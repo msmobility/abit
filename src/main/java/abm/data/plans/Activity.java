@@ -1,8 +1,6 @@
-package data.plans;
+package abm.data.plans;
 
-import data.geo.Location;
-
-import java.util.Comparator;
+import abm.data.geo.Location;
 
 public class Activity implements Comparable<Activity> {
 

@@ -1,11 +1,9 @@
-package data.plans;
+package abm.data.plans;
 
-import data.geo.TravelTimes;
-import data.pop.Person;
-import models.ScheduleUtils;
+import abm.data.pop.Person;
+import abm.models.ScheduleUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Plan {
 

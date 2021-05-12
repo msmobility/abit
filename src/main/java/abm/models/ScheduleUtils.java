@@ -1,9 +1,7 @@
-package models;
+package abm.models;
 
-import data.plans.Activity;
-import data.plans.Plan;
-
-import java.util.Comparator;
+import abm.data.plans.Activity;
+import abm.data.plans.Plan;
 
 public class ScheduleUtils {
 

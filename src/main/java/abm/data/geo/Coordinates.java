@@ -1,4 +1,4 @@
-package data.geo;
+package abm.data.geo;
 
 public class Coordinates {
     double x;

@@ -1,8 +1,8 @@
-package data;
+package abm.data;
 
-import data.geo.TravelTimes;
-import data.pop.Household;
-import data.pop.Person;
+import abm.data.geo.TravelTimes;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
 
 import java.util.Map;
 

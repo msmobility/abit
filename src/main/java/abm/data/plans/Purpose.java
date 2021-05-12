@@ -1,4 +1,4 @@
-package data.plans;
+package abm.data.plans;
 
 public enum Purpose {
 

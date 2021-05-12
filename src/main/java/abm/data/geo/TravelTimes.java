@@ -1,6 +1,6 @@
-package data.geo;
+package abm.data.geo;
 
-import data.plans.Mode;
+import abm.data.plans.Mode;
 
 public class TravelTimes {
 

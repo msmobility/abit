@@ -1,13 +1,13 @@
-package models;
+package abm.models;
 
-import data.geo.Coordinates;
-import data.geo.Location;
-import data.plans.Activity;
-import data.plans.Plan;
-import data.plans.PlanUtils;
-import data.plans.Purpose;
-import data.pop.Household;
-import data.pop.Person;
+import abm.data.geo.Coordinates;
+import abm.data.geo.Location;
+import abm.data.plans.Activity;
+import abm.data.plans.Plan;
+import abm.data.plans.PlanUtils;
+import abm.data.plans.Purpose;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;

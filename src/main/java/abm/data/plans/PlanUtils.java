@@ -1,11 +1,6 @@
-package data.plans;
+package abm.data.plans;
 
-import data.geo.TravelTimes;
-
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.SortedMap;
-import java.util.stream.Collectors;
+import abm.data.geo.TravelTimes;
 
 public class PlanUtils {
     /**

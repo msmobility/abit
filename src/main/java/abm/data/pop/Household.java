@@ -1,6 +1,6 @@
-package data.pop;
+package abm.data.pop;
 
-import data.geo.Location;
+import abm.data.geo.Location;
 
 import java.util.ArrayList;
 import java.util.List;
