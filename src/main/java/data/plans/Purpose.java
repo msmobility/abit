@@ -6,7 +6,6 @@ public enum Purpose {
     W,
     E,
     S,
-    L,
     R,
     A,
     O;
