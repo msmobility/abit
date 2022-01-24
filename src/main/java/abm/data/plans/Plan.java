@@ -41,6 +41,7 @@ public class Plan {
     public String logPlan(double interval_s) {
         double time = ScheduleUtils.startOfTheDay() + interval_s / 2;
         StringBuilder string = new StringBuilder();
+        string.append(person.getId()).append(",").append(person.getHousehold().getId()).append(",");
         int size = 0;
         while (time <= ScheduleUtils.endOfTheDay()) {
             for (Activity a : homeActivities.values()) {

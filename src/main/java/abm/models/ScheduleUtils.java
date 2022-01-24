@@ -6,7 +6,7 @@ import abm.data.plans.Plan;
 public class ScheduleUtils {
 
     public static double endOfTheDay() {
-        return 24 * 3600;
+        return 7 * 24 * 3600;
     }
 
     public static double startOfTheDay() {
