@@ -2,14 +2,23 @@ package abm.data.plans;
 
 import abm.data.geo.TravelTimes;
 
-public class PlanUtils {
+
+public class PlanTools {
+
+    private final TravelTimes travelTimes;
+
+    public PlanTools(TravelTimes travelTimes) {
+        this.travelTimes = travelTimes;
+    }
+
+
     /**
      * Adds a main activity tour. Cuts the home activity into two pieces, one before the tour and another after the tour
      * Adds trip
      *
      * @param mainTourActivity
      */
-    public static void addMainTour(Plan plan, Activity mainTourActivity) {
+    public void addMainTour(Plan plan, Activity mainTourActivity) {
         //find the home activity
         Activity homeActivity = null;
 
@@ -23,7 +32,7 @@ public class PlanUtils {
         Tour tour = new Tour(mainTourActivity);
         plan.getTours().put(mainTourActivity.getStartTime_s(), tour);
         if (homeActivity != null) {
-            double timeToMainActivity = TravelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
+            double timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
             double previousEndOfHomeActivity = homeActivity.getEndTime_s();
             homeActivity.setEndTime_s(mainTourActivity.getStartTime_s() - timeToMainActivity);
             tour.getTrips().put(homeActivity, new Trip(homeActivity, mainTourActivity));
@@ -39,7 +48,7 @@ public class PlanUtils {
      *
      * @param subTourActivity
      */
-    public static void addSubtour(Plan plan, Activity subTourActivity) {
+    public void addSubtour(Plan plan, Activity subTourActivity) {
         Activity mainActivity = null;
         Tour tour = null;
         //the search in the following may be not necessary or need to be adapted later
@@ -58,7 +67,7 @@ public class PlanUtils {
 
         //todo here
         if (mainActivity != null) {
-            double timeToSubTourActivity = TravelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
+            double timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
             double previousEndOfMainActivity = mainActivity.getEndTime_s();
             mainActivity.setEndTime_s(subTourActivity.getStartTime_s() - timeToSubTourActivity);
             Trip previousTripFromMainActivity = tour.getTrips().get(mainActivity);
@@ -78,7 +87,7 @@ public class PlanUtils {
      * Adds one stop before the next main activity, modifying the home activity accordingly
      * Changes the outbound trip and splits it into two subtrips
      */
-    public static void addStopBefore(Plan plan, Activity stopBefore, Activity mainActivity) {
+    public void addStopBefore(Plan plan, Activity stopBefore, Activity mainActivity) {
 
         Activity candidatePreviousActivity = null;
         for (Tour candidateTour : plan.getTours().values()){
@@ -107,13 +116,13 @@ public class PlanUtils {
         tour.getTrips().remove(tripToRemove.getPreviousActivity());
 
         Trip firstTrip = new Trip(candidatePreviousActivity, stopBefore);
-        double timeForFirstTrip = TravelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, candidatePreviousActivity.getEndTime_s());
+        double timeForFirstTrip = travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, candidatePreviousActivity.getEndTime_s());
         Trip secondTrip = new Trip(stopBefore, mainActivity);
-        double timeForSecondTrip = TravelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), mainActivity.getLocation(), Mode.UNKNOWN, stopBefore.getEndTime_s());
+        double timeForSecondTrip = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), mainActivity.getLocation(), Mode.UNKNOWN, stopBefore.getEndTime_s());
         tour.getTrips().put(firstTrip.getPreviousActivity(), firstTrip);
         tour.getTrips().put(secondTrip.getPreviousActivity(), secondTrip);
 
-        candidatePreviousActivity.setEndTime_s(stopBefore.getStartTime_s() - TravelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, stopBefore.getStartTime_s()));
+        candidatePreviousActivity.setEndTime_s(stopBefore.getStartTime_s() - travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, stopBefore.getStartTime_s()));
 
     }
 
@@ -125,7 +134,7 @@ public class PlanUtils {
      * @param stopAfter
      * @param mainActivity
      */
-    public static void addStopAfter(Plan plan, Activity stopAfter, Activity mainActivity) {
+    public void addStopAfter(Plan plan, Activity stopAfter, Activity mainActivity) {
         Activity candidateAfterActivity = null;
         for (Tour candidateTour : plan.getTours().values()){
             for (Trip candidateTrip : candidateTour.getTrips().values()){
@@ -157,6 +166,6 @@ public class PlanUtils {
         tour.getTrips().put(firstTrip.getPreviousActivity(), firstTrip);
         tour.getTrips().put(secondTrip.getPreviousActivity(), secondTrip);
 
-        candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + TravelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
+        candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
     }
 }

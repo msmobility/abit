@@ -1,10 +1,11 @@
 package abm.models;
 
-import abm.data.geo.Coordinates;
-import abm.data.geo.Location;
+import abm.data.geo.MicroscopicLocation;
+import abm.data.geo.MitoBasedTravelTimes;
+import abm.data.geo.SimpleTravelTimes;
 import abm.data.plans.Activity;
 import abm.data.plans.Plan;
-import abm.data.plans.PlanUtils;
+import abm.data.plans.PlanTools;
 import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
@@ -21,6 +22,8 @@ public class PlanGenerator {
 
 
     void run() throws FileNotFoundException {
+
+        PlanTools planTools = new PlanTools(new SimpleTravelTimes());
 
         final long start = System.currentTimeMillis();
 
@@ -44,7 +47,7 @@ public class PlanGenerator {
 
 
         for (int hhId = 0; hhId < numberOfIdenticalHouseholds; hhId++){
-            Household hh = new Household(hhId, new Location(new Coordinates(0,0)));
+            Household hh = new Household(hhId, new MicroscopicLocation(0,0));
             Person person = new Person(0, hh);
             hh.getPersons().add(person);
             Plan plan = Plan.initializePlan(person);
@@ -52,24 +55,24 @@ public class PlanGenerator {
             //out.println(plan.logPlan(interval_s));
 
             //mandatory main tours
-            Activity workActivity = new Activity(Purpose.W, 8 * 3600, 16 * 3600, new Location(new Coordinates(10000, 0)));
-            PlanUtils.addMainTour(plan, workActivity);
+            Activity workActivity = new Activity(Purpose.W, 8 * 3600, 16 * 3600, new MicroscopicLocation(10000, 0));
+            planTools.addMainTour(plan, workActivity);
             //out.println(plan.logPlan(interval_s));
 
             //mandatory main subtours and stops
-            PlanUtils.addStopBefore(plan, new Activity(Purpose.A, 7.50 * 3600, 7.85*3600, new Location(new Coordinates(1500,0))), workActivity);
+            planTools.addStopBefore(plan, new Activity(Purpose.A, 7.50 * 3600, 7.85*3600, new MicroscopicLocation(1500,0)), workActivity);
             //out.println(plan.logPlan(interval_s));
 
-            PlanUtils.addSubtour(plan, new Activity(Purpose.O, 12*3600, 12.75 * 3600, new Location(new Coordinates(13000,0))));
+            planTools.addSubtour(plan, new Activity(Purpose.O, 12*3600, 12.75 * 3600, new MicroscopicLocation(13000,0)));
             //out.println(plan.logPlan(interval_s));
 
             //discretionary tours
-            Activity shoppingActivity = new Activity(Purpose.S, 18 * 3600, 18.40 * 3600, new Location(new Coordinates(-2000, 0)));
-            PlanUtils.addMainTour(plan, shoppingActivity);
+            Activity shoppingActivity = new Activity(Purpose.S, 18 * 3600, 18.40 * 3600, new MicroscopicLocation(-2000, 0));
+            planTools.addMainTour(plan, shoppingActivity);
             //out.println(plan.logPlan(interval_s));
 
             //discretionary tour stops
-            PlanUtils.addStopAfter(plan, new Activity(Purpose.R, 18.5*3600, 19.5 * 3600, new Location(new Coordinates(-4000, 0))), shoppingActivity);
+            planTools.addStopAfter(plan, new Activity(Purpose.R, 18.5*3600, 19.5 * 3600, new MicroscopicLocation(-4000, 0)), shoppingActivity);
             out.println(plan.logPlan(interval_s));
         }
         out.close();

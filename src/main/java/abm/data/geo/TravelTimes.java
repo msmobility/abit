@@ -1,15 +1,8 @@
 package abm.data.geo;
 
 import abm.data.plans.Mode;
+import de.tum.bgu.msm.data.Location;
 
-public class TravelTimes {
-
-    public static double getTravelTimeInSeconds(Location origin, Location destination, Mode mode, double time){
-        double distance_m = Math.abs(origin.getCoordinates().getX() - destination.getCoordinates().getX()) +
-                Math.abs(origin.getCoordinates().getY() - destination.getCoordinates().getY());
-
-        double speed_ms = 15. / 3.6;
-
-        return distance_m / speed_ms;
-    }
+public interface TravelTimes {
+    double getTravelTimeInSeconds(Location origin, Location destination, Mode mode, double time);
 }

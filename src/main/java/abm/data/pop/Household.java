@@ -1,6 +1,6 @@
 package abm.data.pop;
 
-import abm.data.geo.Location;
+import abm.data.geo.MicroscopicLocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +9,10 @@ public class Household {
 
     private int id;
     private List<Person> persons;
-    private Location location;
+    private MicroscopicLocation location;
 
 
-    public Household(int id, Location location) {
+    public Household(int id, MicroscopicLocation location) {
         this.id = id;
         this.persons = new ArrayList<>();
         this.location = location;
@@ -26,7 +26,7 @@ public class Household {
         return persons;
     }
 
-    public Location getLocation() {
+    public MicroscopicLocation getLocation() {
         return location;
     }
 }
