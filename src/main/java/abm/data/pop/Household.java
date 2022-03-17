@@ -10,7 +10,7 @@ public class Household {
     private int id;
     private List<Person> persons;
     private MicroscopicLocation location;
-
+    private de.tum.bgu.msm.data.household.Household siloHousehold;
 
     public Household(int id, MicroscopicLocation location) {
         this.id = id;
@@ -28,5 +28,9 @@ public class Household {
 
     public MicroscopicLocation getLocation() {
         return location;
+    }
+
+    public de.tum.bgu.msm.data.household.Household getSiloHousehold(){
+        return siloHousehold;
     }
 }
