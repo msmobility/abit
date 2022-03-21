@@ -1,6 +1,7 @@
 package abm.data.plans;
 
-import de.tum.bgu.msm.data.Location;
+
+import abm.data.geo.Location;
 
 public class Activity implements Comparable<Activity> {
 

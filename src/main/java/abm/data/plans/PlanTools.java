@@ -1,6 +1,6 @@
 package abm.data.plans;
 
-import abm.data.geo.TravelTimes;
+import abm.data.travelTimes.TravelTimes;
 
 
 public class PlanTools {

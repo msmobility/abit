@@ -1,8 +1,7 @@
 package abm.models;
 
 import abm.data.geo.MicroscopicLocation;
-import abm.data.geo.MitoBasedTravelTimes;
-import abm.data.geo.SimpleTravelTimes;
+import abm.data.travelTimes.SimpleTravelTimes;
 import abm.data.plans.Activity;
 import abm.data.plans.Plan;
 import abm.data.plans.PlanTools;

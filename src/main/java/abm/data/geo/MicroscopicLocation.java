@@ -1,6 +1,5 @@
 package abm.data.geo;
 
-import de.tum.bgu.msm.data.MicroLocation;
 import org.locationtech.jts.geom.Coordinate;
 
 public class MicroscopicLocation implements MicroLocation {

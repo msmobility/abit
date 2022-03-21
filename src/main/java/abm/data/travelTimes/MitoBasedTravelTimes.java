@@ -1,7 +1,9 @@
-package abm.data.geo;
+package abm.data.travelTimes;
 
+import abm.data.geo.Location;
 import abm.data.plans.Mode;
-import de.tum.bgu.msm.data.Location;
+import de.tum.bgu.msm.data.MitoZone;
+
 
 public class MitoBasedTravelTimes implements TravelTimes {
 
@@ -14,7 +16,11 @@ public class MitoBasedTravelTimes implements TravelTimes {
 
     @Override
     public double getTravelTimeInSeconds(Location origin, Location destination, Mode mode, double time){
-       return mitoTravelTimes.getTravelTime(origin, destination, time, mode.toString())*60;
+
+        de.tum.bgu.msm.data.Location mitoOrigin = new MitoZone(origin.getZoneId(), null);
+        de.tum.bgu.msm.data.Location mitoDestination = new MitoZone(destination.getZoneId(), null);
+
+        return mitoTravelTimes.getTravelTime(mitoOrigin, mitoDestination, time, mode.toString())*60;
     }
 
 
