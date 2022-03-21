@@ -35,10 +35,10 @@ public class PlanTools {
             double timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
             double previousEndOfHomeActivity = homeActivity.getEndTime_s();
             homeActivity.setEndTime_s(mainTourActivity.getStartTime_s() - timeToMainActivity);
-            tour.getTrips().put(homeActivity, new Trip(homeActivity, mainTourActivity));
-            Activity secondHomeActivity = new Activity(Purpose.H, mainTourActivity.getEndTime_s() + timeToMainActivity, previousEndOfHomeActivity, homeActivity.getLocation());
+            tour.getLegs().put(homeActivity, new Leg(homeActivity, mainTourActivity));
+            Activity secondHomeActivity = new Activity(Purpose.HOME, mainTourActivity.getEndTime_s() + timeToMainActivity, previousEndOfHomeActivity, homeActivity.getLocation());
             plan.getHomeActivities().put(secondHomeActivity.getStartTime_s(), secondHomeActivity);
-            tour.getTrips().put(mainTourActivity, new Trip(mainTourActivity, secondHomeActivity));
+            tour.getLegs().put(mainTourActivity, new Leg(mainTourActivity, secondHomeActivity));
         }
     }
 
@@ -70,13 +70,13 @@ public class PlanTools {
             double timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
             double previousEndOfMainActivity = mainActivity.getEndTime_s();
             mainActivity.setEndTime_s(subTourActivity.getStartTime_s() - timeToSubTourActivity);
-            Trip previousTripFromMainActivity = tour.getTrips().get(mainActivity);
-            subtour.getTrips().put(mainActivity, new Trip(mainActivity, subTourActivity));
+            Leg previousLegFromMainActivity = tour.getLegs().get(mainActivity);
+            subtour.getLegs().put(mainActivity, new Leg(mainActivity, subTourActivity));
             Activity secondMainActivity = new Activity(mainActivity.getPurpose(), subTourActivity.getEndTime_s() + timeToSubTourActivity, previousEndOfMainActivity, mainActivity.getLocation());
             tour.getActivities().put(secondMainActivity.getStartTime_s(), secondMainActivity);
-            subtour.getTrips().put(subTourActivity, new Trip(subTourActivity, secondMainActivity));
-            tour.getTrips().remove(mainActivity);
-            tour.getTrips().put(secondMainActivity, new Trip(secondMainActivity, previousTripFromMainActivity.getNextActivity()));
+            subtour.getLegs().put(subTourActivity, new Leg(subTourActivity, secondMainActivity));
+            tour.getLegs().remove(mainActivity);
+            tour.getLegs().put(secondMainActivity, new Leg(secondMainActivity, previousLegFromMainActivity.getNextActivity()));
         } else {
             //trying to add a subtour without having a tour!
         }
@@ -91,21 +91,21 @@ public class PlanTools {
 
         Activity candidatePreviousActivity = null;
         for (Tour candidateTour : plan.getTours().values()){
-            for (Trip candidateTrip : candidateTour.getTrips().values()){
-                if (candidateTrip.getNextActivity().equals(mainActivity)){
-                    candidatePreviousActivity = candidateTrip.getPreviousActivity();
+            for (Leg candidateLeg : candidateTour.getLegs().values()){
+                if (candidateLeg.getNextActivity().equals(mainActivity)){
+                    candidatePreviousActivity = candidateLeg.getPreviousActivity();
                 }
             }
         }
 
 
         Tour tour = null;
-        Trip tripToRemove = null;
+        Leg legToRemove = null;
         for (Tour candidateTour : plan.getTours().values()) {
-            for (Trip candidateTrip : candidateTour.getTrips().values()){
-                if (candidateTrip.getNextActivity().equals(mainActivity)){
+            for (Leg candidateLeg : candidateTour.getLegs().values()){
+                if (candidateLeg.getNextActivity().equals(mainActivity)){
                     tour = candidateTour;
-                    tripToRemove = candidateTrip;
+                    legToRemove = candidateLeg;
                     break;
 
                 }
@@ -113,14 +113,14 @@ public class PlanTools {
         }
 
         tour.getActivities().put(stopBefore.getStartTime_s(), stopBefore);
-        tour.getTrips().remove(tripToRemove.getPreviousActivity());
+        tour.getLegs().remove(legToRemove.getPreviousActivity());
 
-        Trip firstTrip = new Trip(candidatePreviousActivity, stopBefore);
+        Leg firstLeg = new Leg(candidatePreviousActivity, stopBefore);
         double timeForFirstTrip = travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, candidatePreviousActivity.getEndTime_s());
-        Trip secondTrip = new Trip(stopBefore, mainActivity);
+        Leg secondLeg = new Leg(stopBefore, mainActivity);
         double timeForSecondTrip = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), mainActivity.getLocation(), Mode.UNKNOWN, stopBefore.getEndTime_s());
-        tour.getTrips().put(firstTrip.getPreviousActivity(), firstTrip);
-        tour.getTrips().put(secondTrip.getPreviousActivity(), secondTrip);
+        tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
+        tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
 
         candidatePreviousActivity.setEndTime_s(stopBefore.getStartTime_s() - travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, stopBefore.getStartTime_s()));
 
@@ -137,21 +137,21 @@ public class PlanTools {
     public void addStopAfter(Plan plan, Activity stopAfter, Activity mainActivity) {
         Activity candidateAfterActivity = null;
         for (Tour candidateTour : plan.getTours().values()){
-            for (Trip candidateTrip : candidateTour.getTrips().values()){
-                if (candidateTrip.getPreviousActivity().equals(mainActivity)){
-                    candidateAfterActivity = candidateTrip.getNextActivity();
+            for (Leg candidateLeg : candidateTour.getLegs().values()){
+                if (candidateLeg.getPreviousActivity().equals(mainActivity)){
+                    candidateAfterActivity = candidateLeg.getNextActivity();
                 }
             }
         }
 
 
-        Trip tripToRemove = null;
+        Leg legToRemove = null;
         Tour tour = null;
         for (Tour candidateTour : plan.getTours().values()){
-            for (Trip candidateTrip : candidateTour.getTrips().values()){
-                if (candidateTrip.getPreviousActivity().equals(mainActivity)){
+            for (Leg candidateLeg : candidateTour.getLegs().values()){
+                if (candidateLeg.getPreviousActivity().equals(mainActivity)){
                     tour = candidateTour;
-                    tripToRemove = candidateTrip;
+                    legToRemove = candidateLeg;
                     break;
                 }
 
@@ -159,12 +159,12 @@ public class PlanTools {
         }
 
         tour.getActivities().put(stopAfter.getStartTime_s(), stopAfter);
-        tour.getTrips().remove(tripToRemove.getPreviousActivity());
+        tour.getLegs().remove(legToRemove.getPreviousActivity());
 
-        Trip firstTrip = new Trip(mainActivity, stopAfter);
-        Trip secondTrip = new Trip(stopAfter, candidateAfterActivity);
-        tour.getTrips().put(firstTrip.getPreviousActivity(), firstTrip);
-        tour.getTrips().put(secondTrip.getPreviousActivity(), secondTrip);
+        Leg firstLeg = new Leg(mainActivity, stopAfter);
+        Leg secondLeg = new Leg(stopAfter, candidateAfterActivity);
+        tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
+        tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
 
         candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
     }

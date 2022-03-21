@@ -1,15 +1,15 @@
-package abm.models;
+package abm;
 
 import abm.data.plans.Activity;
 import abm.data.plans.Plan;
 
 public class ScheduleUtils {
 
-    public static double endOfTheDay() {
+    public static double endOfTheWeek() {
         return 7 * 24 * 3600;
     }
 
-    public static double startOfTheDay() {
+    public static double startOfTheWeek() {
         return 0;
     }
 

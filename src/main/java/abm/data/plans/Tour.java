@@ -6,21 +6,22 @@ import java.util.TreeMap;
 public class Tour {
 
     private final SortedMap<Double, Activity> activities;
-    private final SortedMap<Activity, Trip> trips;
+    private final SortedMap<Activity, Leg> legs;
     private final Activity mainActivity;
     private final SortedMap<Double, Tour> subtours;
+    Mode tourMode;
 
 
     public Tour(Activity mainActivity) {
         this.mainActivity = mainActivity;
         activities = new TreeMap<>();
         activities.put(mainActivity.getStartTime_s(), mainActivity);
-        trips = new TreeMap<>();
+        legs = new TreeMap<>();
         subtours = new TreeMap<>();
     }
 
-    public SortedMap<Activity, Trip> getTrips() {
-        return trips;
+    public SortedMap<Activity, Leg> getLegs() {
+        return legs;
     }
 
     public SortedMap<Double, Activity> getActivities() {

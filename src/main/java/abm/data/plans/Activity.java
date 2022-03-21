@@ -2,12 +2,15 @@ package abm.data.plans;
 
 
 import abm.data.geo.Location;
+import java.time.DayOfWeek;
 
 public class Activity implements Comparable<Activity> {
 
     private Purpose purpose;
+    private DayOfWeek dayOfWeek;
     private double startTime_s;
     private double endTime_s;
+
     private Location location;
 
 
@@ -16,6 +19,10 @@ public class Activity implements Comparable<Activity> {
         this.startTime_s = startTime_s;
         this.endTime_s = endTime_s;
         this.location = location;
+    }
+
+    public Activity(Purpose purpose){
+        this.purpose = purpose;
     }
 
     public Purpose getPurpose() {
@@ -42,6 +49,13 @@ public class Activity implements Comparable<Activity> {
         this.endTime_s = endTime_s;
     }
 
+    public double getDuration(){
+        return  endTime_s - startTime_s;
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
+    }
 
     @Override
     public int compareTo(Activity activity) {
@@ -62,5 +76,13 @@ public class Activity implements Comparable<Activity> {
                 ", endTime_s=" + endTime_s +
                 ", location=" + location +
                 '}';
+    }
+
+    public DayOfWeek getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public void setDayOfWeek(DayOfWeek dayOfWeek) {
+        this.dayOfWeek = dayOfWeek;
     }
 }

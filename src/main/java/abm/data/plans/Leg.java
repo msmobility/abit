@@ -1,12 +1,12 @@
 package abm.data.plans;
 
-public class Trip {
+public class Leg {
 
     Activity previousActivity;
     Activity nextActivity;
     Mode mode;
 
-    public Trip(Activity previousActivity, Activity nextActivity) {
+    public Leg(Activity previousActivity, Activity nextActivity) {
         this.previousActivity = previousActivity;
         this.nextActivity = nextActivity;
         this.mode = Mode.UNKNOWN;

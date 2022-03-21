@@ -1,13 +1,14 @@
 package abm.data.plans;
 
 import abm.data.pop.Person;
-import abm.models.ScheduleUtils;
+import abm.ScheduleUtils;
 
 import java.util.*;
 
 public class Plan {
 
     private Person person;
+    private int id;
     private SortedMap<Double, Activity> homeActivities;
     private SortedMap<Double, Tour> tours;
 
@@ -21,9 +22,10 @@ public class Plan {
 
     public static Plan initializePlan(Person person) {
         Plan plan = new Plan();
+        plan.id = person.getId();
         plan.person = person;
         plan.homeActivities = new TreeMap<>();
-        plan.homeActivities.put(0., new Activity(Purpose.H, ScheduleUtils.startOfTheDay(), ScheduleUtils.endOfTheDay(), person.getHousehold().getLocation()));
+        plan.homeActivities.put(0., new Activity(Purpose.HOME, ScheduleUtils.startOfTheWeek(), ScheduleUtils.endOfTheWeek(), person.getHousehold().getLocation()));
         plan.tours = new TreeMap<>();
         return plan;
     }
@@ -39,11 +41,11 @@ public class Plan {
 
 
     public String logPlan(double interval_s) {
-        double time = ScheduleUtils.startOfTheDay() + interval_s / 2;
+        double time = ScheduleUtils.startOfTheWeek() + interval_s / 2;
         StringBuilder string = new StringBuilder();
         string.append(person.getId()).append(",").append(person.getHousehold().getId()).append(",");
         int size = 0;
-        while (time <= ScheduleUtils.endOfTheDay()) {
+        while (time <= ScheduleUtils.endOfTheWeek()) {
             for (Activity a : homeActivities.values()) {
                 if (time <= a.getEndTime_s() && time > a.getStartTime_s()) {
                     string.append(a.getPurpose().toString()).append(",");
@@ -61,7 +63,7 @@ public class Plan {
                         break;
                     }
                 }
-                for (Trip t : tour.getTrips().values()) {
+                for (Leg t : tour.getLegs().values()) {
                     if (time >= t.getPreviousActivity().getEndTime_s() && time < t.getNextActivity().getStartTime_s()) {
                         string.append("T" + ",");
                         size++;
@@ -78,7 +80,7 @@ public class Plan {
                             break;
                         }
                     }
-                    for (Trip t : subtour.getTrips().values()) {
+                    for (Leg t : subtour.getLegs().values()) {
                         if (time >= t.getPreviousActivity().getEndTime_s() && time < t.getNextActivity().getStartTime_s()) {
                             string.append("T" + ",");
                             size++;
