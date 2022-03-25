@@ -1,5 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
+import abm.Utils;
 import abm.data.plans.Activity;
 import abm.data.plans.DiscretionaryActivityType;
 import abm.data.plans.PlanTools;
@@ -9,7 +10,7 @@ import java.util.*;
 
 public class SimpleSplitByType implements SplitByType {
 
-    static Random random = new Random(2);
+    static Random random = Utils.random;
 
     @Override
     public DiscretionaryActivityType assignActivityType(Activity activity, Person person) {

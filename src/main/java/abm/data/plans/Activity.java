@@ -1,11 +1,17 @@
 package abm.data.plans;
 
 
+import abm.Utils;
 import abm.data.geo.Location;
+import abm.data.geo.MicroscopicLocation;
+import abm.data.pop.Person;
+
 import java.time.DayOfWeek;
 
 public class Activity implements Comparable<Activity> {
 
+    private Person person;
+    private Tour tour;
     private Purpose purpose;
     private DayOfWeek dayOfWeek;
     private double startTime_s;
@@ -22,8 +28,9 @@ public class Activity implements Comparable<Activity> {
         this.location = location;
     }
 
-    public Activity(Purpose purpose){
+    public Activity(Person person, Purpose purpose) {
         this.purpose = purpose;
+        this.person = person;
     }
 
     public Purpose getPurpose() {
@@ -50,8 +57,8 @@ public class Activity implements Comparable<Activity> {
         this.endTime_s = endTime_s;
     }
 
-    public double getDuration(){
-        return  endTime_s - startTime_s;
+    public double getDuration() {
+        return endTime_s - startTime_s;
     }
 
     public void setLocation(Location location) {
@@ -60,7 +67,7 @@ public class Activity implements Comparable<Activity> {
 
     @Override
     public int compareTo(Activity activity) {
-        if (activity.getStartTime_s() < this.getStartTime_s()){
+        if (activity.getStartTime_s() < this.getStartTime_s()) {
             return 1;
         } else if (activity.getStartTime_s() == this.getStartTime_s()) {
             return 0;
@@ -71,12 +78,51 @@ public class Activity implements Comparable<Activity> {
 
     @Override
     public String toString() {
-        return "Activity{" +
-                "purpose=" + purpose +
-                ", startTime_s=" + startTime_s +
-                ", endTime_s=" + endTime_s +
-                ", location=" + location +
-                '}';
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(person.getHousehold().getId()).append(Utils.SEPARATOR);
+        builder.append(person.getId()).append(Utils.SEPARATOR);
+        builder.append(tour.getActivities().firstKey()/60).append(Utils.SEPARATOR);
+        builder.append(dayOfWeek.getValue()).append(Utils.SEPARATOR);
+        builder.append(startTime_s / 60).append(Utils.SEPARATOR);
+        builder.append(endTime_s / 60).append(Utils.SEPARATOR);
+        builder.append(purpose).append(Utils.SEPARATOR);
+        builder.append(location.getZoneId()).append(Utils.SEPARATOR);
+
+        if (location instanceof MicroscopicLocation) {
+            final MicroscopicLocation microscopicLocation = (MicroscopicLocation) (MicroscopicLocation) location;
+            builder.append(microscopicLocation.getX()).append(Utils.SEPARATOR);
+            builder.append(microscopicLocation.getY()).append(Utils.SEPARATOR);
+        } else {
+            builder.append(-1).append(Utils.SEPARATOR);
+            builder.append(-1).append(Utils.SEPARATOR);
+        }
+
+        if (discretionaryActivityType != null){
+            builder.append(discretionaryActivityType);
+        } else {
+            builder.append("MANDATORY");
+        }
+
+
+        return builder.toString();
+    }
+
+
+    public static String getHeader() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("person_id").append(Utils.SEPARATOR);
+        builder.append("household_id").append(Utils.SEPARATOR);
+        builder.append("tour_start_time_min").append(Utils.SEPARATOR);
+        builder.append("day").append(Utils.SEPARATOR);
+        builder.append("start_time_min").append(Utils.SEPARATOR);
+        builder.append("end_time_min").append(Utils.SEPARATOR);
+        builder.append("purpose").append(Utils.SEPARATOR);
+        builder.append("zone_id").append(Utils.SEPARATOR);
+        builder.append("x").append(Utils.SEPARATOR);
+        builder.append("y").append(Utils.SEPARATOR);
+        builder.append("activity_type");
+        return builder.toString();
     }
 
     public DayOfWeek getDayOfWeek() {
@@ -93,5 +139,9 @@ public class Activity implements Comparable<Activity> {
 
     public void setDiscretionaryActivityType(DiscretionaryActivityType discretionaryActivityType) {
         this.discretionaryActivityType = discretionaryActivityType;
+    }
+
+    public void setTour(Tour tour) {
+        this.tour = tour;
     }
 }

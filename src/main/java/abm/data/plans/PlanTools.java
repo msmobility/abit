@@ -1,5 +1,6 @@
 package abm.data.plans;
 
+import abm.Utils;
 import abm.data.travelTimes.TravelTimes;
 
 import java.util.Collections;
@@ -35,6 +36,7 @@ public class PlanTools {
         }
         //add a tour - adds the new activity there
         Tour tour = new Tour(mainTourActivity);
+        mainTourActivity.setTour(tour);
         plan.getTours().put(mainTourActivity.getStartTime_s(), tour);
         if (homeActivity != null) {
             double timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
@@ -91,6 +93,7 @@ public class PlanTools {
     /**
      * Adds one stop before the next main activity, modifying the home activity accordingly
      * Changes the outbound trip and splits it into two subtrips
+     * //todo this methods needs to be changed to addStopBefore GIVEN the tour (no need to look for a tour)
      */
     public void addStopBefore(Plan plan, Activity stopBefore, Activity mainActivity) {
 
@@ -119,21 +122,23 @@ public class PlanTools {
 
         try {
             tour.getActivities().put(stopBefore.getStartTime_s(), stopBefore);
-        } catch(Exception e) {
+            tour.getLegs().remove(legToRemove.getPreviousActivity());
+
+            Leg firstLeg = new Leg(candidatePreviousActivity, stopBefore);
+            double timeForFirstTrip = travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, candidatePreviousActivity.getEndTime_s());
+            Leg secondLeg = new Leg(stopBefore, mainActivity);
+            double timeForSecondTrip = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), mainActivity.getLocation(), Mode.UNKNOWN, stopBefore.getEndTime_s());
+            tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
+            tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
+
+            candidatePreviousActivity.setEndTime_s(stopBefore.getStartTime_s() - travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, stopBefore.getStartTime_s()));
+
+            stopBefore.setTour(tour);
+
+        } catch (Exception e) {
             System.out.println("Check here");
 
         }
-
-        tour.getLegs().remove(legToRemove.getPreviousActivity());
-
-        Leg firstLeg = new Leg(candidatePreviousActivity, stopBefore);
-        double timeForFirstTrip = travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, candidatePreviousActivity.getEndTime_s());
-        Leg secondLeg = new Leg(stopBefore, mainActivity);
-        double timeForSecondTrip = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), mainActivity.getLocation(), Mode.UNKNOWN, stopBefore.getEndTime_s());
-        tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
-        tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
-
-        candidatePreviousActivity.setEndTime_s(stopBefore.getStartTime_s() - travelTimes.getTravelTimeInSeconds(candidatePreviousActivity.getLocation(), stopBefore.getLocation(), Mode.UNKNOWN, stopBefore.getStartTime_s()));
 
     }
 
@@ -141,7 +146,7 @@ public class PlanTools {
     /**
      * Adds one stop before the previous main activity, modifying the home activity accordingly
      * Changes the inbound trip and splits it into two subtrips
-     *
+     * todo this methods needs to be changed to addStopAfter GIVEN the tour (no need to look for a tour)
      * @param stopAfter
      * @param mainActivity
      */
@@ -168,27 +173,33 @@ public class PlanTools {
 
             }
         }
+        try {
+            tour.getActivities().put(stopAfter.getStartTime_s(), stopAfter);
+            tour.getLegs().remove(legToRemove.getPreviousActivity());
 
-        tour.getActivities().put(stopAfter.getStartTime_s(), stopAfter);
-        tour.getLegs().remove(legToRemove.getPreviousActivity());
+            Leg firstLeg = new Leg(mainActivity, stopAfter);
+            Leg secondLeg = new Leg(stopAfter, candidateAfterActivity);
+            tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
+            tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
+            candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
 
-        Leg firstLeg = new Leg(mainActivity, stopAfter);
-        Leg secondLeg = new Leg(stopAfter, candidateAfterActivity);
-        tour.getLegs().put(firstLeg.getPreviousActivity(), firstLeg);
-        tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
+            stopAfter.setTour(tour);
 
-        candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
+        } catch (Exception e) {
+            System.out.println("Check here");
+        }
+
     }
 
     public static Tour findMandatoryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, new Random(1));
+        Collections.shuffle(tourList, Utils.random);
         return tourList.stream().findFirst().orElse(null);
     }
 
     public static Tour findDiscretionaryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, new Random(1));
+        Collections.shuffle(tourList, Utils.random);
         return tourList.stream().findFirst().orElse(null);
     }
 }

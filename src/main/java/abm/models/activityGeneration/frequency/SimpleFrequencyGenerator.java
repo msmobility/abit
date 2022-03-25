@@ -1,5 +1,6 @@
 package abm.models.activityGeneration.frequency;
 
+import abm.Utils;
 import abm.data.plans.Purpose;
 import abm.data.pop.Person;
 
@@ -9,7 +10,7 @@ public class SimpleFrequencyGenerator implements FrequencyGenerator {
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
 
-        Random random = new Random(0);
+        Random random = Utils.random;
         return random.nextInt(7);
     }
 }

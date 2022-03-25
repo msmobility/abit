@@ -1,13 +1,16 @@
 package abm.models.activityGeneration.time;
 
+import abm.Utils;
 import abm.data.plans.Activity;
 
 import java.util.Random;
 
 public class SimpleTimeAssignment implements TimeAssignment {
 
-    static Random random = new Random(1);
+    static Random random = Utils.random;
 
+
+    //TODO Split into assignStartTime and assignDuration (Stops do not need start time, since it is derived from the main tour)
     @Override
     public void assignTime(Activity activity) {
 

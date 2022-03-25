@@ -1,5 +1,6 @@
 package abm.models.destinationChoice;
 
+import abm.Utils;
 import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.plans.Activity;
@@ -9,7 +10,7 @@ import java.util.Random;
 
 public class SimpleDestinationChoice implements DestinationChoice{
 
-    Random rmd = new Random(1);
+    Random rmd = Utils.random;
 
     @Override
     public void selectMainActivityDestination(Person person, Activity activity) {

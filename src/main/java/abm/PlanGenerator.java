@@ -1,10 +1,12 @@
 package abm;
 
+import abm.data.DataSet;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.travelTimes.SimpleTravelTimes;
+import abm.io.output.OutputWriter;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
@@ -39,22 +41,22 @@ public class PlanGenerator {
     SplitByType splitByType = new SimpleSplitByType();
     SplitStopType stopSplitType = new SimpleSplitStopType();
 
-    PlanTools planTools = new PlanTools(new SimpleTravelTimes());
+    PlanTools planTools; ;
 
-    public static void main(String[] args) {
-        PlanGenerator planGenerator = new PlanGenerator();
-        planGenerator.run();
+    private final DataSet dataSet;
+
+
+    public PlanGenerator(DataSet dataSet) {
+        this.dataSet = dataSet;
+        this.planTools = new PlanTools(dataSet.getTravelTimes());
     }
 
     public void run() {
-
-        MicroscopicLocation homeLocation = new MicroscopicLocation(112, 123);
-        Household household = new Household(1, homeLocation);
-        Person person = new Person(1, household);
-
-        createPlanForOnePerson(person);
-
-
+        for (Household household : dataSet.getHouseholds().values()) {
+            for (Person person : household.getPersons()){
+                createPlanForOnePerson(person);
+            }
+        }
     }
 
     private void createPlanForOnePerson(Person person) {
@@ -68,7 +70,7 @@ public class PlanGenerator {
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numAct, purpose);
 
             for (DayOfWeek day : dayOfWeeks) {
-                Activity activity = new Activity(purpose);
+                Activity activity = new Activity(person, purpose);
                 destinationChoice.selectMainActivityDestination(person, activity);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignTime(activity);
@@ -81,7 +83,7 @@ public class PlanGenerator {
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             int numAct = frequencyGenerator.calculateNumberOfActivitiesPerWeek(person, purpose);
             for (int i = 0; i <= numAct; i++) {
-                Activity activity = new Activity(purpose);
+                Activity activity = new Activity(person, purpose);
                 discretionaryActivities.add(activity);
             }
         }
