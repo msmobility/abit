@@ -10,6 +10,7 @@ public class Activity implements Comparable<Activity> {
     private DayOfWeek dayOfWeek;
     private double startTime_s;
     private double endTime_s;
+    private DiscretionaryActivityType discretionaryActivityType;
 
     private Location location;
 
@@ -84,5 +85,13 @@ public class Activity implements Comparable<Activity> {
 
     public void setDayOfWeek(DayOfWeek dayOfWeek) {
         this.dayOfWeek = dayOfWeek;
+    }
+
+    public DiscretionaryActivityType getDiscretionaryActivityType() {
+        return discretionaryActivityType;
+    }
+
+    public void setDiscretionaryActivityType(DiscretionaryActivityType discretionaryActivityType) {
+        this.discretionaryActivityType = discretionaryActivityType;
     }
 }

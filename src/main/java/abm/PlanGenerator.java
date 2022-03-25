@@ -94,6 +94,7 @@ public class PlanGenerator {
 
         for (Activity activity : discretionaryActivities) {
             DiscretionaryActivityType discretionaryActivityType = splitByType.assignActivityType(activity, person);
+            activity.setDiscretionaryActivityType(discretionaryActivityType);
             switch (discretionaryActivityType) {
                 case ON_MANDATORY_TOUR:
                     stopsOnMandatory.add(activity);
