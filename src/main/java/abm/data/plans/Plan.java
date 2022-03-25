@@ -27,6 +27,7 @@ public class Plan {
         plan.homeActivities = new TreeMap<>();
         plan.homeActivities.put(0., new Activity(Purpose.HOME, ScheduleUtils.startOfTheWeek(), ScheduleUtils.endOfTheWeek(), person.getHousehold().getLocation()));
         plan.tours = new TreeMap<>();
+        person.setPlan(plan);
         return plan;
     }
 

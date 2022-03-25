@@ -6,7 +6,10 @@ import abm.data.pop.Person;
 
 public class SimpleTourModeChoice implements TourModeChoice {
     @Override
-    public Mode chooseMode(Person person, Tour tour) {
-        return Mode.WALK;
+    public void chooseMode(Person person, Tour tour) {
+        tour.getLegs().values().forEach(leg -> {
+            // Todo add logic for deciding the mode
+            leg.setMode(Mode.WALK);
+        });
     }
 }

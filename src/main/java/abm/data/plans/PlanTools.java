@@ -2,6 +2,11 @@ package abm.data.plans;
 
 import abm.data.travelTimes.TravelTimes;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+
 
 public class PlanTools {
 
@@ -90,9 +95,9 @@ public class PlanTools {
     public void addStopBefore(Plan plan, Activity stopBefore, Activity mainActivity) {
 
         Activity candidatePreviousActivity = null;
-        for (Tour candidateTour : plan.getTours().values()){
-            for (Leg candidateLeg : candidateTour.getLegs().values()){
-                if (candidateLeg.getNextActivity().equals(mainActivity)){
+        for (Tour candidateTour : plan.getTours().values()) {
+            for (Leg candidateLeg : candidateTour.getLegs().values()) {
+                if (candidateLeg.getNextActivity().equals(mainActivity)) {
                     candidatePreviousActivity = candidateLeg.getPreviousActivity();
                 }
             }
@@ -102,8 +107,8 @@ public class PlanTools {
         Tour tour = null;
         Leg legToRemove = null;
         for (Tour candidateTour : plan.getTours().values()) {
-            for (Leg candidateLeg : candidateTour.getLegs().values()){
-                if (candidateLeg.getNextActivity().equals(mainActivity)){
+            for (Leg candidateLeg : candidateTour.getLegs().values()) {
+                if (candidateLeg.getNextActivity().equals(mainActivity)) {
                     tour = candidateTour;
                     legToRemove = candidateLeg;
                     break;
@@ -112,7 +117,13 @@ public class PlanTools {
             }
         }
 
-        tour.getActivities().put(stopBefore.getStartTime_s(), stopBefore);
+        try {
+            tour.getActivities().put(stopBefore.getStartTime_s(), stopBefore);
+        } catch(Exception e) {
+            System.out.println("Check here");
+
+        }
+
         tour.getLegs().remove(legToRemove.getPreviousActivity());
 
         Leg firstLeg = new Leg(candidatePreviousActivity, stopBefore);
@@ -136,9 +147,9 @@ public class PlanTools {
      */
     public void addStopAfter(Plan plan, Activity stopAfter, Activity mainActivity) {
         Activity candidateAfterActivity = null;
-        for (Tour candidateTour : plan.getTours().values()){
-            for (Leg candidateLeg : candidateTour.getLegs().values()){
-                if (candidateLeg.getPreviousActivity().equals(mainActivity)){
+        for (Tour candidateTour : plan.getTours().values()) {
+            for (Leg candidateLeg : candidateTour.getLegs().values()) {
+                if (candidateLeg.getPreviousActivity().equals(mainActivity)) {
                     candidateAfterActivity = candidateLeg.getNextActivity();
                 }
             }
@@ -147,9 +158,9 @@ public class PlanTools {
 
         Leg legToRemove = null;
         Tour tour = null;
-        for (Tour candidateTour : plan.getTours().values()){
-            for (Leg candidateLeg : candidateTour.getLegs().values()){
-                if (candidateLeg.getPreviousActivity().equals(mainActivity)){
+        for (Tour candidateTour : plan.getTours().values()) {
+            for (Leg candidateLeg : candidateTour.getLegs().values()) {
+                if (candidateLeg.getPreviousActivity().equals(mainActivity)) {
                     tour = candidateTour;
                     legToRemove = candidateLeg;
                     break;
@@ -167,5 +178,17 @@ public class PlanTools {
         tour.getLegs().put(secondLeg.getPreviousActivity(), secondLeg);
 
         candidateAfterActivity.setStartTime_s(stopAfter.getEndTime_s() + travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), candidateAfterActivity.getLocation(), Mode.UNKNOWN, stopAfter.getEndTime_s()));
+    }
+
+    public static Tour findMandatoryTour(Plan plan) {
+        final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+        Collections.shuffle(tourList, new Random(1));
+        return tourList.stream().findFirst().orElse(null);
+    }
+
+    public static Tour findDiscretionaryTour(Plan plan) {
+        final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+        Collections.shuffle(tourList, new Random(1));
+        return tourList.stream().findFirst().orElse(null);
     }
 }

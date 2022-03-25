@@ -6,5 +6,5 @@ import abm.data.pop.Person;
 
 public interface TourModeChoice {
 
-    Mode chooseMode(Person person, Tour tour);
+    void chooseMode(Person person, Tour tour);
 }

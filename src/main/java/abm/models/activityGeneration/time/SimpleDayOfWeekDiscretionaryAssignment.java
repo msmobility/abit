@@ -11,6 +11,6 @@ public class SimpleDayOfWeekDiscretionaryAssignment implements DayOfWeekDiscreti
 
     @Override
     public void assignDayOfWeek(Activity activity) {
-        activity.setDayOfWeek(DayOfWeek.of(random.nextInt(7)));
+        activity.setDayOfWeek(DayOfWeek.of(random.nextInt(6) + 1));
     }
 }
