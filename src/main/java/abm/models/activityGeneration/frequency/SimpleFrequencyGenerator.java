@@ -10,7 +10,7 @@ public class SimpleFrequencyGenerator implements FrequencyGenerator {
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
 
-        Random random = Utils.random;
+        Random random = Utils.getRandomObject();
         return random.nextInt(7);
     }
 }

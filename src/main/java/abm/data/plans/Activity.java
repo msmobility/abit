@@ -7,6 +7,7 @@ import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Person;
 
 import java.time.DayOfWeek;
+import java.util.Objects;
 
 public class Activity implements Comparable<Activity> {
 
@@ -14,14 +15,14 @@ public class Activity implements Comparable<Activity> {
     private Tour tour;
     private Purpose purpose;
     private DayOfWeek dayOfWeek;
-    private double startTime_s;
-    private double endTime_s;
+    private int startTime_s;
+    private int endTime_s;
     private DiscretionaryActivityType discretionaryActivityType;
 
     private Location location;
 
 
-    public Activity(Purpose purpose, double startTime_s, double endTime_s, Location location) {
+    public Activity(Purpose purpose, int startTime_s, int endTime_s, Location location) {
         this.purpose = purpose;
         this.startTime_s = startTime_s;
         this.endTime_s = endTime_s;
@@ -37,11 +38,11 @@ public class Activity implements Comparable<Activity> {
         return purpose;
     }
 
-    public double getStartTime_s() {
+    public int getStartTime_s() {
         return startTime_s;
     }
 
-    public double getEndTime_s() {
+    public int getEndTime_s() {
         return endTime_s;
     }
 
@@ -49,15 +50,15 @@ public class Activity implements Comparable<Activity> {
         return location;
     }
 
-    public void setStartTime_s(double startTime_s) {
+    public void setStartTime_s(int startTime_s) {
         this.startTime_s = startTime_s;
     }
 
-    public void setEndTime_s(double endTime_s) {
+    public void setEndTime_s(int endTime_s) {
         this.endTime_s = endTime_s;
     }
 
-    public double getDuration() {
+    public int getDuration() {
         return endTime_s - startTime_s;
     }
 
@@ -143,5 +144,25 @@ public class Activity implements Comparable<Activity> {
 
     public void setTour(Tour tour) {
         this.tour = tour;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Activity activity = (Activity) o;
+        return startTime_s == activity.startTime_s &&
+                endTime_s == activity.endTime_s &&
+                Objects.equals(person, activity.person) &&
+                Objects.equals(tour, activity.tour) &&
+                purpose == activity.purpose &&
+                dayOfWeek == activity.dayOfWeek &&
+                discretionaryActivityType == activity.discretionaryActivityType &&
+                Objects.equals(location, activity.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(person, tour, purpose, dayOfWeek, startTime_s, endTime_s, discretionaryActivityType, location.getZoneId());
     }
 }

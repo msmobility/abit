@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class SimpleDestinationChoice implements DestinationChoice{
 
-    Random rmd = Utils.random;
+    Random rmd = Utils.getRandomObject();
 
     @Override
     public void selectMainActivityDestination(Person person, Activity activity) {

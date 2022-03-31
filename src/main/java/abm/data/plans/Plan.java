@@ -9,14 +9,14 @@ public class Plan {
 
     private Person person;
     private int id;
-    private SortedMap<Double, Activity> homeActivities;
-    private SortedMap<Double, Tour> tours;
+    private SortedMap<Integer, Activity> homeActivities;
+    private SortedMap<Integer, Tour> tours;
 
     private Plan() {
 
     }
 
-    public SortedMap<Double, Tour> getTours() {
+    public SortedMap<Integer, Tour> getTours() {
         return tours;
     }
 
@@ -25,7 +25,7 @@ public class Plan {
         plan.id = person.getId();
         plan.person = person;
         plan.homeActivities = new TreeMap<>();
-        plan.homeActivities.put(0., new Activity(Purpose.HOME, ScheduleUtils.startOfTheWeek(), ScheduleUtils.endOfTheWeek(), person.getHousehold().getLocation()));
+        plan.homeActivities.put(ScheduleUtils.startOfTheWeek(), new Activity(Purpose.HOME, ScheduleUtils.startOfTheWeek(), ScheduleUtils.endOfTheWeek(), person.getHousehold().getLocation()));
         plan.tours = new TreeMap<>();
         person.setPlan(plan);
         return plan;
@@ -36,7 +36,7 @@ public class Plan {
         return person;
     }
 
-    public SortedMap<Double, Activity> getHomeActivities() {
+    public SortedMap<Integer, Activity> getHomeActivities() {
         return homeActivities;
     }
 

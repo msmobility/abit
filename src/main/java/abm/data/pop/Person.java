@@ -3,6 +3,8 @@ package abm.data.pop;
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
 
+import java.util.Objects;
+
 public class Person {
 
     private final int id;
@@ -44,5 +46,18 @@ public class Person {
 
     public void setPlan(Plan plan) {
         this.plan = plan;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return id == person.id && Objects.equals(household, person.household) && habitualMode == person.habitualMode && Objects.equals(plan, person.plan);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, household, habitualMode, plan);
     }
 }

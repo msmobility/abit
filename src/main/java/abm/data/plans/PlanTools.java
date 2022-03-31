@@ -40,8 +40,8 @@ public class PlanTools {
             Tour tour = new Tour(mainTourActivity);
             mainTourActivity.setTour(tour);
             plan.getTours().put(mainTourActivity.getStartTime_s(), tour);
-            double timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
-            double previousEndOfHomeActivity = homeActivity.getEndTime_s();
+            int timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
+            int previousEndOfHomeActivity = homeActivity.getEndTime_s();
             homeActivity.setEndTime_s(mainTourActivity.getStartTime_s() - timeToMainActivity);
             tour.getLegs().put(homeActivity, new Leg(homeActivity, mainTourActivity));
             Activity secondHomeActivity = new Activity(Purpose.HOME, mainTourActivity.getEndTime_s() + timeToMainActivity, previousEndOfHomeActivity, homeActivity.getLocation());
@@ -78,8 +78,8 @@ public class PlanTools {
 
         //todo here
         if (mainActivity != null) {
-            double timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
-            double previousEndOfMainActivity = mainActivity.getEndTime_s();
+            int timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
+            int previousEndOfMainActivity = mainActivity.getEndTime_s();
             mainActivity.setEndTime_s(subTourActivity.getStartTime_s() - timeToSubTourActivity);
             Leg previousLegFromMainActivity = tour.getLegs().get(mainActivity);
             subtour.getLegs().put(mainActivity, new Leg(mainActivity, subTourActivity));
@@ -115,14 +115,14 @@ public class PlanTools {
         tour.getLegs().remove(previousHomeActivity);
 
         //find a start time for the stop before
-        double timeForFirstLeg = travelTimes.getTravelTimeInSeconds(previousHomeActivity.getLocation(),
+        int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(previousHomeActivity.getLocation(),
                 stopBefore.getLocation(), Mode.UNKNOWN, previousHomeActivity.getEndTime_s());
         //note that the following calculation does not know yet about the departure time, so it uses the arrival time as departur time
-        double timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), firstActivityInExistingTour.getLocation(),
+        int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), firstActivityInExistingTour.getLocation(),
                 Mode.UNKNOWN, firstActivityInExistingTour.getEndTime_s());
 
-        final double duration = stopBefore.getDuration();
-        double stopBeforeStartTime_s = firstActivityInExistingTour.getStartTime_s() - duration - timeForSecondLeg;
+        final int duration = stopBefore.getDuration();
+        int stopBeforeStartTime_s = firstActivityInExistingTour.getStartTime_s() - duration - timeForSecondLeg;
 
         stopBefore.setStartTime_s(stopBeforeStartTime_s);
         stopBefore.setEndTime_s(stopBeforeStartTime_s + duration);
@@ -155,27 +155,37 @@ public class PlanTools {
      */
     public void addStopAfter(Plan plan, Activity stopAfter, Tour tour) {
         //find the last activity and the last leg
-        Activity lastActivityInExistingTour;
-        lastActivityInExistingTour = tour.getLegs().lastKey();
+        Activity lastActivityInExistingTour = tour.getLegs().lastKey();
 
         //remove the leg
         //the key in legs is the previous activity!
         //find a start time for the stop before
-        final Leg leg = tour.getLegs().get(lastActivityInExistingTour);
+
+        Leg leg = tour.getLegs().get(lastActivityInExistingTour);
+
+        if (leg == null){
+            //todo investigate this
+            System.out.println("A problem with the keys of leg is found");
+            for (Leg thisLeg : tour.getLegs().values()){
+                if (thisLeg.getPreviousActivity().equals(lastActivityInExistingTour)){
+                    leg = thisLeg;
+                }
+            }
+        }
 
         final Activity followingHomeActivity = leg.getNextActivity();
         tour.getLegs().remove(lastActivityInExistingTour);
 
-        double timeForFirstLeg = travelTimes.getTravelTimeInSeconds(lastActivityInExistingTour.getLocation(),
+        int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(lastActivityInExistingTour.getLocation(),
                 stopAfter.getLocation(), Mode.UNKNOWN, followingHomeActivity.getEndTime_s());
 
-        double stopAfterStart_s = lastActivityInExistingTour.getEndTime_s() + timeForFirstLeg;
-        double stopAfterDuration = stopAfter.getDuration();
+        int stopAfterStart_s = lastActivityInExistingTour.getEndTime_s() + timeForFirstLeg;
+        int stopAfterDuration = stopAfter.getDuration();
 
         stopAfter.setStartTime_s(stopAfterStart_s);
         stopAfter.setEndTime_s(stopAfterStart_s + stopAfterDuration);
 
-        double timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), followingHomeActivity.getLocation(),
+        int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), followingHomeActivity.getLocation(),
                 Mode.UNKNOWN, stopAfter.getEndTime_s());
 
         //add the new stop before
@@ -194,13 +204,13 @@ public class PlanTools {
 
     public static Tour findMandatoryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, Utils.random);
+        Collections.shuffle(tourList, Utils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }
 
     public static Tour findDiscretionaryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, Utils.random);
+        Collections.shuffle(tourList, Utils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }
 }

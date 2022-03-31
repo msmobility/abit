@@ -88,7 +88,7 @@ public class PlanGenerator {
             }
         }
 
-        Collections.shuffle(discretionaryActivities, Utils.random);
+        Collections.shuffle(discretionaryActivities, Utils.getRandomObject());
 
         List<Activity> stopsOnMandatory = new ArrayList<>();
         List<Activity> primaryDiscretionaryActivities = new ArrayList<>();
@@ -103,6 +103,11 @@ public class PlanGenerator {
                     break;
                 case PRIMARY:
                     primaryDiscretionaryActivities.add(activity);
+                    //need to create the tour here otherwise it will not exist and no stops can be attached!
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
+                    timeAssignment.assignTime(activity);
+                    planTools.addMainTour(plan, activity);
                     break;
                 case ON_DISCRETIONARY_TOUR:
                     stopsOnDiscretionaryTours.add(activity);
@@ -118,13 +123,13 @@ public class PlanGenerator {
                     StopType stopType = stopSplitType.getStopType(person, activity);
 
                     if (stopType.equals(StopType.BEFORE)) {
-                        double tempTime = selectedTour.getActivities().firstKey();
+                        int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
                         destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
                         timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
-                        double tempTime = selectedTour.getActivities().lastKey();
+                        int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
                         destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
                         timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
@@ -132,15 +137,6 @@ public class PlanGenerator {
                     }
                 }
         );
-
-        primaryDiscretionaryActivities.forEach(activity -> {
-
-            destinationChoice.selectMainActivityDestination(person, activity);
-            dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-            timeAssignment.assignTime(activity);
-            planTools.addMainTour(plan, activity);
-
-        });
 
         stopsOnDiscretionaryTours.forEach(activity -> {
 
@@ -151,13 +147,13 @@ public class PlanGenerator {
 
             if (stopType.equals(StopType.BEFORE)) {
                 //Todo in MOP we consider the first stop as primary activity, so the analysis is different from the code implementation here
-                double tempTime = selectedTour.getActivities().firstKey();
+                int tempTime = selectedTour.getActivities().firstKey();
                 Activity firstActivity = selectedTour.getActivities().get(tempTime);
                 destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
                 timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                 planTools.addStopBefore(plan, activity, selectedTour);
             } else {
-                double tempTime = selectedTour.getActivities().lastKey();
+                int tempTime = selectedTour.getActivities().lastKey();
                 Activity lastActivity = selectedTour.getActivities().get(tempTime);
                 destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
                 timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity

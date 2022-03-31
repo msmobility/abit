@@ -9,11 +9,9 @@ import java.util.Random;
 
 public class SimpleSplitStopType implements SplitStopType {
 
-    private Random random = Utils.random;
-
     @Override
     public StopType getStopType(Person person, Activity activity){
-        boolean isBefore = random.nextBoolean();
+        boolean isBefore = Utils.getRandomObject().nextBoolean();
         if (isBefore){
           return StopType.BEFORE;
         } else {

@@ -10,12 +10,9 @@ import java.util.*;
 
 public class SimpleSplitByType implements SplitByType {
 
-    static Random random = Utils.random;
-
     @Override
     public DiscretionaryActivityType assignActivityType(Activity activity, Person person) {
 
-        //Todo
         List<DiscretionaryActivityType> discretionaryActivityTypeSet = new ArrayList<>();
         discretionaryActivityTypeSet.add(DiscretionaryActivityType.PRIMARY);
 
@@ -26,7 +23,7 @@ public class SimpleSplitByType implements SplitByType {
             discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR);
         }
 
-        Collections.shuffle(discretionaryActivityTypeSet, Utils.random);
+        Collections.shuffle(discretionaryActivityTypeSet, Utils.getRandomObject());
 
         return discretionaryActivityTypeSet.stream().findFirst().get();
     }
