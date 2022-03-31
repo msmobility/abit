@@ -9,7 +9,7 @@ public class SimpleTourModeChoice implements TourModeChoice {
     public void chooseMode(Person person, Tour tour) {
         tour.getLegs().values().forEach(leg -> {
             // Todo add logic for deciding the mode
-            leg.setMode(Mode.WALK);
+            leg.setLegMode(Mode.WALK);
         });
     }
 }

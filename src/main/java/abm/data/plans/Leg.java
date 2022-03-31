@@ -2,14 +2,14 @@ package abm.data.plans;
 
 public class Leg {
 
-    Activity previousActivity;
-    Activity nextActivity;
-    Mode mode;
+    private Activity previousActivity;
+    private Activity nextActivity;
+    private Mode legMode;
 
     public Leg(Activity previousActivity, Activity nextActivity) {
         this.previousActivity = previousActivity;
         this.nextActivity = nextActivity;
-        this.mode = Mode.UNKNOWN;
+        this.legMode = Mode.UNKNOWN;
     }
 
     public Activity getPreviousActivity() {
@@ -28,11 +28,11 @@ public class Leg {
         this.nextActivity = nextActivity;
     }
 
-    public Mode getMode() {
-        return mode;
+    public Mode getLegMode() {
+        return legMode;
     }
 
-    public void setMode(Mode mode) {
-        this.mode = mode;
+    public void setLegMode(Mode legMode) {
+        this.legMode = legMode;
     }
 }

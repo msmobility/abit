@@ -56,7 +56,7 @@ public class PlanGeneratorTest {
             //out.println(plan.logPlan(interval_s));
 
             //mandatory main subtours and stops
-            planTools.addStopBefore(plan, new Activity(Purpose.ACCOMPANY, 7.50 * 3600, 7.85*3600, new MicroscopicLocation(1500,0)), workActivity);
+            //planTools.addStopBefore(plan, new Activity(Purpose.ACCOMPANY, 7.50 * 3600, 7.85*3600, new MicroscopicLocation(1500,0)), workActivity);
             //out.println(plan.logPlan(interval_s));
 
             planTools.addSubtour(plan, new Activity(Purpose.OTHER, 12*3600, 12.75 * 3600, new MicroscopicLocation(13000,0)));
@@ -68,7 +68,7 @@ public class PlanGeneratorTest {
             //out.println(plan.logPlan(interval_s));
 
             //discretionary tour stops
-            planTools.addStopAfter(plan, new Activity(Purpose.RECREATION, 18.5*3600, 19.5 * 3600, new MicroscopicLocation(-4000, 0)), shoppingActivity);
+            //planTools.addStopAfter(plan, new Activity(Purpose.RECREATION, 18.5*3600, 19.5 * 3600, new MicroscopicLocation(-4000, 0)), shoppingActivity);
             out.println(plan.logPlan(interval_s));
 
 
