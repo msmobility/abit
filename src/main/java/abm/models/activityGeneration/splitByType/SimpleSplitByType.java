@@ -18,12 +18,15 @@ public class SimpleSplitByType implements SplitByType {
         //Todo
         List<DiscretionaryActivityType> discretionaryActivityTypeSet = new ArrayList<>();
         discretionaryActivityTypeSet.add(DiscretionaryActivityType.PRIMARY);
-        if (PlanTools.findMandatoryTour(person.getPlan()) != null )
-            discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_MANDATORY_TOUR);
-        if (PlanTools.findDiscretionaryTour(person.getPlan()) != null )
-            discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR);
 
-        Collections.shuffle(discretionaryActivityTypeSet);
+        if (PlanTools.findMandatoryTour(person.getPlan()) != null ){
+            discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+        }
+        if (PlanTools.findDiscretionaryTour(person.getPlan()) != null ){
+            discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR);
+        }
+
+        Collections.shuffle(discretionaryActivityTypeSet, Utils.random);
 
         return discretionaryActivityTypeSet.stream().findFirst().get();
     }

@@ -88,7 +88,7 @@ public class PlanGenerator {
             }
         }
 
-        Collections.shuffle(discretionaryActivities);
+        Collections.shuffle(discretionaryActivities, Utils.random);
 
         List<Activity> stopsOnMandatory = new ArrayList<>();
         List<Activity> primaryDiscretionaryActivities = new ArrayList<>();
@@ -100,10 +100,13 @@ public class PlanGenerator {
             switch (discretionaryActivityType) {
                 case ON_MANDATORY_TOUR:
                     stopsOnMandatory.add(activity);
+                    break;
                 case PRIMARY:
                     primaryDiscretionaryActivities.add(activity);
+                    break;
                 case ON_DISCRETIONARY_TOUR:
                     stopsOnDiscretionaryTours.add(activity);
+                    break;
             }
         }
 
@@ -118,13 +121,13 @@ public class PlanGenerator {
                         double tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
                         destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
-                        timeAssignment.assignTime(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                        timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         double tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
                         destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
-                        timeAssignment.assignTime(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                        timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -151,13 +154,13 @@ public class PlanGenerator {
                 double tempTime = selectedTour.getActivities().firstKey();
                 Activity firstActivity = selectedTour.getActivities().get(tempTime);
                 destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
-                timeAssignment.assignTime(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                 planTools.addStopBefore(plan, activity, selectedTour);
             } else {
                 double tempTime = selectedTour.getActivities().lastKey();
                 Activity lastActivity = selectedTour.getActivities().get(tempTime);
                 destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
-                timeAssignment.assignTime(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                timeAssignment.assignTimeToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                 planTools.addStopAfter(plan, activity, selectedTour);
             }
 
@@ -166,8 +169,6 @@ public class PlanGenerator {
         plan.getTours().values().forEach(tour -> {
             tourModeChoice.chooseMode(person, tour);
         });
-
-        System.out.println("Don't be happy too earlier");
 
     }
 
