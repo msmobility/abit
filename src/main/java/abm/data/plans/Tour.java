@@ -7,7 +7,7 @@ import java.util.TreeMap;
 public class Tour {
 
     private final SortedMap<Integer, Activity> activities;
-    private final SortedMap<Activity, Leg> legs;
+    private final SortedMap<Integer, Leg> legs;
     private final Activity mainActivity;
     private final SortedMap<Integer, Tour> subtours;
     Mode tourMode;
@@ -21,7 +21,7 @@ public class Tour {
         subtours = new TreeMap<>();
     }
 
-    public SortedMap<Activity, Leg> getLegs() {
+    public SortedMap<Integer, Leg> getLegs() {
         return legs;
     }
 

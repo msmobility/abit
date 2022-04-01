@@ -21,14 +21,6 @@ public class Activity implements Comparable<Activity> {
 
     private Location location;
 
-
-    public Activity(Purpose purpose, int startTime_s, int endTime_s, Location location) {
-        this.purpose = purpose;
-        this.startTime_s = startTime_s;
-        this.endTime_s = endTime_s;
-        this.location = location;
-    }
-
     public Activity(Person person, Purpose purpose) {
         this.purpose = purpose;
         this.person = person;
@@ -83,7 +75,7 @@ public class Activity implements Comparable<Activity> {
 
         builder.append(person.getHousehold().getId()).append(Utils.SEPARATOR);
         builder.append(person.getId()).append(Utils.SEPARATOR);
-        builder.append(tour.getActivities().firstKey()/60).append(Utils.SEPARATOR);
+        builder.append(tour.getActivities().firstKey() / 60).append(Utils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(Utils.SEPARATOR);
         builder.append(startTime_s / 60).append(Utils.SEPARATOR);
         builder.append(endTime_s / 60).append(Utils.SEPARATOR);
@@ -91,7 +83,7 @@ public class Activity implements Comparable<Activity> {
         builder.append(location.getZoneId()).append(Utils.SEPARATOR);
 
         if (location instanceof MicroscopicLocation) {
-            final MicroscopicLocation microscopicLocation = (MicroscopicLocation) (MicroscopicLocation) location;
+            final MicroscopicLocation microscopicLocation = (MicroscopicLocation) location;
             builder.append(microscopicLocation.getX()).append(Utils.SEPARATOR);
             builder.append(microscopicLocation.getY()).append(Utils.SEPARATOR);
         } else {
@@ -99,7 +91,7 @@ public class Activity implements Comparable<Activity> {
             builder.append(-1).append(Utils.SEPARATOR);
         }
 
-        if (discretionaryActivityType != null){
+        if (discretionaryActivityType != null) {
             builder.append(discretionaryActivityType);
         } else {
             builder.append("MANDATORY");
@@ -146,23 +138,8 @@ public class Activity implements Comparable<Activity> {
         this.tour = tour;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Activity activity = (Activity) o;
-        return startTime_s == activity.startTime_s &&
-                endTime_s == activity.endTime_s &&
-                Objects.equals(person, activity.person) &&
-                Objects.equals(tour, activity.tour) &&
-                purpose == activity.purpose &&
-                dayOfWeek == activity.dayOfWeek &&
-                discretionaryActivityType == activity.discretionaryActivityType &&
-                Objects.equals(location, activity.location);
+    public Person getPerson() {
+        return person;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(person, tour, purpose, dayOfWeek, startTime_s, endTime_s, discretionaryActivityType, location.getZoneId());
-    }
 }
