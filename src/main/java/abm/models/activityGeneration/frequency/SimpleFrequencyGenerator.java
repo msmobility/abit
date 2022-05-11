@@ -10,7 +10,21 @@ public class SimpleFrequencyGenerator implements FrequencyGenerator {
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
 
-        Random random = Utils.getRandomObject();
-        return random.nextInt(7);
+        switch (purpose){
+            case WORK:
+                return 3;
+            case EDUCATION:
+                return 1;
+            case RECREATION:
+                return 5;
+            case OTHER:
+                return 3;
+            case SHOPPING:
+                return 4;
+            case ACCOMPANY:
+                return 6;
+            default:
+                throw new RuntimeException("Not possible");
+        }
     }
 }

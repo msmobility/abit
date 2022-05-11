@@ -18,7 +18,6 @@ public class SimpleTimeAssignment implements TimeAssignment {
         int duration = (int) Math.max(60, 1 * 3600 + Utils.getRandomObject().nextGaussian() * 4 * 3600);
 
         //Todo add a method for scheduling
-
         activity.setStartTime_s(midnight + startTime);
         activity.setEndTime_s(midnight +  startTime + duration);
 

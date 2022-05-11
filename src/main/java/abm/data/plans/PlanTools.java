@@ -53,6 +53,8 @@ public class PlanTools {
         } else {
             //there is no home activity because, e.g. a main tour is placed at the same time (before time availability is considered)
             //System.out.println("Two tours at the same time not possible");
+
+
         }
     }
 
@@ -79,7 +81,7 @@ public class PlanTools {
         tour.getSubtours().put(subTourActivity.getStartTime_s(), subtour);
         //add the new activity and break the main activity of the tour
 
-        //todo here
+
         if (mainActivity != null) {
             int timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
             int previousEndOfMainActivity = mainActivity.getEndTime_s();
@@ -103,7 +105,6 @@ public class PlanTools {
     /**
      * Adds one stop before the next main activity, modifying the home activity accordingly
      * Changes the outbound trip and splits it into two subtrips
-     * //todo this methods needs to be changed to addStopBefore GIVEN the tour (no need to look for a tour)
      */
     public void addStopBefore(Plan plan, Activity stopBefore, Tour tour) {
 
@@ -151,7 +152,6 @@ public class PlanTools {
     /**
      * Adds one stop before the previous main activity, modifying the home activity accordingly
      * Changes the inbound trip and splits it into two subtrips
-     * todo this methods needs to be changed to addStopAfter GIVEN the tour (no need to look for a tour)
      *
      * @param stopAfter
      * @param stopAfter

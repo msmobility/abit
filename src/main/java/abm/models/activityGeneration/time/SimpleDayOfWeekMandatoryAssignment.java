@@ -8,6 +8,17 @@ public class SimpleDayOfWeekMandatoryAssignment implements DayOfWeekMandatoryAss
     @Override
     public DayOfWeek[] assignDaysOfWeek(int numberOfActivities, Purpose purpose) {
         //Todo read Corin's table and return the DaysOfWeek
-        return new DayOfWeek[]{DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY};
+
+        switch (purpose){
+            case WORK:
+                return new DayOfWeek[]{DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY};
+            case EDUCATION:
+                return new DayOfWeek[]{DayOfWeek.FRIDAY};
+            default:
+                throw new RuntimeException("Not possible");
+        }
+
+
+
     }
 }
