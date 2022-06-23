@@ -11,7 +11,7 @@ public class SimpleTimeAssignment implements TimeAssignment {
 
     //TODO Split into assignStartTime and assignDuration (Stops do not need start time, since it is derived from the main tour)
     @Override
-    public void assignTime(Activity activity) {
+    public void assignStartTimeAndDuration(Activity activity) {
 
         int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600;
         int startTime = (int) Math.max(0, 10 * 3600 + Utils.getRandomObject().nextGaussian() * 2 * 3600);
@@ -23,7 +23,7 @@ public class SimpleTimeAssignment implements TimeAssignment {
 
     }
 
-    public void assignTimeToStop(Activity activity) {
+    public void assignDurationToStop(Activity activity) {
 
         int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600;
         int startTime = 0;

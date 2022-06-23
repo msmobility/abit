@@ -37,7 +37,7 @@ public class SimpleSplitByType implements SplitByType {
         // if mandatory tour, return DiscretionaryActivityType.ON_MANDATORY_TOUR
 
         // if discretionary tour
-        //need to figure out how to split between a primary and a stopm on discretionary tour:
+        //need to figure out how to split between a primary and a stop on discretionary tour:
         // the first activity that is not in a discretionary tour has to be primary
         //the last one that is not in a discretionary tour may be more likely to be a stop instead of primary
 

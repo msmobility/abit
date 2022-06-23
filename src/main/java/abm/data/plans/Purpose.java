@@ -8,10 +8,10 @@ public enum Purpose {
     HOME,
     WORK,
     EDUCATION,
-    SHOPPING,
-    RECREATION,
     ACCOMPANY,
-    OTHER;
+    SHOPPING,
+    OTHER,
+    RECREATION;
 
     public static Set<Purpose> getMandatoryPurposes(){
         Set<Purpose> purposes = new HashSet<>();
@@ -28,5 +28,8 @@ public enum Purpose {
         purposes.add(OTHER);
         return purposes;
     }
+
+
+
 
 }

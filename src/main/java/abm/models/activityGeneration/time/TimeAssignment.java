@@ -4,7 +4,7 @@ import abm.data.plans.Activity;
 
 public interface TimeAssignment {
 
-    void assignTime(Activity activity);
+    void assignStartTimeAndDuration(Activity activity);
 
-    void assignTimeToStop(Activity activity);
+    void assignDurationToStop(Activity activity);
 }

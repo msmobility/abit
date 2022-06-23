@@ -21,7 +21,7 @@ public class PlanTools {
 
     /**
      * Adds a main activity tour. Cuts the home activity into two pieces, one before the tour and another after the tour
-     * Adds trip
+     * Adds trips
      *
      * @param mainTourActivity
      */
