@@ -100,6 +100,24 @@ public class PlanGenerator {
                 switch (discretionaryActivityType) {
                     case ON_MANDATORY_TOUR:
                         stopsOnMandatory.add(activity);
+                        Tour selectedTour = planTools.findMandatoryTour(plan);
+                        activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
+                        //the order of time assignment and stopSplitByType is not yet decided
+                        StopType stopType = stopSplitType.getStopType(person, activity);
+                        timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+
+                        if (stopType.equals(StopType.BEFORE)) {
+                            int tempTime = selectedTour.getActivities().firstKey();
+                            Activity firstActivity = selectedTour.getActivities().get(tempTime);
+                            destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
+                            planTools.addStopBefore(plan, activity, selectedTour);
+                        } else {
+                            int tempTime = selectedTour.getActivities().lastKey();
+                            Activity lastActivity = selectedTour.getActivities().get(tempTime);
+                            destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
+                            //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                            planTools.addStopAfter(plan, activity, selectedTour);
+                        }
                         break;
                     case PRIMARY:
                         primaryDiscretionaryActivities.add(activity);
@@ -119,25 +137,7 @@ public class PlanGenerator {
 
         stopsOnMandatory.forEach(activity -> {
 
-                    Tour selectedTour = planTools.findMandatoryTour(plan);
-                    activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
 
-                    //the order of time assignment and stopSplitByType is not yet decided
-                    StopType stopType = stopSplitType.getStopType(person, activity);
-                    timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
-                        //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
                 }
         );
 

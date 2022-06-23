@@ -7,7 +7,6 @@ import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Person;
 
 import java.time.DayOfWeek;
-import java.util.Objects;
 
 public class Activity implements Comparable<Activity> {
 
@@ -15,8 +14,8 @@ public class Activity implements Comparable<Activity> {
     private Tour tour;
     private Purpose purpose;
     private DayOfWeek dayOfWeek;
-    private int startTime_s;
-    private int endTime_s;
+    private int startTime_min;
+    private int endTime_min;
     private DiscretionaryActivityType discretionaryActivityType;
 
     private Location location;
@@ -30,28 +29,28 @@ public class Activity implements Comparable<Activity> {
         return purpose;
     }
 
-    public int getStartTime_s() {
-        return startTime_s;
+    public int getStartTime_min() {
+        return startTime_min;
     }
 
-    public int getEndTime_s() {
-        return endTime_s;
+    public int getEndTime_min() {
+        return endTime_min;
     }
 
     public Location getLocation() {
         return location;
     }
 
-    public void setStartTime_s(int startTime_s) {
-        this.startTime_s = startTime_s;
+    public void setStartTime_min(int startTime_min) {
+        this.startTime_min = startTime_min;
     }
 
-    public void setEndTime_s(int endTime_s) {
-        this.endTime_s = endTime_s;
+    public void setEndTime_min(int endTime_min) {
+        this.endTime_min = endTime_min;
     }
 
     public int getDuration() {
-        return endTime_s - startTime_s;
+        return endTime_min - startTime_min;
     }
 
     public void setLocation(Location location) {
@@ -60,9 +59,9 @@ public class Activity implements Comparable<Activity> {
 
     @Override
     public int compareTo(Activity activity) {
-        if (activity.getStartTime_s() < this.getStartTime_s()) {
+        if (activity.getStartTime_min() < this.getStartTime_min()) {
             return 1;
-        } else if (activity.getStartTime_s() == this.getStartTime_s()) {
+        } else if (activity.getStartTime_min() == this.getStartTime_min()) {
             return 0;
         } else {
             return -1;
@@ -77,8 +76,8 @@ public class Activity implements Comparable<Activity> {
         builder.append(person.getId()).append(Utils.SEPARATOR);
         builder.append(tour.getActivities().firstKey() / 60).append(Utils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(Utils.SEPARATOR);
-        builder.append(startTime_s / 60).append(Utils.SEPARATOR);
-        builder.append(endTime_s / 60).append(Utils.SEPARATOR);
+        builder.append(startTime_min).append(Utils.SEPARATOR);
+        builder.append(endTime_min).append(Utils.SEPARATOR);
         builder.append(purpose).append(Utils.SEPARATOR);
         builder.append(location.getZoneId()).append(Utils.SEPARATOR);
 

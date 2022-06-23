@@ -16,7 +16,7 @@ public class Tour {
     public Tour(Activity mainActivity) {
         this.mainActivity = mainActivity;
         activities = new TreeMap<>();
-        activities.put(mainActivity.getStartTime_s(), mainActivity);
+        activities.put(mainActivity.getStartTime_min(), mainActivity);
         legs = new TreeMap<>();
         subtours = new TreeMap<>();
     }

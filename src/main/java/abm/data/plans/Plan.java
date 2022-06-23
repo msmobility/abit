@@ -2,6 +2,7 @@ package abm.data.plans;
 
 import abm.data.pop.Person;
 import abm.ScheduleUtils;
+import abm.data.timeOfDay.AvailableTimeOfWeek;
 
 import java.util.*;
 
@@ -11,6 +12,7 @@ public class Plan {
     private int id;
     private SortedMap<Integer, Activity> homeActivities;
     private SortedMap<Integer, Tour> tours;
+    private AvailableTimeOfWeek availableTimeOfWeek;
 
     private Plan() {
 
@@ -22,12 +24,13 @@ public class Plan {
 
     public static Plan initializePlan(Person person) {
         Plan plan = new Plan();
+        plan.availableTimeOfWeek = new AvailableTimeOfWeek();
         plan.id = person.getId();
         plan.person = person;
         plan.homeActivities = new TreeMap<>();
         final Activity homeActivity = new Activity(person, Purpose.HOME);
-        homeActivity.setStartTime_s(ScheduleUtils.startOfTheWeek());
-        homeActivity.setEndTime_s(ScheduleUtils.endOfTheWeek());
+        homeActivity.setStartTime_min(ScheduleUtils.startOfTheWeek());
+        homeActivity.setEndTime_min(ScheduleUtils.endOfTheWeek());
         homeActivity.setLocation(person.getHousehold().getLocation());
         plan.homeActivities.put(ScheduleUtils.startOfTheWeek(), homeActivity);
         plan.tours = new TreeMap<>();
@@ -52,7 +55,7 @@ public class Plan {
         int size = 0;
         while (time <= ScheduleUtils.endOfTheWeek()) {
             for (Activity a : homeActivities.values()) {
-                if (time <= a.getEndTime_s() && time > a.getStartTime_s()) {
+                if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
                     string.append(a.getPurpose().toString()).append(",");
                     size++;
                     time += interval_s;
@@ -61,7 +64,7 @@ public class Plan {
             }
             for (Tour tour : tours.values()) {
                 for (Activity a : tour.getActivities().values()) {
-                    if (time <= a.getEndTime_s() && time > a.getStartTime_s()) {
+                    if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
                         string.append(a.getPurpose().toString()).append(",");
                         size++;
                         time += interval_s;
@@ -69,7 +72,7 @@ public class Plan {
                     }
                 }
                 for (Leg t : tour.getLegs().values()) {
-                    if (time >= t.getPreviousActivity().getEndTime_s() && time < t.getNextActivity().getStartTime_s()) {
+                    if (time >= t.getPreviousActivity().getEndTime_min() && time < t.getNextActivity().getStartTime_min()) {
                         string.append("T" + ",");
                         size++;
                         time += interval_s;
@@ -78,7 +81,7 @@ public class Plan {
                 }
                 for (Tour subtour : tour.getSubtours().values()) {
                     for (Activity a : subtour.getActivities().values()) {
-                        if (time <= a.getEndTime_s() && time > a.getStartTime_s()) {
+                        if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
                             string.append(a.getPurpose().toString()).append(",");
                             size++;
                             time += interval_s;
@@ -86,7 +89,7 @@ public class Plan {
                         }
                     }
                     for (Leg t : subtour.getLegs().values()) {
-                        if (time >= t.getPreviousActivity().getEndTime_s() && time < t.getNextActivity().getStartTime_s()) {
+                        if (time >= t.getPreviousActivity().getEndTime_min() && time < t.getNextActivity().getStartTime_min()) {
                             string.append("T" + ",");
                             size++;
                             time += interval_s;
@@ -102,6 +105,10 @@ public class Plan {
         }
         string.append("H");
         return string.toString();
+    }
+
+    public AvailableTimeOfWeek getAvailableTimeOfDay() {
+        return availableTimeOfWeek;
     }
 
 }

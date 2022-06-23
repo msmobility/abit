@@ -5,8 +5,6 @@ import abm.data.travelTimes.TravelTimes;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 
@@ -30,7 +28,7 @@ public class PlanTools {
         Activity homeActivity = null;
 
         for (Activity candidateActivity : plan.getHomeActivities().values()) {
-            if (mainTourActivity.getStartTime_s() > candidateActivity.getStartTime_s() && mainTourActivity.getEndTime_s() < candidateActivity.getEndTime_s()) {
+            if (mainTourActivity.getStartTime_min() > candidateActivity.getStartTime_min() && mainTourActivity.getEndTime_min() < candidateActivity.getEndTime_min()) {
                 homeActivity = candidateActivity;
                 break;
             }
@@ -39,17 +37,18 @@ public class PlanTools {
         if (homeActivity != null) {
             Tour tour = new Tour(mainTourActivity);
             mainTourActivity.setTour(tour);
-            plan.getTours().put(mainTourActivity.getStartTime_s(), tour);
-            int timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_s());
-            int previousEndOfHomeActivity = homeActivity.getEndTime_s();
-            homeActivity.setEndTime_s(mainTourActivity.getStartTime_s() - timeToMainActivity);
-            tour.getLegs().put(homeActivity.getEndTime_s(), new Leg(homeActivity, mainTourActivity));
+            plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
+            int timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
+            int previousEndOfHomeActivity = homeActivity.getEndTime_min();
+            homeActivity.setEndTime_min(mainTourActivity.getStartTime_min() - timeToMainActivity);
+            tour.getLegs().put(homeActivity.getEndTime_min(), new Leg(homeActivity, mainTourActivity));
             Activity secondHomeActivity = new Activity(homeActivity.getPerson(), Purpose.HOME);
-            secondHomeActivity.setStartTime_s(mainTourActivity.getEndTime_s() + timeToMainActivity);
-            secondHomeActivity.setEndTime_s(previousEndOfHomeActivity);
+            secondHomeActivity.setStartTime_min(mainTourActivity.getEndTime_min() + timeToMainActivity);
+            secondHomeActivity.setEndTime_min(previousEndOfHomeActivity);
             secondHomeActivity.setLocation(homeActivity.getLocation());
-            plan.getHomeActivities().put(secondHomeActivity.getStartTime_s(), secondHomeActivity);
-            tour.getLegs().put(mainTourActivity.getEndTime_s(), new Leg(mainTourActivity, secondHomeActivity));
+            plan.getHomeActivities().put(secondHomeActivity.getStartTime_min(), secondHomeActivity);
+            tour.getLegs().put(mainTourActivity.getEndTime_min(), new Leg(mainTourActivity, secondHomeActivity));
+            plan.getAvailableTimeOfDay().blockTime(previousEndOfHomeActivity,secondHomeActivity.getStartTime_min());
         } else {
             //there is no home activity because, e.g. a main tour is placed at the same time (before time availability is considered)
             //System.out.println("Two tours at the same time not possible");
@@ -70,7 +69,7 @@ public class PlanTools {
         //the search in the following may be not necessary or need to be adapted later
         for (Tour candidateTour : plan.getTours().values()) {
             Activity candidateActivity = candidateTour.getMainActivity();
-            if (subTourActivity.getStartTime_s() > candidateActivity.getStartTime_s() && subTourActivity.getEndTime_s() < candidateActivity.getEndTime_s()) {
+            if (subTourActivity.getStartTime_min() > candidateActivity.getStartTime_min() && subTourActivity.getEndTime_min() < candidateActivity.getEndTime_min()) {
                 mainActivity = candidateActivity;
                 tour = candidateTour;
                 break;
@@ -78,24 +77,24 @@ public class PlanTools {
         }
         //add subtour
         Tour subtour = new Tour(subTourActivity);
-        tour.getSubtours().put(subTourActivity.getStartTime_s(), subtour);
+        tour.getSubtours().put(subTourActivity.getStartTime_min(), subtour);
         //add the new activity and break the main activity of the tour
 
 
         if (mainActivity != null) {
-            int timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_s());
-            int previousEndOfMainActivity = mainActivity.getEndTime_s();
-            mainActivity.setEndTime_s(subTourActivity.getStartTime_s() - timeToSubTourActivity);
+            int timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
+            int previousEndOfMainActivity = mainActivity.getEndTime_min();
+            mainActivity.setEndTime_min(subTourActivity.getStartTime_min() - timeToSubTourActivity);
             Leg previousLegFromMainActivity = tour.getLegs().get(mainActivity);
-            subtour.getLegs().put(mainActivity.getEndTime_s(), new Leg(mainActivity, subTourActivity));
+            subtour.getLegs().put(mainActivity.getEndTime_min(), new Leg(mainActivity, subTourActivity));
             Activity secondMainActivity = new Activity(mainActivity.getPerson(), mainActivity.getPurpose());
-            secondMainActivity.setStartTime_s(subTourActivity.getEndTime_s() + timeToSubTourActivity);
-            secondMainActivity.setEndTime_s(previousEndOfMainActivity);
+            secondMainActivity.setStartTime_min(subTourActivity.getEndTime_min() + timeToSubTourActivity);
+            secondMainActivity.setEndTime_min(previousEndOfMainActivity);
             secondMainActivity.setLocation(mainActivity.getLocation());
-            tour.getActivities().put(secondMainActivity.getStartTime_s(), secondMainActivity);
-            subtour.getLegs().put(subTourActivity.getEndTime_s(), new Leg(subTourActivity, secondMainActivity));
+            tour.getActivities().put(secondMainActivity.getStartTime_min(), secondMainActivity);
+            subtour.getLegs().put(subTourActivity.getEndTime_min(), new Leg(subTourActivity, secondMainActivity));
             tour.getLegs().remove(mainActivity);
-            tour.getLegs().put(secondMainActivity.getEndTime_s(), new Leg(secondMainActivity, previousLegFromMainActivity.getNextActivity()));
+            tour.getLegs().put(secondMainActivity.getEndTime_min(), new Leg(secondMainActivity, previousLegFromMainActivity.getNextActivity()));
         } else {
             //trying to add a subtour without having a tour!
         }
@@ -121,16 +120,16 @@ public class PlanTools {
 
         //find a start time for the stop before
         int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(previousHomeActivity.getLocation(),
-                stopBefore.getLocation(), Mode.UNKNOWN, previousHomeActivity.getEndTime_s());
+                stopBefore.getLocation(), Mode.UNKNOWN, previousHomeActivity.getEndTime_min());
         //note that the following calculation does not know yet about the departure time, so it uses the arrival time as departur time
         int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), firstActivityInExistingTour.getLocation(),
-                Mode.UNKNOWN, firstActivityInExistingTour.getEndTime_s());
+                Mode.UNKNOWN, firstActivityInExistingTour.getEndTime_min());
 
         final int duration = stopBefore.getDuration();
-        int stopBeforeStartTime_s = firstActivityInExistingTour.getStartTime_s() - duration - timeForSecondLeg;
+        int stopBeforeStartTime_s = firstActivityInExistingTour.getStartTime_min() - duration - timeForSecondLeg;
 
-        stopBefore.setStartTime_s(stopBeforeStartTime_s);
-        stopBefore.setEndTime_s(stopBeforeStartTime_s + duration);
+        stopBefore.setStartTime_min(stopBeforeStartTime_s);
+        stopBefore.setEndTime_min(stopBeforeStartTime_s + duration);
 
         //add the new stop before
         tour.getActivities().put(stopBeforeStartTime_s, stopBefore);
@@ -139,10 +138,10 @@ public class PlanTools {
         Leg firstLeg = new Leg(previousHomeActivity, stopBefore);
         Leg secondLeg = new Leg(stopBefore, firstActivityInExistingTour);
 
-        tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_s(), firstLeg);
-        tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_s(), secondLeg);
+        tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_min(), firstLeg);
+        tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_min(), secondLeg);
 
-        previousHomeActivity.setEndTime_s(stopBefore.getStartTime_s() - timeForFirstLeg);
+        previousHomeActivity.setEndTime_min(stopBefore.getStartTime_min() - timeForFirstLeg);
 
         stopBefore.setTour(tour);
 
@@ -170,16 +169,16 @@ public class PlanTools {
         tour.getLegs().remove(lastKey);
 
         int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(lastActivityInExistingTour.getLocation(),
-                stopAfter.getLocation(), Mode.UNKNOWN, followingHomeActivity.getEndTime_s());
+                stopAfter.getLocation(), Mode.UNKNOWN, followingHomeActivity.getEndTime_min());
 
-        int stopAfterStart_s = lastActivityInExistingTour.getEndTime_s() + timeForFirstLeg;
+        int stopAfterStart_s = lastActivityInExistingTour.getEndTime_min() + timeForFirstLeg;
         int stopAfterDuration = stopAfter.getDuration();
 
-        stopAfter.setStartTime_s(stopAfterStart_s);
-        stopAfter.setEndTime_s(stopAfterStart_s + stopAfterDuration);
+        stopAfter.setStartTime_min(stopAfterStart_s);
+        stopAfter.setEndTime_min(stopAfterStart_s + stopAfterDuration);
 
         int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), followingHomeActivity.getLocation(),
-                Mode.UNKNOWN, stopAfter.getEndTime_s());
+                Mode.UNKNOWN, stopAfter.getEndTime_min());
 
         //add the new stop before
         tour.getActivities().put(stopAfterStart_s, stopAfter);
@@ -187,10 +186,10 @@ public class PlanTools {
         Leg firstLeg = new Leg(lastActivityInExistingTour, stopAfter);
         Leg secondLeg = new Leg(stopAfter, followingHomeActivity );
 
-        tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_s(), firstLeg);
-        tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_s(), secondLeg);
+        tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_min(), firstLeg);
+        tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_min(), secondLeg);
 
-        followingHomeActivity.setStartTime_s(stopAfter.getEndTime_s() + timeForSecondLeg);
+        followingHomeActivity.setStartTime_min(stopAfter.getEndTime_min() + timeForSecondLeg);
 
         stopAfter.setTour(tour);
     }
