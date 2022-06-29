@@ -32,6 +32,11 @@ public class DataSet {
         return households;
     }
 
-    public void setTravelDistance(MitoBasedTravelDistances mitoBasedTravelDistances) {
+    public TravelDistances getTravelDistances() {
+        return travelDistances;
+    }
+
+    public void setTravelDistances(TravelDistances travelDistances) {
+        this.travelDistances = travelDistances;
     }
 }

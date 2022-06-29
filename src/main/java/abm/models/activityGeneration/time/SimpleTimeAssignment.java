@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.time;
 
-import abm.Utils;
+import abm.AbitUtils;
 import abm.data.plans.Activity;
 
 public class SimpleTimeAssignment implements TimeAssignment {
@@ -12,8 +12,8 @@ public class SimpleTimeAssignment implements TimeAssignment {
     public void assignStartTimeAndDuration(Activity activity) {
 
         int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600/60;
-        int startTime = (int) Math.max(0, 10 * 3600 + Utils.getRandomObject().nextGaussian() * 2 * 3600)/60;
-        int duration = (int) Math.max(60, 1 * 3600 + Utils.getRandomObject().nextGaussian() * 4 * 3600)/60;
+        int startTime = (int) Math.max(0, 10 * 3600 + AbitUtils.getRandomObject().nextGaussian() * 2 * 3600)/60;
+        int duration = (int) Math.max(60, 1 * 3600 + AbitUtils.getRandomObject().nextGaussian() * 4 * 3600)/60;
 
         //Todo add a method for scheduling
         activity.setStartTime_min(midnight + startTime);
@@ -25,7 +25,7 @@ public class SimpleTimeAssignment implements TimeAssignment {
 
         int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600/60;
         int startTime = 0/60;
-        int duration = (int) Math.max(60, 1 * 3600 + Utils.getRandomObject().nextGaussian() * 4 * 3600)/60;
+        int duration = (int) Math.max(60, 1 * 3600 + AbitUtils.getRandomObject().nextGaussian() * 4 * 3600)/60;
 
         //Todo add a method for scheduling
         activity.setStartTime_min(midnight + startTime);

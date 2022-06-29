@@ -1,13 +1,11 @@
 package abm.models.activityGeneration.time;
 
-import abm.Utils;
 import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
 import abm.data.timeOfDay.TimeOfDayUtils;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
 import de.tum.bgu.msm.util.MitoUtil;
-import jakarta.validation.constraints.Null;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

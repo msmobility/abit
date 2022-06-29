@@ -19,7 +19,9 @@ public class RunAbit {
     public static void main(String[] args) {
 
         Resources.initializeResources(args[0]);
-        MitoUtil.initializeRandomNumber(Utils.getRandomObject());
+        AbitUtils.loadHdf5Lib();
+
+        MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
         logger.info("Reading data");
         DataSet dataSet = new DefaultDataReaderManager().readData();

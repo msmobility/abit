@@ -1,6 +1,6 @@
 package abm.data.plans;
 
-import abm.Utils;
+import abm.AbitUtils;
 import abm.data.travelInformation.TravelTimes;
 
 import java.util.Collections;
@@ -218,13 +218,13 @@ public class PlanTools {
 
     public static Tour findMandatoryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, Utils.getRandomObject());
+        Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }
 
     public static Tour findDiscretionaryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-        Collections.shuffle(tourList, Utils.getRandomObject());
+        Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }
 }

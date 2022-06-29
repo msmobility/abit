@@ -1,10 +1,7 @@
 package abm.models.activityGeneration.frequency;
 
-import abm.Utils;
 import abm.data.plans.Purpose;
 import abm.data.pop.Person;
-
-import java.util.Random;
 
 public class SimpleFrequencyGenerator implements FrequencyGenerator {
     @Override

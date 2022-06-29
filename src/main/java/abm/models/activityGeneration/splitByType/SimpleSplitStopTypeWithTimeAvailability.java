@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.Utils;
+import abm.AbitUtils;
 import abm.data.plans.Activity;
 import abm.data.plans.Leg;
 import abm.data.plans.StopType;
@@ -55,7 +55,7 @@ public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
         if (nAfter * 15 > activity.getDuration() && nBefore * 15 > activity.getDuration()) {
             double probabilityBefore = Double.valueOf(nBefore) / (nBefore + nAfter);
-            if (Utils.randomObject.nextDouble() < probabilityBefore) {
+            if (AbitUtils.randomObject.nextDouble() < probabilityBefore) {
                 return StopType.BEFORE;
             } else {
                 return StopType.AFTER;

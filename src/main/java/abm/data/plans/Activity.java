@@ -1,7 +1,7 @@
 package abm.data.plans;
 
 
-import abm.Utils;
+import abm.AbitUtils;
 import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Person;
@@ -72,22 +72,22 @@ public class Activity implements Comparable<Activity> {
     public String toString() {
         StringBuilder builder = new StringBuilder();
 
-        builder.append(person.getHousehold().getId()).append(Utils.SEPARATOR);
-        builder.append(person.getId()).append(Utils.SEPARATOR);
-        builder.append(tour.getActivities().firstKey()).append(Utils.SEPARATOR);
-        builder.append(dayOfWeek.getValue()).append(Utils.SEPARATOR);
-        builder.append(startTime_min).append(Utils.SEPARATOR);
-        builder.append(endTime_min).append(Utils.SEPARATOR);
-        builder.append(purpose).append(Utils.SEPARATOR);
-        builder.append(location.getZoneId()).append(Utils.SEPARATOR);
+        builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
+        builder.append(person.getId()).append(AbitUtils.SEPARATOR);
+        builder.append(tour.getActivities().firstKey()).append(AbitUtils.SEPARATOR);
+        builder.append(dayOfWeek.getValue()).append(AbitUtils.SEPARATOR);
+        builder.append(startTime_min).append(AbitUtils.SEPARATOR);
+        builder.append(endTime_min).append(AbitUtils.SEPARATOR);
+        builder.append(purpose).append(AbitUtils.SEPARATOR);
+        builder.append(location.getZoneId()).append(AbitUtils.SEPARATOR);
 
         if (location instanceof MicroscopicLocation) {
             final MicroscopicLocation microscopicLocation = (MicroscopicLocation) location;
-            builder.append(microscopicLocation.getX()).append(Utils.SEPARATOR);
-            builder.append(microscopicLocation.getY()).append(Utils.SEPARATOR);
+            builder.append(microscopicLocation.getX()).append(AbitUtils.SEPARATOR);
+            builder.append(microscopicLocation.getY()).append(AbitUtils.SEPARATOR);
         } else {
-            builder.append(-1).append(Utils.SEPARATOR);
-            builder.append(-1).append(Utils.SEPARATOR);
+            builder.append(-1).append(AbitUtils.SEPARATOR);
+            builder.append(-1).append(AbitUtils.SEPARATOR);
         }
 
         if (discretionaryActivityType != null) {
@@ -103,16 +103,16 @@ public class Activity implements Comparable<Activity> {
 
     public static String getHeader() {
         StringBuilder builder = new StringBuilder();
-        builder.append("person_id").append(Utils.SEPARATOR);
-        builder.append("household_id").append(Utils.SEPARATOR);
-        builder.append("tour_start_time_min").append(Utils.SEPARATOR);
-        builder.append("day").append(Utils.SEPARATOR);
-        builder.append("start_time_min").append(Utils.SEPARATOR);
-        builder.append("end_time_min").append(Utils.SEPARATOR);
-        builder.append("purpose").append(Utils.SEPARATOR);
-        builder.append("zone_id").append(Utils.SEPARATOR);
-        builder.append("x").append(Utils.SEPARATOR);
-        builder.append("y").append(Utils.SEPARATOR);
+        builder.append("person_id").append(AbitUtils.SEPARATOR);
+        builder.append("household_id").append(AbitUtils.SEPARATOR);
+        builder.append("tour_start_time_min").append(AbitUtils.SEPARATOR);
+        builder.append("day").append(AbitUtils.SEPARATOR);
+        builder.append("start_time_min").append(AbitUtils.SEPARATOR);
+        builder.append("end_time_min").append(AbitUtils.SEPARATOR);
+        builder.append("purpose").append(AbitUtils.SEPARATOR);
+        builder.append("zone_id").append(AbitUtils.SEPARATOR);
+        builder.append("x").append(AbitUtils.SEPARATOR);
+        builder.append("y").append(AbitUtils.SEPARATOR);
         builder.append("activity_type");
         return builder.toString();
     }

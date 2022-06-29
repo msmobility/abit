@@ -3,7 +3,6 @@ package abm;
 import abm.data.DataSet;
 import abm.io.input.SimpleDataReaderManager;
 import abm.io.output.OutputWriter;
-import abm.properties.Resources;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;
 
@@ -18,7 +17,7 @@ public class RunAbitSimple {
      */
     public static void main(String[] args) {
 
-        MitoUtil.initializeRandomNumber(Utils.getRandomObject());
+        MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
         logger.info("Reading data");
         DataSet dataSet = new SimpleDataReaderManager().readData();

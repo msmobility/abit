@@ -52,7 +52,7 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
         String nonMotorizedMatrixName  = Resources.instance.getString("car.distance.omx.matrix");
         travelDistances.readSkim("non_motorized_m", nonMotorizedFile, nonMotorizedMatrixName, 1.);
 
-        dataSet.setTravelDistance(new MitoBasedTravelDistances(travelDistances));
+        dataSet.setTravelDistances(new MitoBasedTravelDistances(travelDistances));
 
 
     }

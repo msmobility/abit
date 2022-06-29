@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.Utils;
+import abm.AbitUtils;
 import abm.data.plans.*;
 import abm.data.pop.Person;
 
@@ -31,7 +31,7 @@ public class SimpleSplitByType implements SplitByType {
         discretionaryTours.forEach(tour -> discretionaryActivityTypeSet.add(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR));
 
 
-        Collections.shuffle(discretionaryActivityTypeSet, Utils.getRandomObject());
+        Collections.shuffle(discretionaryActivityTypeSet, AbitUtils.getRandomObject());
 
         //first run split by type from MOP: mandatory tour or discretionary tour
         // if mandatory tour, return DiscretionaryActivityType.ON_MANDATORY_TOUR
