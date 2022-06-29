@@ -4,7 +4,7 @@ import abm.data.DataSet;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.travelTimes.SimpleTravelTimes;
+import abm.data.travelInformation.SimpleTravelTimes;
 
 public class SimpleDataReaderManager implements DataReaderManager {
 

@@ -1,6 +1,8 @@
 package abm.data;
 
-import abm.data.travelTimes.TravelTimes;
+import abm.data.travelInformation.MitoBasedTravelDistances;
+import abm.data.travelInformation.TravelDistances;
+import abm.data.travelInformation.TravelTimes;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 
@@ -12,6 +14,7 @@ public class DataSet {
     final private Map<Integer, Household> households = new HashMap<>();
     final private Map<Integer, Person> persons = new HashMap<>();
     private TravelTimes travelTimes;
+    private TravelDistances travelDistances;
 
     public Map<Integer, Person> getPersons() {
         return persons;
@@ -29,4 +32,6 @@ public class DataSet {
         return households;
     }
 
+    public void setTravelDistance(MitoBasedTravelDistances mitoBasedTravelDistances) {
+    }
 }

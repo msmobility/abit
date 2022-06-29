@@ -1,4 +1,4 @@
-package abm.data.travelTimes;
+package abm.data.travelInformation;
 
 import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;

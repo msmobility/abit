@@ -2,16 +2,17 @@ package abm.io.input;
 
 
 import abm.data.DataSet;
-import abm.data.travelTimes.MitoBasedTravelTimes;
+import abm.data.travelInformation.MitoBasedTravelDistances;
+import abm.data.travelInformation.MitoBasedTravelTimes;
 import abm.properties.Resources;
 import de.tum.bgu.msm.data.travelTimes.SkimTravelTimes;
 
-public class MitoTravelTimeReader implements Reader {
+public class MitoTravelTimeAndDistanceReader implements Reader {
 
 
     private final DataSet dataSet;
 
-    public MitoTravelTimeReader(DataSet dataSet) {
+    public MitoTravelTimeAndDistanceReader(DataSet dataSet) {
         this.dataSet = dataSet;
     }
 
@@ -43,11 +44,15 @@ public class MitoTravelTimeReader implements Reader {
         String trainMatrixName  = Resources.instance.getString("car.omx.matrix");
         travelTimes.readSkim("train", trainFile, trainMatrixName, 1/60.* trainFactor );
 
+        dataSet.setTravelTimes(new MitoBasedTravelTimes(travelTimes));
+
+        //it is using the traveltimes but this is distance!
+        SkimTravelTimes travelDistances = new SkimTravelTimes();
         String nonMotorizedFile = Resources.instance.getString("car.omx.file");
         String nonMotorizedMatrixName  = Resources.instance.getString("car.distance.omx.matrix");
-        travelTimes.readSkim("non_motorized_m", nonMotorizedFile, nonMotorizedMatrixName, 1.);
+        travelDistances.readSkim("non_motorized_m", nonMotorizedFile, nonMotorizedMatrixName, 1.);
 
-        dataSet.setTravelTimes(new MitoBasedTravelTimes(travelTimes));
+        dataSet.setTravelDistance(new MitoBasedTravelDistances(travelDistances));
 
 
     }

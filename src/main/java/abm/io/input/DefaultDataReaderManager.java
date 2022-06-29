@@ -7,7 +7,7 @@ public class DefaultDataReaderManager implements DataReaderManager {
     public DataSet readData() {
         DataSet dataSet = new DataSet();
 
-        new MitoTravelTimeReader(dataSet).read();
+        new MitoTravelTimeAndDistanceReader(dataSet).read();
 
         return dataSet;
     }

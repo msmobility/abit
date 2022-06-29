@@ -1,7 +1,7 @@
 package abm.data.plans;
 
 import abm.Utils;
-import abm.data.travelTimes.TravelTimes;
+import abm.data.travelInformation.TravelTimes;
 
 import java.util.Collections;
 import java.util.List;
