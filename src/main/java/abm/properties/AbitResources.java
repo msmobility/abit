@@ -1,31 +1,27 @@
 package abm.properties;
 
-import de.tum.bgu.msm.data.Purpose;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import static de.tum.bgu.msm.resources.Properties.*;
-
 /**
  * Created by Nico on 19.07.2017.
  */
-public class Resources {
+public class AbitResources {
 
 
     //TODO: provide defaults.
 
-    public static Resources instance;
+    public static AbitResources instance;
 
     private final Properties properties;
 
     private final Path baseDirectory;
 
 
-    private Resources(Properties properties, String baseDirectory) {
+    private AbitResources(Properties properties, String baseDirectory) {
         this.properties = properties;
         this.baseDirectory = Paths.get(baseDirectory).getParent();
     }
@@ -34,7 +30,7 @@ public class Resources {
         try (FileInputStream in = new FileInputStream(fileName)) {
             Properties properties = new Properties();
             properties.load(in);
-            instance = new Resources(properties, fileName);
+            instance = new AbitResources(properties, fileName);
         } catch (IOException e) {
             e.printStackTrace();
         }

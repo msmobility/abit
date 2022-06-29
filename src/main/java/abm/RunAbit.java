@@ -3,7 +3,7 @@ package abm;
 import abm.data.DataSet;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
-import abm.properties.Resources;
+import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;
@@ -19,7 +19,7 @@ public class RunAbit {
      */
     public static void main(String[] args) {
 
-        Resources.initializeResources(args[0]);
+        AbitResources.initializeResources(args[0]);
         AbitUtils.loadHdf5Lib();
 
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());

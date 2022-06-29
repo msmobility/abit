@@ -1,5 +1,6 @@
 package abm.data;
 
+import abm.data.geo.Zone;
 import abm.data.travelInformation.MitoBasedTravelDistances;
 import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
@@ -15,6 +16,9 @@ public class DataSet {
     final private Map<Integer, Person> persons = new HashMap<>();
     private TravelTimes travelTimes;
     private TravelDistances travelDistances;
+
+    final private Map<Integer, Zone> zones = new HashMap<>();
+
 
     public Map<Integer, Person> getPersons() {
         return persons;
@@ -38,5 +42,9 @@ public class DataSet {
 
     public void setTravelDistances(TravelDistances travelDistances) {
         this.travelDistances = travelDistances;
+    }
+
+    public Map<Integer, Zone> getZones() {
+        return zones;
     }
 }

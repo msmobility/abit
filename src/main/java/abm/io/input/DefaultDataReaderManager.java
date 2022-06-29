@@ -7,7 +7,10 @@ public class DefaultDataReaderManager implements DataReaderManager {
     public DataSet readData() {
         DataSet dataSet = new DataSet();
 
+        new ZoneReader(dataSet).read();
+
         new MitoTravelTimeAndDistanceReader(dataSet).read();
+
 
         return dataSet;
     }

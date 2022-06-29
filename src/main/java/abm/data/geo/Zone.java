@@ -1,22 +1,48 @@
 package abm.data.geo;
 
+import org.locationtech.jts.geom.Geometry;
+
 public class Zone implements Location {
 
     private int id;
-    private AreaType1 areaType1;
+    private BBSRType BBSRType;
+    private Geometry geometry;
+    private String name;
 
+    public Zone(int id) {
+        this.id = id;
+    }
 
+    public void setId(int id) {
+        this.id = id;
+    }
 
     @Override
     public int getZoneId() {
         return id;
     }
 
-    public AreaType1 getAreaType1() {
-        return areaType1;
+    public BBSRType getAreaType1() {
+        return BBSRType;
     }
 
-    public void setAreaType1(AreaType1 areaType1) {
-        this.areaType1 = areaType1;
+    public void setAreaType1(BBSRType BBSRType) {
+        this.BBSRType = BBSRType;
+    }
+
+    public Geometry getGeometry() {
+        return geometry;
+    }
+
+    public void setGeometry(Geometry geometry) {
+        this.geometry = geometry;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
