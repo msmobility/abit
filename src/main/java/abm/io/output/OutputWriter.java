@@ -15,7 +15,7 @@ public class OutputWriter {
 
     public void run(){
         try {
-            new ActivityPrinter(dataSet).print("activities.csv");
+            new ActivityPrinter(dataSet).print("output/activities.csv");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

@@ -1,6 +1,7 @@
-package abm.data.plans;
+package abm.utils;
 
-import abm.AbitUtils;
+import abm.data.plans.*;
+import abm.utils.AbitUtils;
 import abm.data.travelInformation.TravelTimes;
 
 import java.util.Collections;
@@ -14,6 +15,14 @@ public class PlanTools {
 
     public PlanTools(TravelTimes travelTimes) {
         this.travelTimes = travelTimes;
+    }
+
+    public static int endOfTheWeek() {
+        return 7 * 24 * 60;
+    }
+
+    public static int startOfTheWeek() {
+        return 0;
     }
 
 

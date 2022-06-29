@@ -1,5 +1,7 @@
 package abm.data.timeOfDay;
 
+import abm.properties.InternalProperties;
+
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,19 +17,18 @@ if the window is available (true) or not (false)
 public class AvailableTimeOfWeek {
 
     private SortedMap<Integer, Boolean> internalMap;
-    private static final int INTERVAL_MIN = 15;
     private static final int MAX_VALUE = (int) (7 * 24 * 60 );
 
 
     public AvailableTimeOfWeek() {
         internalMap = new TreeMap<>();
-        for (int i = 0; i < MAX_VALUE; i = i + INTERVAL_MIN) {
+        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
             internalMap.put(i, true);
         }
     }
 
     public void blockTime(int from, int until) {
-        for (int i = 0; i < MAX_VALUE; i = i + INTERVAL_MIN) {
+        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
             if (i >= from && i <= until) {
                 internalMap.put(i, false);
             }
@@ -38,7 +39,7 @@ public class AvailableTimeOfWeek {
         if (internalMap.containsKey(minute)) {
             return internalMap.get(minute) ? 1 : 0;
         } else {
-            int newIndex = Math.round(minute/INTERVAL_MIN) * INTERVAL_MIN;
+            int newIndex = Math.round(minute/InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
             return internalMap.get(newIndex) ? 1 : 0;
         }
     }

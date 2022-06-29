@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.plans.*;
 import abm.data.pop.Person;
 

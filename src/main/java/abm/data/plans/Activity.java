@@ -1,7 +1,7 @@
 package abm.data.plans;
 
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Person;

@@ -1,6 +1,6 @@
 package abm.models.destinationChoice;
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.plans.Activity;
 import abm.data.pop.Person;

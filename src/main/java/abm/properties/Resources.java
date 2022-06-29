@@ -15,6 +15,7 @@ import static de.tum.bgu.msm.resources.Properties.*;
  */
 public class Resources {
 
+
     //TODO: provide defaults.
 
     public static Resources instance;

@@ -1,9 +1,11 @@
 package abm.data.timeOfDay;
 
 
+import abm.properties.InternalProperties;
+
 public class TimeOfDayUtils {
 
-    private static final int SEARCH_INTERVAL_MIN = 15;
+
     private static final int MAX_VALUE = 7 * 24 * 60;
 
 
@@ -36,11 +38,11 @@ public class TimeOfDayUtils {
 
         AvailableTimeOfWeek newAvailableTOD = new AvailableTimeOfWeek();
 
-        for (int minute = SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + SEARCH_INTERVAL_MIN) {
-            if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - SEARCH_INTERVAL_MIN) == 1){
+        for (int minute = InternalProperties.SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + InternalProperties.SEARCH_INTERVAL_MIN) {
+            if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - InternalProperties.SEARCH_INTERVAL_MIN) == 1){
                 newAvailableTOD.blockTime(Math.max(0, minute - tripDuration), minute);
             } else if (baseAvailableTOD.isAvailable(minute) == 0) {
-                newAvailableTOD.blockTime(minute - SEARCH_INTERVAL_MIN, minute);
+                newAvailableTOD.blockTime(minute - InternalProperties.SEARCH_INTERVAL_MIN, minute);
             }
         }
         return newAvailableTOD;

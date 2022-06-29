@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.time;
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.plans.Activity;
 
 import java.time.DayOfWeek;

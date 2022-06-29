@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.plans.Activity;
 import abm.data.plans.StopType;
 import abm.data.plans.Tour;

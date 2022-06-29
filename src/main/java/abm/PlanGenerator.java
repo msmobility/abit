@@ -14,11 +14,16 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.utils.PlanTools;
+import org.apache.log4j.Logger;
+
 
 import java.time.DayOfWeek;
 import java.util.*;
 
 public class PlanGenerator {
+
+    private static Logger logger = Logger.getLogger(PlanGenerator.class);
 
     HabitualModeChoice habitualModeChoice = new SimpleHabitualModeChoice();
     FrequencyGenerator frequencyGenerator = new SimpleFrequencyGenerator();
@@ -46,9 +51,14 @@ public class PlanGenerator {
     }
 
     public void run() {
+        int counter = 0;
         for (Household household : dataSet.getHouseholds().values()) {
             for (Person person : household.getPersons()) {
                 createPlanForOnePerson(person);
+                counter++;
+                if ((counter % 1000) == 0){
+                    logger.info("Completed " + counter + " persons.");
+                }
             }
         }
     }

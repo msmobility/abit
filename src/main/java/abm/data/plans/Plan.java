@@ -1,8 +1,8 @@
 package abm.data.plans;
 
 import abm.data.pop.Person;
-import abm.ScheduleUtils;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
+import abm.utils.PlanTools;
 
 import java.util.*;
 
@@ -31,13 +31,13 @@ public class Plan {
         plan.person = person;
         //plan.homeActivities = new TreeMap<>();
         final Activity homeActivity = new Activity(person, Purpose.HOME);
-        homeActivity.setStartTime_min(ScheduleUtils.startOfTheWeek());
-        homeActivity.setEndTime_min(ScheduleUtils.endOfTheWeek());
+        homeActivity.setStartTime_min(PlanTools.startOfTheWeek());
+        homeActivity.setEndTime_min(PlanTools.endOfTheWeek());
         homeActivity.setLocation(person.getHousehold().getLocation());
         //plan.homeActivities.put(ScheduleUtils.startOfTheWeek(), homeActivity);
         plan.dummyHomeActivity = new Activity(person, Purpose.HOME);
-        plan.dummyHomeActivity.setStartTime_min(ScheduleUtils.startOfTheWeek());
-        plan.dummyHomeActivity.setEndTime_min(ScheduleUtils.endOfTheWeek());
+        plan.dummyHomeActivity.setStartTime_min(PlanTools.startOfTheWeek());
+        plan.dummyHomeActivity.setEndTime_min(PlanTools.endOfTheWeek());
         plan.dummyHomeActivity.setLocation(person.getHousehold().getLocation());
         plan.tours = new TreeMap<>();
         person.setPlan(plan);
@@ -55,11 +55,11 @@ public class Plan {
     }*/
 
     public String logPlan(double interval_s) {
-        double time = ScheduleUtils.startOfTheWeek() + interval_s / 2;
+        double time = PlanTools.startOfTheWeek() + interval_s / 2;
         StringBuilder string = new StringBuilder();
         string.append(person.getId()).append(",").append(person.getHousehold().getId()).append(",");
         int size = 0;
-        while (time <= ScheduleUtils.endOfTheWeek()) {
+        while (time <= PlanTools.endOfTheWeek()) {
            /* for (Activity a : homeActivities.values()) {
                 if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
                     string.append(a.getPurpose().toString()).append(",");

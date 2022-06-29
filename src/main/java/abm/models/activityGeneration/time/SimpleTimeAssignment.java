@@ -1,6 +1,6 @@
 package abm.models.activityGeneration.time;
 
-import abm.AbitUtils;
+import abm.utils.AbitUtils;
 import abm.data.plans.Activity;
 
 public class SimpleTimeAssignment implements TimeAssignment {

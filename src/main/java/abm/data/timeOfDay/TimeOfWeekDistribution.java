@@ -1,5 +1,6 @@
 package abm.data.timeOfDay;
 
+import abm.properties.InternalProperties;
 import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
@@ -16,13 +17,12 @@ import java.util.stream.Collectors;
 public class TimeOfWeekDistribution {
 
     private SortedMap<Integer, Double> internalMap;
-    private static final int INTERVAL_MIN = 15;
     private static final int MAX_VALUE = (int) (7 * 24 * 60);
 
 
     public TimeOfWeekDistribution() {
         internalMap = new TreeMap<>();
-        for (int i = 0; i < MAX_VALUE; i = i+INTERVAL_MIN) {
+        for (int i = 0; i < MAX_VALUE; i = i+InternalProperties.SEARCH_INTERVAL_MIN) {
             internalMap.put(i, 0.);
         }
     }
@@ -40,7 +40,7 @@ public class TimeOfWeekDistribution {
         if (internalMap.containsKey(minute)) {
             return internalMap.get(minute);
         } else {
-            int newIndex = Math.round(minute/INTERVAL_MIN) * INTERVAL_MIN;
+            int newIndex = Math.round(minute/ InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
             return internalMap.get(newIndex);
         }
 

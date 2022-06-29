@@ -1,6 +1,7 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.AbitUtils;
+import abm.properties.InternalProperties;
+import abm.utils.AbitUtils;
 import abm.data.plans.Activity;
 import abm.data.plans.Leg;
 import abm.data.plans.StopType;
@@ -12,7 +13,6 @@ import java.time.DayOfWeek;
 
 public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
-    private static final int SEARCH_INTERVAL = 15;
     private int counterErrors = 0;
 
     @Override
@@ -32,7 +32,7 @@ public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
         //count periods before
         int nBefore = 0;
-        for (int t = tourStart_min - SEARCH_INTERVAL; t > midnight; t -= SEARCH_INTERVAL) {
+        for (int t = tourStart_min - InternalProperties.SEARCH_INTERVAL_MIN; t > midnight; t -= InternalProperties.SEARCH_INTERVAL_MIN) {
             if (availableTimeOfDay.isAvailable(t) == 1) {
                 nBefore++;
             } else {
@@ -43,7 +43,7 @@ public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
         //count periods after
         int nAfter = 0;
-        for (int t = tourEnd_min + SEARCH_INTERVAL; t < midnight + 60 * 24; t += SEARCH_INTERVAL) {
+        for (int t = tourEnd_min + InternalProperties.SEARCH_INTERVAL_MIN; t < midnight + 60 * 24; t += InternalProperties.SEARCH_INTERVAL_MIN) {
             if (availableTimeOfDay.isAvailable(t) == 1) {
                 nAfter++;
             } else {
@@ -67,7 +67,7 @@ public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
             return StopType.BEFORE;
         } else {
             counterErrors++;
-            System.out.println("Cannot allocate this stop: n = " + counterErrors);
+            //System.out.println("Cannot allocate this stop: n = " + counterErrors);
             return null;
         }
 
