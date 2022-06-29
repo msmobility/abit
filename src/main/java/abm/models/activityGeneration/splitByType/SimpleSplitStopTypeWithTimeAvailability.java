@@ -13,14 +13,15 @@ import java.time.DayOfWeek;
 public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
     private static final int SEARCH_INTERVAL = 15;
+    private int counterErrors = 0;
 
     @Override
-    public StopType getStopType(Person person, Activity activity, Tour tour){
+    public StopType getStopType(Person person, Activity activity, Tour tour) {
 
         AvailableTimeOfWeek availableTimeOfDay = person.getPlan().getAvailableTimeOfDay();
 
         final DayOfWeek dayOfWeek = tour.getMainActivity().getDayOfWeek();
-        int midnight = dayOfWeek.ordinal() * 24*60;
+        int midnight = dayOfWeek.ordinal() * 24 * 60;
 
         availableTimeOfDay = availableTimeOfDay.getForThisDayOfWeek(dayOfWeek);
 
@@ -31,42 +32,44 @@ public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
 
         //count periods before
         int nBefore = 0;
-        for (int t = midnight + SEARCH_INTERVAL ; t < tourStart_min; t +=SEARCH_INTERVAL){
+        for (int t = tourStart_min - SEARCH_INTERVAL; t > midnight; t -= SEARCH_INTERVAL) {
             if (availableTimeOfDay.isAvailable(t) == 1) {
                 nBefore++;
             } else {
+                //until it finds the previous blocked time
                 break;
             }
         }
 
         //count periods after
         int nAfter = 0;
-        for (int t = tourEnd_min + SEARCH_INTERVAL ; t < midnight + 60*24; t +=SEARCH_INTERVAL){
+        for (int t = tourEnd_min + SEARCH_INTERVAL; t < midnight + 60 * 24; t += SEARCH_INTERVAL) {
             if (availableTimeOfDay.isAvailable(t) == 1) {
                 nAfter++;
             } else {
-            break;
-        }
+                //until it finds the next blocked time
+                break;
+            }
         }
 
 
-        if (nAfter + nBefore == 0){
-            //System.out.println("There is no time to allocate this stop!");
-            //todo for some stops there is no time available!
-            return null;
-        } else {
-            double probabilityBefore = nBefore / (nBefore + nAfter);
-            if (Utils.randomObject.nextDouble() < probabilityBefore){
+        if (nAfter * 15 > activity.getDuration() && nBefore * 15 > activity.getDuration()) {
+            double probabilityBefore = Double.valueOf(nBefore) / (nBefore + nAfter);
+            if (Utils.randomObject.nextDouble() < probabilityBefore) {
                 return StopType.BEFORE;
             } else {
                 return StopType.AFTER;
             }
 
+        } else if (nAfter * 15 > activity.getDuration()) {
+            return StopType.AFTER;
+        } else if (nBefore * 15 > activity.getDuration()) {
+            return StopType.BEFORE;
+        } else {
+            counterErrors++;
+            System.out.println("Cannot allocate this stop: n = " + counterErrors);
+            return null;
         }
-
-
-
-
 
 
     }

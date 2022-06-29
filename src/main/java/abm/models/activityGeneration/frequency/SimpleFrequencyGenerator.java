@@ -16,13 +16,13 @@ public class SimpleFrequencyGenerator implements FrequencyGenerator {
             case EDUCATION:
                 return 1;
             case RECREATION:
-                return 5;
+                return 3;
             case OTHER:
                 return 3;
             case SHOPPING:
-                return 4;
+                return 2;
             case ACCOMPANY:
-                return 6;
+                return 8;
             default:
                 throw new RuntimeException("Not possible");
         }
