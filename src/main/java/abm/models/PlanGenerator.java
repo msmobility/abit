@@ -1,4 +1,4 @@
-package abm;
+package abm.models;
 
 import abm.data.DataSet;
 import abm.data.plans.*;
@@ -25,22 +25,29 @@ public class PlanGenerator {
 
     private static Logger logger = Logger.getLogger(PlanGenerator.class);
 
-    HabitualModeChoice habitualModeChoice = new SimpleHabitualModeChoice();
-    FrequencyGenerator frequencyGenerator = new SimpleFrequencyGenerator();
-
-    DestinationChoice destinationChoice = new SimpleDestinationChoice();
-    TourModeChoice tourModeChoice = new SimpleTourModeChoice();
-    DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
-
-    DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
-    TimeAssignment timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
-
-
-    SplitByType splitByType = new SimpleSplitByType();
-    SplitStopType stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
+    private HabitualModeChoice habitualModeChoice;
+    private FrequencyGenerator frequencyGenerator;
+    private DestinationChoice destinationChoice;
+    private TourModeChoice tourModeChoice;
+    private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
+    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+    private TimeAssignment timeAssignment;
+    private SplitByType splitByType;
+    private SplitStopType stopSplitType;
 
     PlanTools planTools;
-    ;
+
+    {
+        stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
+        splitByType = new SimpleSplitByType();
+        timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
+        dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
+        destinationChoice = new SimpleDestinationChoice();
+        tourModeChoice = new SimpleTourModeChoice();
+        habitualModeChoice = new SimpleHabitualModeChoice();
+        frequencyGenerator = new SimpleFrequencyGenerator();
+    }
+
 
     private final DataSet dataSet;
 

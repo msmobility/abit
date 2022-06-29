@@ -3,6 +3,7 @@ package abm;
 import abm.data.DataSet;
 import abm.io.input.SimpleDataReaderManager;
 import abm.io.output.OutputWriter;
+import abm.models.PlanGenerator;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;

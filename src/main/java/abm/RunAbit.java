@@ -3,6 +3,7 @@ package abm;
 import abm.data.DataSet;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
+import abm.models.PlanGenerator;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
