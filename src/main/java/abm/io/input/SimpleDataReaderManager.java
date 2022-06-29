@@ -6,9 +6,10 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.travelTimes.SimpleTravelTimes;
 
-public class SimpleDataReader {
+public class SimpleDataReaderManager implements DataReaderManager {
 
 
+    @Override
     public DataSet readData() {
         DataSet dataSet = new DataSet();
 

@@ -2,18 +2,18 @@ package abm.data.pop;
 
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
+import org.matsim.utils.objectattributes.attributable.Attributes;
 
-import java.util.Objects;
+import java.util.Optional;
 
 public class Person {
 
     private final int id;
     private final Household household;
     private Mode habitualMode;
-
+    private final Attributes attributes = new Attributes();
     private Plan plan;
 
-    private de.tum.bgu.msm.data.person.Person siloPerson;
     public Person(int id, Household household) {
         this.id = id;
         this.household = household;
@@ -26,10 +26,6 @@ public class Person {
 
     public Household getHousehold() {
         return household;
-    }
-
-    public de.tum.bgu.msm.data.person.Person getSiloPerson() {
-        return siloPerson;
     }
 
     public Mode getHabitualMode() {
@@ -47,5 +43,14 @@ public class Person {
     public void setPlan(Plan plan) {
         this.plan = plan;
     }
+
+    public Optional<Object> getAttribute(String key) {
+        return Optional.ofNullable(attributes.getAttribute(key));
+    }
+
+    public void setAttribute(String key, Object value) {
+        attributes.putAttribute(key, value);
+    }
+
 
 }
