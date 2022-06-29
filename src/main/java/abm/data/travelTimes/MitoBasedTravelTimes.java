@@ -15,7 +15,7 @@ public class MitoBasedTravelTimes implements TravelTimes {
 
 
     @Override
-    public int getTravelTimeInSeconds(Location origin, Location destination, Mode mode, double time){
+    public int getTravelTimeInMinutes(Location origin, Location destination, Mode mode, double time){
 
         de.tum.bgu.msm.data.Location mitoOrigin = new MitoZone(origin.getZoneId(), null);
         de.tum.bgu.msm.data.Location mitoDestination = new MitoZone(destination.getZoneId(), null);

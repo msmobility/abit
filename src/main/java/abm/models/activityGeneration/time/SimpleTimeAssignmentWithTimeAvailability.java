@@ -2,17 +2,61 @@ package abm.models.activityGeneration.time;
 
 import abm.Utils;
 import abm.data.plans.Activity;
+import abm.data.plans.Purpose;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
 import abm.data.timeOfDay.TimeOfDayUtils;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
+import de.tum.bgu.msm.util.MitoUtil;
+import jakarta.validation.constraints.Null;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.time.DayOfWeek;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SimpleTimeAssignmentWithTimeAvailability implements TimeAssignment {
 
 
+    private Map<Purpose, TimeOfWeekDistribution> timeOfWeekDistributionMap;
 
-    //TODO Split into assignStartTime and assignDuration (Stops do not need start time, since it is derived from the main tour)
+    public SimpleTimeAssignmentWithTimeAvailability() {
+        timeOfWeekDistributionMap = new HashMap<>();
+        readTimeOfDayDistributions();
+    }
+
+    private void readTimeOfDayDistributions() {
+
+        int timeIndex;
+        int purposeIndex;
+        int probabilityIndex;
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("input/tod_dummy.csv"));
+            String[] firstLine = br.readLine().split(",");
+
+            timeIndex = MitoUtil.findPositionInArray("time", firstLine);
+            purposeIndex = MitoUtil.findPositionInArray("purpose", firstLine);
+            probabilityIndex = MitoUtil.findPositionInArray("probability", firstLine);
+
+            String line;
+            while((line = br.readLine())!= null){
+                int time = Integer.parseInt(line.split(",")[timeIndex]);
+                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex]);
+                double probability = Double.parseDouble(line.split(",")[probabilityIndex]);
+
+                timeOfWeekDistributionMap.putIfAbsent(purpose, new TimeOfWeekDistribution());
+                timeOfWeekDistributionMap.get(purpose).setProbability(time, probability);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
     @Override
     public void assignStartTimeAndDuration(Activity activity) {
 
@@ -26,34 +70,53 @@ public class SimpleTimeAssignmentWithTimeAvailability implements TimeAssignment 
 
         //get the available time for new tours
         AvailableTimeOfWeek availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
+        availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, duration);
         availableTimeOfWeek = availableTimeOfWeek.getForThisDayOfWeek(dayOfWeek);
 
 
         //get the departure probabilities
-        TimeOfWeekDistribution timeOfWeekDistribution = new TimeOfWeekDistribution();
-        timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
+        TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
+
         //convert to the selected day
+        timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
 
         //update the probabilities with the availability and expected tour duration
-        availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, duration);
         timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
 
-        int startTime = timeOfWeekDistribution.selectTime();
-        int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600/60;
 
+        int startTime;
+        startTime = timeOfWeekDistribution.selectTime();
 
-        activity.setStartTime_min(midnight + startTime);
-        activity.setEndTime_min(midnight +  startTime + duration);
+        //int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600/60;
+
+        activity.setStartTime_min(startTime);
+        activity.setEndTime_min(startTime + duration);
 
     }
 
     public void assignDurationToStop(Activity activity) {
 
-        int midnight = (activity.getDayOfWeek().getValue() - 1) * 24 * 3600;
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
         int startTime = 0;
-        int duration = (int) Math.max(60, 1 * 3600 + Utils.getRandomObject().nextGaussian() * 4 * 3600);
+        int duration;
 
-        //Todo add a method for scheduling
+        switch (activity.getPurpose()){
+            case ACCOMPANY:
+                duration = 30;
+                break;
+            case SHOPPING:
+                duration = 20;
+                break;
+            case OTHER:
+                duration = 5;
+                break;
+            case RECREATION:
+                duration = 120;
+                break;
+            default:
+                throw new RuntimeException("Error assigning stop duration to a non-compatible purpose");
+        }
+
         activity.setStartTime_min(midnight + startTime);
         activity.setEndTime_min(midnight + startTime + duration);
 

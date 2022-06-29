@@ -5,6 +5,7 @@ public class Leg {
     private Activity previousActivity;
     private Activity nextActivity;
     private Mode legMode;
+    private int travelTime_min;
 
     public Leg(Activity previousActivity, Activity nextActivity) {
         this.previousActivity = previousActivity;
@@ -34,5 +35,13 @@ public class Leg {
 
     public void setLegMode(Mode legMode) {
         this.legMode = legMode;
+    }
+
+    public int getTravelTime_min() {
+        return travelTime_min;
+    }
+
+    public void setTravelTime_min(int travelTime_min) {
+        this.travelTime_min = travelTime_min;
     }
 }

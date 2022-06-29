@@ -3,8 +3,8 @@ package abm.data.timeOfDay;
 
 public class TimeOfDayUtils {
 
-    private static final int SEARCH_INTERVAL_MIN = 5;
-    private static final int MAP_SIZE = 48 * 60;
+    private static final int SEARCH_INTERVAL_MIN = 15;
+    private static final int MAX_VALUE = 7 * 24 * 60;
 
 
     /**
@@ -36,7 +36,7 @@ public class TimeOfDayUtils {
 
         AvailableTimeOfWeek newAvailableTOD = new AvailableTimeOfWeek();
 
-        for (int minute = SEARCH_INTERVAL_MIN; minute < MAP_SIZE; minute = minute + SEARCH_INTERVAL_MIN) {
+        for (int minute = SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + SEARCH_INTERVAL_MIN) {
             if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - SEARCH_INTERVAL_MIN) == 1){
                 newAvailableTOD.blockTime(Math.max(0, minute - tripDuration), minute);
             } else if (baseAvailableTOD.isAvailable(minute) == 0) {
@@ -46,30 +46,5 @@ public class TimeOfDayUtils {
         return newAvailableTOD;
     }
 
-    /**
-     * Returns the negative of the availability object to put non-home based trips only when home base trips are happening
-     * @param baseAvailableTOD
-     * @return
-     */
-    public static AvailableTimeOfWeek convertToNonHomeBasedTrip(AvailableTimeOfWeek baseAvailableTOD) {
-        AvailableTimeOfWeek newAvailableTOD = new AvailableTimeOfWeek();
-        for (int minute : baseAvailableTOD.getMinutes()) {
-            if (baseAvailableTOD.isAvailable(minute) == 1){
-                newAvailableTOD.blockTime(minute - SEARCH_INTERVAL_MIN, minute);
-            }
-        }
-        return newAvailableTOD;
-    }
 
-    public static AvailableTimeOfWeek updateAvailableTimeToAvoidTooLateTermination(AvailableTimeOfWeek availableTODNextTrip, int tripDuration) {
-        for (int minute : availableTODNextTrip.getMinutes()) {
-            if (minute + tripDuration > 26 * 60 ){
-                availableTODNextTrip.blockTime(minute - SEARCH_INTERVAL_MIN, minute);
-            } else {
-               //do nothing
-            }
-
-        }
-        return availableTODNextTrip;
-    }
 }

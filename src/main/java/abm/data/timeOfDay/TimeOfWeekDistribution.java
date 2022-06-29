@@ -17,12 +17,12 @@ public class TimeOfWeekDistribution {
 
     private SortedMap<Integer, Double> internalMap;
     private static final int INTERVAL_MIN = 15;
-    private static final int MAP_SIZE = (int) (7 * 24 * 60 / INTERVAL_MIN);
+    private static final int MAX_VALUE = (int) (7 * 24 * 60);
 
 
     public TimeOfWeekDistribution() {
         internalMap = new TreeMap<>();
-        for (int i = 0; i < MAP_SIZE; i = i+ INTERVAL_MIN) {
+        for (int i = 0; i < MAX_VALUE; i = i+INTERVAL_MIN) {
             internalMap.put(i, 0.);
         }
     }
@@ -60,7 +60,7 @@ public class TimeOfWeekDistribution {
     }
 
     public TimeOfWeekDistribution getForThisDayOfWeek(DayOfWeek dayOfWeek){
-        int midnightBefore = (dayOfWeek.getValue() - 1) * 60;
+        int midnightBefore = dayOfWeek.ordinal() * 60 * 24;
         TimeOfWeekDistribution timeOfDayDistribution = new TimeOfWeekDistribution();
         this.internalMap.keySet().forEach(m ->{
             if (m > midnightBefore && m < midnightBefore + 60 * 24){

@@ -10,10 +10,12 @@ public class Plan {
 
     private Person person;
     private int id;
-    private SortedMap<Integer, Activity> homeActivities;
+
+    //private SortedMap<Integer, Activity> homeActivities;
+
+    private Activity dummyHomeActivity;
     private SortedMap<Integer, Tour> tours;
     private AvailableTimeOfWeek availableTimeOfWeek;
-
     private Plan() {
 
     }
@@ -27,12 +29,16 @@ public class Plan {
         plan.availableTimeOfWeek = new AvailableTimeOfWeek();
         plan.id = person.getId();
         plan.person = person;
-        plan.homeActivities = new TreeMap<>();
+        //plan.homeActivities = new TreeMap<>();
         final Activity homeActivity = new Activity(person, Purpose.HOME);
         homeActivity.setStartTime_min(ScheduleUtils.startOfTheWeek());
         homeActivity.setEndTime_min(ScheduleUtils.endOfTheWeek());
         homeActivity.setLocation(person.getHousehold().getLocation());
-        plan.homeActivities.put(ScheduleUtils.startOfTheWeek(), homeActivity);
+        //plan.homeActivities.put(ScheduleUtils.startOfTheWeek(), homeActivity);
+        plan.dummyHomeActivity = new Activity(person, Purpose.HOME);
+        plan.dummyHomeActivity.setStartTime_min(ScheduleUtils.startOfTheWeek());
+        plan.dummyHomeActivity.setEndTime_min(ScheduleUtils.endOfTheWeek());
+        plan.dummyHomeActivity.setLocation(person.getHousehold().getLocation());
         plan.tours = new TreeMap<>();
         person.setPlan(plan);
         return plan;
@@ -43,10 +49,10 @@ public class Plan {
         return person;
     }
 
-    public SortedMap<Integer, Activity> getHomeActivities() {
-        return homeActivities;
-    }
 
+    /*public SortedMap<Integer, Activity> getHomeActivities() {
+        return homeActivities;
+    }*/
 
     public String logPlan(double interval_s) {
         double time = ScheduleUtils.startOfTheWeek() + interval_s / 2;
@@ -54,14 +60,14 @@ public class Plan {
         string.append(person.getId()).append(",").append(person.getHousehold().getId()).append(",");
         int size = 0;
         while (time <= ScheduleUtils.endOfTheWeek()) {
-            for (Activity a : homeActivities.values()) {
+           /* for (Activity a : homeActivities.values()) {
                 if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
                     string.append(a.getPurpose().toString()).append(",");
                     size++;
                     time += interval_s;
                     break;
                 }
-            }
+            }*/
             for (Tour tour : tours.values()) {
                 for (Activity a : tour.getActivities().values()) {
                     if (time <= a.getEndTime_min() && time > a.getStartTime_min()) {
@@ -111,4 +117,8 @@ public class Plan {
         return availableTimeOfWeek;
     }
 
+
+    public Activity getDummyHomeActivity() {
+        return dummyHomeActivity;
+    }
 }

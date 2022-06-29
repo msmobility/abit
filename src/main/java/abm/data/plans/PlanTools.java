@@ -25,36 +25,50 @@ public class PlanTools {
      */
     public void addMainTour(Plan plan, Activity mainTourActivity) {
         //find the home activity
-        Activity homeActivity = null;
+        //Activity homeActivity = null;
 
-        for (Activity candidateActivity : plan.getHomeActivities().values()) {
+        /*for (Activity candidateActivity : plan.getHomeActivities().values()) {
             if (mainTourActivity.getStartTime_min() > candidateActivity.getStartTime_min() && mainTourActivity.getEndTime_min() < candidateActivity.getEndTime_min()) {
                 homeActivity = candidateActivity;
                 break;
             }
-        }
+        }*/
         //add a tour - adds the new activity there
-        if (homeActivity != null) {
-            Tour tour = new Tour(mainTourActivity);
-            mainTourActivity.setTour(tour);
-            plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
-            int timeToMainActivity = travelTimes.getTravelTimeInSeconds(homeActivity.getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
-            int previousEndOfHomeActivity = homeActivity.getEndTime_min();
-            homeActivity.setEndTime_min(mainTourActivity.getStartTime_min() - timeToMainActivity);
-            tour.getLegs().put(homeActivity.getEndTime_min(), new Leg(homeActivity, mainTourActivity));
-            Activity secondHomeActivity = new Activity(homeActivity.getPerson(), Purpose.HOME);
-            secondHomeActivity.setStartTime_min(mainTourActivity.getEndTime_min() + timeToMainActivity);
-            secondHomeActivity.setEndTime_min(previousEndOfHomeActivity);
-            secondHomeActivity.setLocation(homeActivity.getLocation());
-            plan.getHomeActivities().put(secondHomeActivity.getStartTime_min(), secondHomeActivity);
-            tour.getLegs().put(mainTourActivity.getEndTime_min(), new Leg(mainTourActivity, secondHomeActivity));
-            plan.getAvailableTimeOfDay().blockTime(previousEndOfHomeActivity,secondHomeActivity.getStartTime_min());
-        } else {
-            //there is no home activity because, e.g. a main tour is placed at the same time (before time availability is considered)
-            //System.out.println("Two tours at the same time not possible");
+        //if (homeActivity != null) {
+        Tour tour = new Tour(mainTourActivity);
+        mainTourActivity.setTour(tour);
+
+        plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
+
+        int timeToMainActivity = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
+
+        //int previousEndOfHomeActivity = homeActivity.getEndTime_min();
+        //homeActivity.setEndTime_min(mainTourActivity.getStartTime_min() - timeToMainActivity);
+
+        int timeLeavingHome_min = mainTourActivity.getStartTime_min() - timeToMainActivity;
+        final Leg firstLeg = new Leg(plan.getDummyHomeActivity(), mainTourActivity);
+        firstLeg.setTravelTime_min(timeToMainActivity);
+        tour.getLegs().put(timeLeavingHome_min, firstLeg);
 
 
-        }
+        int timeArrivingHome_min = mainTourActivity.getEndTime_min() + timeToMainActivity;
+
+        //Activity secondHomeActivity = new Activity(homeActivity.getPerson(), Purpose.HOME);
+        //secondHomeActivity.setStartTime_min(y);
+        //secondHomeActivity.setEndTime_min(previousEndOfHomeActivity);
+        //secondHomeActivity.setLocation(homeActivity.getLocation());
+        //plan.getHomeActivities().put(secondHomeActivity.getStartTime_min(), secondHomeActivity);
+
+        final Leg secondLeg = new Leg(mainTourActivity, plan.getDummyHomeActivity());
+        secondLeg.setTravelTime_min(timeToMainActivity);
+        tour.getLegs().put(mainTourActivity.getEndTime_min(), secondLeg);
+        plan.getAvailableTimeOfDay().blockTime(timeLeavingHome_min, timeArrivingHome_min);
+        //} else {
+        //there is no home activity because, e.g. a main tour is placed at the same time (before time availability is considered)
+        //System.out.println("Two tours at the same time not possible");
+
+
+        //}
     }
 
     /**
@@ -82,7 +96,7 @@ public class PlanTools {
 
 
         if (mainActivity != null) {
-            int timeToSubTourActivity = travelTimes.getTravelTimeInSeconds(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
+            int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
             int previousEndOfMainActivity = mainActivity.getEndTime_min();
             mainActivity.setEndTime_min(subTourActivity.getStartTime_min() - timeToSubTourActivity);
             Leg previousLegFromMainActivity = tour.getLegs().get(mainActivity);
@@ -112,17 +126,17 @@ public class PlanTools {
 
         //remove the leg
         //the key in legs is the previous activity!
-        Activity previousHomeActivity;
-        final int firstKey = tour.getLegs().firstKey();
-        previousHomeActivity = tour.getLegs().get(firstKey).getPreviousActivity();
+        //Activity previousHomeActivity;
+        final int timeLeavingHomeBeforeAddingStop_min = tour.getLegs().firstKey();
+        //previousHomeActivity = tour.getLegs().get(firstKey).getPreviousActivity();
 
-        tour.getLegs().remove(firstKey);
+        tour.getLegs().remove(timeLeavingHomeBeforeAddingStop_min);
 
         //find a start time for the stop before
-        int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(previousHomeActivity.getLocation(),
-                stopBefore.getLocation(), Mode.UNKNOWN, previousHomeActivity.getEndTime_min());
-        //note that the following calculation does not know yet about the departure time, so it uses the arrival time as departur time
-        int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopBefore.getLocation(), firstActivityInExistingTour.getLocation(),
+        int timeForFirstLeg = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(),
+                stopBefore.getLocation(), Mode.UNKNOWN, timeLeavingHomeBeforeAddingStop_min);
+        //note that the following calculation does not know yet about the departure time, so it uses the arrival time as departure time
+        int timeForSecondLeg = travelTimes.getTravelTimeInMinutes(stopBefore.getLocation(), firstActivityInExistingTour.getLocation(),
                 Mode.UNKNOWN, firstActivityInExistingTour.getEndTime_min());
 
         final int duration = stopBefore.getDuration();
@@ -135,15 +149,19 @@ public class PlanTools {
         tour.getActivities().put(stopBeforeStartTime_s, stopBefore);
 
 
-        Leg firstLeg = new Leg(previousHomeActivity, stopBefore);
+        Leg firstLeg = new Leg(plan.getDummyHomeActivity(), stopBefore);
+        firstLeg.setTravelTime_min(timeForFirstLeg);
         Leg secondLeg = new Leg(stopBefore, firstActivityInExistingTour);
+        secondLeg.setTravelTime_min(timeForSecondLeg);
 
-        tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_min(), firstLeg);
+        tour.getLegs().put(stopBeforeStartTime_s - timeForFirstLeg, firstLeg);
         tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_min(), secondLeg);
 
-        previousHomeActivity.setEndTime_min(stopBefore.getStartTime_min() - timeForFirstLeg);
+        //previousHomeActivity.setEndTime_min(stopBefore.getStartTime_min() - timeForFirstLeg);
 
         stopBefore.setTour(tour);
+
+        plan.getAvailableTimeOfDay().blockTime(stopBefore.getStartTime_min() - timeForFirstLeg, firstActivityInExistingTour.getStartTime_min());
 
     }
 
@@ -165,11 +183,11 @@ public class PlanTools {
         //the key in legs is the previous activity!
         //find a start time for the stop before
 
-        final Activity followingHomeActivity = tour.getLegs().get(lastKey).getNextActivity();
+        //final Activity followingHomeActivity = tour.getLegs().get(lastKey).getNextActivity();
         tour.getLegs().remove(lastKey);
 
-        int timeForFirstLeg = travelTimes.getTravelTimeInSeconds(lastActivityInExistingTour.getLocation(),
-                stopAfter.getLocation(), Mode.UNKNOWN, followingHomeActivity.getEndTime_min());
+        int timeForFirstLeg = travelTimes.getTravelTimeInMinutes(lastActivityInExistingTour.getLocation(),
+                stopAfter.getLocation(), Mode.UNKNOWN, lastActivityInExistingTour.getEndTime_min());
 
         int stopAfterStart_s = lastActivityInExistingTour.getEndTime_min() + timeForFirstLeg;
         int stopAfterDuration = stopAfter.getDuration();
@@ -177,21 +195,25 @@ public class PlanTools {
         stopAfter.setStartTime_min(stopAfterStart_s);
         stopAfter.setEndTime_min(stopAfterStart_s + stopAfterDuration);
 
-        int timeForSecondLeg = travelTimes.getTravelTimeInSeconds(stopAfter.getLocation(), followingHomeActivity.getLocation(),
+        int timeForSecondLeg = travelTimes.getTravelTimeInMinutes(stopAfter.getLocation(), plan.getDummyHomeActivity().getLocation(),
                 Mode.UNKNOWN, stopAfter.getEndTime_min());
 
         //add the new stop before
         tour.getActivities().put(stopAfterStart_s, stopAfter);
 
         Leg firstLeg = new Leg(lastActivityInExistingTour, stopAfter);
-        Leg secondLeg = new Leg(stopAfter, followingHomeActivity );
+        firstLeg.setTravelTime_min(timeForFirstLeg);
+        Leg secondLeg = new Leg(stopAfter, plan.getDummyHomeActivity());
+        secondLeg.setTravelTime_min(timeForSecondLeg);
 
         tour.getLegs().put(firstLeg.getPreviousActivity().getEndTime_min(), firstLeg);
         tour.getLegs().put(secondLeg.getPreviousActivity().getEndTime_min(), secondLeg);
 
-        followingHomeActivity.setStartTime_min(stopAfter.getEndTime_min() + timeForSecondLeg);
+        //followingHomeActivity.setStartTime_min(stopAfter.getEndTime_min() + timeForSecondLeg);
 
         stopAfter.setTour(tour);
+
+        plan.getAvailableTimeOfDay().blockTime(lastActivityInExistingTour.getEndTime_min(), stopAfter.getEndTime_min() + timeForSecondLeg);
     }
 
     public static Tour findMandatoryTour(Plan plan) {

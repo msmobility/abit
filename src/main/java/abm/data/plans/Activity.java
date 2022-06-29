@@ -74,7 +74,7 @@ public class Activity implements Comparable<Activity> {
 
         builder.append(person.getHousehold().getId()).append(Utils.SEPARATOR);
         builder.append(person.getId()).append(Utils.SEPARATOR);
-        builder.append(tour.getActivities().firstKey() / 60).append(Utils.SEPARATOR);
+        builder.append(tour.getActivities().firstKey()).append(Utils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(Utils.SEPARATOR);
         builder.append(startTime_min).append(Utils.SEPARATOR);
         builder.append(endTime_min).append(Utils.SEPARATOR);

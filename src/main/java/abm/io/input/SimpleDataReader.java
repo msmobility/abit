@@ -12,7 +12,8 @@ public class SimpleDataReader {
     public DataSet readData() {
         DataSet dataSet = new DataSet();
 
-        for (int i = 0; i < 200; i++ ){
+        int numberOfHouseholds = 100;
+        for (int i = 0; i < numberOfHouseholds; i++ ){
             MicroscopicLocation homeLocation = new MicroscopicLocation(100. * i, 100. * i);
             Household household = new Household(i, homeLocation);
             Person person = new Person(i, household);

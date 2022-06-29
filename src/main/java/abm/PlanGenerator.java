@@ -6,10 +6,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
-import abm.models.activityGeneration.splitByType.SimpleSplitByType;
-import abm.models.activityGeneration.splitByType.SimpleSplitStopType;
-import abm.models.activityGeneration.splitByType.SplitByType;
-import abm.models.activityGeneration.splitByType.SplitStopType;
+import abm.models.activityGeneration.splitByType.*;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
 import abm.models.destinationChoice.SimpleDestinationChoice;
@@ -31,11 +28,11 @@ public class PlanGenerator {
     DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
 
     DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
-    TimeAssignment timeAssignment = new SimpleTimeAssignment();
+    TimeAssignment timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
 
 
     SplitByType splitByType = new SimpleSplitByType();
-    SplitStopType stopSplitType = new SimpleSplitStopType();
+    SplitStopType stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
 
     PlanTools planTools;
     ;
@@ -103,20 +100,22 @@ public class PlanGenerator {
                         Tour selectedTour = planTools.findMandatoryTour(plan);
                         activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                         //the order of time assignment and stopSplitByType is not yet decided
-                        StopType stopType = stopSplitType.getStopType(person, activity);
+                        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
                         timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
 
-                        if (stopType.equals(StopType.BEFORE)) {
-                            int tempTime = selectedTour.getActivities().firstKey();
-                            Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                            destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
-                            planTools.addStopBefore(plan, activity, selectedTour);
-                        } else {
-                            int tempTime = selectedTour.getActivities().lastKey();
-                            Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                            destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
-                            //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                            planTools.addStopAfter(plan, activity, selectedTour);
+                        if (stopType != null) {
+                            if (stopType.equals(StopType.BEFORE)) {
+                                int tempTime = selectedTour.getActivities().firstKey();
+                                Activity firstActivity = selectedTour.getActivities().get(tempTime);
+                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                                planTools.addStopBefore(plan, activity, selectedTour);
+                            } else {
+                                int tempTime = selectedTour.getActivities().lastKey();
+                                Activity lastActivity = selectedTour.getActivities().get(tempTime);
+                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                                //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                                planTools.addStopAfter(plan, activity, selectedTour);
+                            }
                         }
                         break;
                     case PRIMARY:
@@ -146,20 +145,22 @@ public class PlanGenerator {
             Tour selectedTour = planTools.findDiscretionaryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
 
-            StopType stopType = stopSplitType.getStopType(person, activity);
+            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
             timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
 
-            if (stopType.equals(StopType.BEFORE)) {
-                int tempTime = selectedTour.getActivities().firstKey();
-                Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, firstActivity);
-                planTools.addStopBefore(plan, activity, selectedTour);
-            } else {
-                int tempTime = selectedTour.getActivities().lastKey();
-                Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                destinationChoice.selectStopDestination(person, plan.getHomeActivities().get(plan.getHomeActivities().firstKey()), activity, lastActivity);
-                //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                planTools.addStopAfter(plan, activity, selectedTour);
+            if (stopType != null) {
+                if (stopType.equals(StopType.BEFORE)) {
+                    int tempTime = selectedTour.getActivities().firstKey();
+                    Activity firstActivity = selectedTour.getActivities().get(tempTime);
+                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                    planTools.addStopBefore(plan, activity, selectedTour);
+                } else {
+                    int tempTime = selectedTour.getActivities().lastKey();
+                    Activity lastActivity = selectedTour.getActivities().get(tempTime);
+                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                    //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                    planTools.addStopAfter(plan, activity, selectedTour);
+                }
             }
 
         });

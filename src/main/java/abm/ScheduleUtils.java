@@ -6,7 +6,7 @@ import abm.data.plans.Plan;
 public class ScheduleUtils {
 
     public static int endOfTheWeek() {
-        return 7 * 24 * 3600;
+        return 7 * 24 * 60;
     }
 
     public static int startOfTheWeek() {
