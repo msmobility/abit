@@ -4,6 +4,7 @@ import abm.data.DataSet;
 import abm.io.input.SimpleDataReaderManager;
 import abm.io.output.OutputWriter;
 import abm.models.PlanGenerator;
+import abm.models.SimpleModelSetup;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;
@@ -25,7 +26,7 @@ public class RunAbitSimple {
         DataSet dataSet = new SimpleDataReaderManager(Integer.parseInt(args[0])).readData();
 
         logger.info("Generating plans");
-        new PlanGenerator(dataSet).run();
+        new PlanGenerator(dataSet, new SimpleModelSetup()).run();
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();

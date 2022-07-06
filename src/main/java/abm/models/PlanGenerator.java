@@ -37,24 +37,24 @@ public class PlanGenerator {
 
     PlanTools planTools;
 
-    {
-        stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
-        splitByType = new SimpleSplitByType();
-        timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
-        dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
-        destinationChoice = new SimpleDestinationChoice();
-        tourModeChoice = new SimpleTourModeChoice();
-        habitualModeChoice = new SimpleHabitualModeChoice();
-        frequencyGenerator = new SimpleFrequencyGenerator();
-    }
-
 
     private final DataSet dataSet;
 
 
-    public PlanGenerator(DataSet dataSet) {
+    public PlanGenerator(DataSet dataSet, ModelSetup modelSetup) {
         this.dataSet = dataSet;
         this.planTools = new PlanTools(dataSet.getTravelTimes());
+
+
+        this.stopSplitType = modelSetup.getStopSplitType();
+        this.splitByType = modelSetup.getSplitByType();
+        this.timeAssignment = modelSetup.getTimeAssignment();
+        this.dayOfWeekMandatoryAssignment = modelSetup.getDayOfWeekMandatoryAssignment();
+        this.destinationChoice = modelSetup.getDestinationChoice();
+        this.tourModeChoice = modelSetup.getTourModeChoice();
+        this.habitualModeChoice = modelSetup.getHabitualModeChoice();
+        this.frequencyGenerator = modelSetup.getFrequencyGenerator();
+
     }
 
     public void run() {
@@ -63,7 +63,7 @@ public class PlanGenerator {
             for (Person person : household.getPersons()) {
                 createPlanForOnePerson(person);
                 counter++;
-                if ((counter % 1000) == 0){
+                if ((counter % 1000) == 0) {
                     logger.info("Completed " + counter + " persons.");
                 }
             }

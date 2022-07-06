@@ -3,6 +3,7 @@ package abm;
 import abm.data.DataSet;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
+import abm.models.DefaultModelSetup;
 import abm.models.PlanGenerator;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -29,7 +30,7 @@ public class RunAbit {
         DataSet dataSet = new DefaultDataReaderManager().readData();
 
         logger.info("Generating plans");
-        new PlanGenerator(dataSet).run();
+        new PlanGenerator(dataSet, new DefaultModelSetup()).run();
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();
