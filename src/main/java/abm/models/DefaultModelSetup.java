@@ -1,6 +1,9 @@
 package abm.models;
 
+import abm.data.DataSet;
+import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
+import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
 import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;
@@ -14,11 +17,14 @@ import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import org.apache.commons.collections.map.HashedMap;
+
+import java.util.Map;
 
 public class DefaultModelSetup implements ModelSetup{
 
+    private static Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private static HabitualModeChoice habitualModeChoice;
-    private static FrequencyGenerator frequencyGenerator;
     private static DestinationChoice destinationChoice;
     private static TourModeChoice tourModeChoice;
     private static DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
@@ -27,7 +33,10 @@ public class DefaultModelSetup implements ModelSetup{
     private static SplitByType splitByType;
     private static SplitStopType stopSplitType;
 
-    public DefaultModelSetup() {
+
+    public DefaultModelSetup(DataSet dataSet) {
+
+
 
         stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
         splitByType = new SimpleSplitByType();
@@ -36,7 +45,14 @@ public class DefaultModelSetup implements ModelSetup{
         destinationChoice = new SimpleDestinationChoice();
         tourModeChoice = new SimpleTourModeChoice();
         habitualModeChoice = new SimpleHabitualModeChoice();
-        frequencyGenerator = new SimpleFrequencyGenerator();
+
+
+
+
+        frequencyGenerators = new HashedMap();
+        for (Purpose purpose : Purpose.getAllPurposes()){
+            frequencyGenerators.put(purpose, new FrequencyGeneratorModel(dataSet, purpose));
+        }
 
     }
 
@@ -46,8 +62,8 @@ public class DefaultModelSetup implements ModelSetup{
     }
 
     @Override
-    public FrequencyGenerator getFrequencyGenerator() {
-        return frequencyGenerator;
+    public Map<Purpose, FrequencyGenerator> getFrequencyGenerator() {
+        return frequencyGenerators;
     }
 
     @Override

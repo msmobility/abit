@@ -1,5 +1,6 @@
 package abm.models;
 
+import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitStopType;
@@ -10,12 +11,14 @@ import abm.models.destinationChoice.DestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 
+import java.util.Map;
+
 public interface ModelSetup {
 
 
     HabitualModeChoice getHabitualModeChoice();
 
-    FrequencyGenerator getFrequencyGenerator();
+    Map<Purpose, FrequencyGenerator> getFrequencyGenerator();
 
     DestinationChoice getDestinationChoice();
 

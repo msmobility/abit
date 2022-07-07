@@ -30,7 +30,7 @@ public class RunAbit {
         DataSet dataSet = new DefaultDataReaderManager().readData();
 
         logger.info("Generating plans");
-        new PlanGenerator(dataSet, new DefaultModelSetup()).run();
+        new PlanGenerator(dataSet, new DefaultModelSetup(dataSet)).run();
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();

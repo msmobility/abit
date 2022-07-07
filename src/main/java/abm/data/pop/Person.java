@@ -13,7 +13,9 @@ public class Person {
     private final int id;
     private final Household household;
     private Mode habitualMode;
+
     private int age;
+
     private Gender gender;
     private Relationship relationship;
     private Occupation occupation;
@@ -28,7 +30,6 @@ public class Person {
 //        this.id = id;
 //        this.household = household;
 //    }
-
     public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School schol) {
         this.id = id;
         this.household = household;
@@ -40,6 +41,42 @@ public class Person {
         this.job = job;
         this.monthlyIncome_eur = monthlyIncome_eur;
         this.schol = schol;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public Relationship getRelationship() {
+        return relationship;
+    }
+
+    public Occupation getOccupation() {
+        return occupation;
+    }
+
+    public boolean isHasLicense() {
+        return hasLicense;
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public int getMonthlyIncome_eur() {
+        return monthlyIncome_eur;
+    }
+
+    public School getSchol() {
+        return schol;
+    }
+
+    public Attributes getAttributes() {
+        return attributes;
     }
 
     public int getId() {

@@ -1,7 +1,9 @@
 package abm.models;
 
+import abm.data.plans.Purpose;
 import abm.models.DefaultModelSetup;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
+import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
 import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;
@@ -14,13 +16,15 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import org.apache.commons.collections.map.HashedMap;
+
+import java.util.Map;
 
 public class SimpleModelSetup implements ModelSetup {
 
 
-
+    private static Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private static HabitualModeChoice habitualModeChoice;
-    private static FrequencyGenerator frequencyGenerator;
     private static DestinationChoice destinationChoice;
     private static TourModeChoice tourModeChoice;
     private static DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
@@ -38,7 +42,10 @@ public class SimpleModelSetup implements ModelSetup {
         destinationChoice = new SimpleDestinationChoice();
         tourModeChoice = new SimpleTourModeChoice();
         habitualModeChoice = new SimpleHabitualModeChoice();
-        frequencyGenerator = new SimpleFrequencyGenerator();
+        frequencyGenerators = new HashedMap();
+        for (Purpose purpose : Purpose.getAllPurposes()){
+            frequencyGenerators.put(purpose, new SimpleFrequencyGenerator());
+        }
 
     }
 
@@ -46,8 +53,8 @@ public class SimpleModelSetup implements ModelSetup {
         return habitualModeChoice;
     }
 
-    public FrequencyGenerator getFrequencyGenerator() {
-        return frequencyGenerator;
+    public Map<Purpose, FrequencyGenerator> getFrequencyGenerator() {
+        return frequencyGenerators;
     }
 
     public DestinationChoice getDestinationChoice() {

@@ -6,6 +6,8 @@ public class Zone implements Location {
 
     private int id;
     private BBSRType BBSRType;
+    private RegionalType regioType;
+    private UrbanRuralType urbanRuralType;
     private Geometry geometry;
     private String name;
 
@@ -22,7 +24,7 @@ public class Zone implements Location {
         return id;
     }
 
-    public BBSRType getAreaType1() {
+    public BBSRType getBBSRType() {
         return BBSRType;
     }
 
@@ -44,5 +46,13 @@ public class Zone implements Location {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public RegionalType getRegionalType() {
+        return regioType;
+    }
+
+    public UrbanRuralType getUrbanRuralType() {
+        return urbanRuralType;
     }
 }

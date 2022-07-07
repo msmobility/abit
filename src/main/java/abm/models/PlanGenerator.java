@@ -26,7 +26,7 @@ public class PlanGenerator {
     private static Logger logger = Logger.getLogger(PlanGenerator.class);
 
     private HabitualModeChoice habitualModeChoice;
-    private FrequencyGenerator frequencyGenerator;
+    private Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private DestinationChoice destinationChoice;
     private TourModeChoice tourModeChoice;
     private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
@@ -53,7 +53,7 @@ public class PlanGenerator {
         this.destinationChoice = modelSetup.getDestinationChoice();
         this.tourModeChoice = modelSetup.getTourModeChoice();
         this.habitualModeChoice = modelSetup.getHabitualModeChoice();
-        this.frequencyGenerator = modelSetup.getFrequencyGenerator();
+        this.frequencyGenerators = modelSetup.getFrequencyGenerator();
 
     }
 
@@ -77,7 +77,7 @@ public class PlanGenerator {
         habitualModeChoice.chooseHabitualMode(person);
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
-            int numberOfDaysWithMandatoryAct = frequencyGenerator.calculateNumberOfActivitiesPerWeek(person, purpose);
+            int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose);
 
             for (DayOfWeek day : dayOfWeeks) {
@@ -93,7 +93,7 @@ public class PlanGenerator {
         SortedMap<Purpose, List<Activity>> discretionaryActivitiesMap = new TreeMap<>();
         //List<Activity> discretionaryActivities = new ArrayList<>();
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-            int numAct = frequencyGenerator.calculateNumberOfActivitiesPerWeek(person, purpose);
+            int numAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             for (int i = 0; i <= numAct; i++) {
                 Activity activity = new Activity(person, purpose);
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
