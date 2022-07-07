@@ -1,7 +1,8 @@
 package abm.data;
 
 import abm.data.geo.Zone;
-import abm.data.travelInformation.MitoBasedTravelDistances;
+import abm.data.pop.Job;
+import abm.data.pop.School;
 import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
 import abm.data.pop.Household;
@@ -14,9 +15,10 @@ public class DataSet {
 
     final private Map<Integer, Household> households = new HashMap<>();
     final private Map<Integer, Person> persons = new HashMap<>();
+    final private Map<Integer, Job> jobs = new HashMap<>();
+    final private Map<Integer, School> schools = new HashMap<>();
     private TravelTimes travelTimes;
     private TravelDistances travelDistances;
-
     final private Map<Integer, Zone> zones = new HashMap<>();
 
 
@@ -36,6 +38,10 @@ public class DataSet {
         return households;
     }
 
+    public Map<Integer, Job> getJobs() {
+        return jobs;
+    }
+
     public TravelDistances getTravelDistances() {
         return travelDistances;
     }
@@ -46,5 +52,9 @@ public class DataSet {
 
     public Map<Integer, Zone> getZones() {
         return zones;
+    }
+
+    public Map<Integer, School> getSchools() {
+        return schools;
     }
 }

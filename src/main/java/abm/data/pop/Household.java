@@ -1,6 +1,8 @@
 package abm.data.pop;
 
+import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;
+import org.matsim.vehicles.Vehicles;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,11 +11,14 @@ public class Household {
 
     private int id;
     private List<Person> persons;
-    private MicroscopicLocation location;
-    private de.tum.bgu.msm.data.household.Household siloHousehold;
+    private Location location;
+    private final int numberOfCars;
+    private List<Vehicles> vehicles; //uses MATSim vehicles for now
 
-    public Household(int id, MicroscopicLocation location) {
+
+    public Household(int id, MicroscopicLocation location, int numberOfCars) {
         this.id = id;
+        this.numberOfCars = numberOfCars;
         this.persons = new ArrayList<>();
         this.location = location;
     }
@@ -26,11 +31,9 @@ public class Household {
         return persons;
     }
 
-    public MicroscopicLocation getLocation() {
+    public Location getLocation() {
         return location;
     }
 
-    public de.tum.bgu.msm.data.household.Household getSiloHousehold(){
-        return siloHousehold;
-    }
+
 }

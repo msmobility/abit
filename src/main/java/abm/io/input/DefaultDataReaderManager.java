@@ -9,6 +9,12 @@ public class DefaultDataReaderManager implements DataReaderManager {
         new ZoneReader(dataSet).read();
         new MitoTravelTimeAndDistanceReader(dataSet).read();
 
+        new HouseholdReader(dataSet).read();
+        new JobReader(dataSet).read();
+        new SchoolReader(dataSet).read();
+        new PersonReader(dataSet).read();
+
+
         return dataSet;
     }
 }

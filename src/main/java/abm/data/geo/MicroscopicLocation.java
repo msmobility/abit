@@ -7,6 +7,7 @@ import java.util.Objects;
 public class MicroscopicLocation implements MicroLocation {
     double x;
     double y;
+    Zone zone;
 
     public MicroscopicLocation(double x, double y) {
         this.x = x;
@@ -26,9 +27,13 @@ public class MicroscopicLocation implements MicroLocation {
         return new Coordinate(x, y);
     }
 
+    public void setZone(Zone zone) {
+        this.zone = zone;
+    }
+
     @Override
     public int getZoneId() {
-        return 0;
+        return this.zone.getZoneId();
     }
 
 }
