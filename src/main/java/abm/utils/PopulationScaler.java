@@ -10,6 +10,14 @@ public class PopulationScaler {
 
     public void scaleDownPopulation(DataSet dataSet){
 
+        //scale households
+
+        //remove persons that are not in the selected households
+
+        //remove non occupied jobs keeping a portion of vacant jobs
+
+        //reduce school capacity
+
 
     }
 
