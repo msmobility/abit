@@ -16,12 +16,12 @@ import java.time.DayOfWeek;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
+public class SplitStopByTypeModel implements SplitStopType {
 
     private int counterErrors = 0;
     private final Map<Purpose, TimeOfWeekDistribution> timeOfWeekDistributionMap;
 
-    public SimpleSplitStopTypeWithTimeAvailability() {
+    public SplitStopByTypeModel() {
         timeOfWeekDistributionMap = new HashMap<>();
         readTimeOfDayDistributions();
     }

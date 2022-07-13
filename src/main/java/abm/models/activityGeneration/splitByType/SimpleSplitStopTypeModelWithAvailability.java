@@ -11,7 +11,7 @@ import abm.utils.AbitUtils;
 
 import java.time.DayOfWeek;
 
-public class SplitStopTypeModel implements SplitStopType {
+public class SimpleSplitStopTypeModelWithAvailability implements SplitStopType {
 
     private int counterErrors = 0;
 

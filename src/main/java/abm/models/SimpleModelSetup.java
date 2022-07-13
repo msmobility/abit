@@ -4,7 +4,7 @@ import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
-import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;
+import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeModelWithAvailability;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
@@ -33,7 +33,7 @@ public class SimpleModelSetup implements ModelSetup {
 
     public SimpleModelSetup() {
 
-        stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
+        stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
         splitByType = new SimpleSplitByType();
         timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
