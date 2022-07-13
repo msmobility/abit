@@ -1,9 +1,7 @@
 package abm.models;
 
 import abm.data.plans.Purpose;
-import abm.models.DefaultModelSetup;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
-import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
 import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;

@@ -33,7 +33,11 @@ public class MicroscopicLocation implements MicroLocation {
 
     @Override
     public int getZoneId() {
-        return this.zone.getZoneId();
+        if (zone != null){
+            return this.zone.getZoneId();
+        } else {
+            return -1;
+        }
     }
 
 }
