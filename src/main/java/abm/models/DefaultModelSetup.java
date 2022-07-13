@@ -4,9 +4,8 @@ import abm.data.DataSet;
 import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
-import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
-import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;
+import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeModelWithAvailability;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
@@ -16,7 +15,6 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
-import abm.utils.PlanTools;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -38,7 +36,7 @@ public class DefaultModelSetup implements ModelSetup{
 
 
 
-        stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
+        stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
         splitByType = new SimpleSplitByType();
         timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
