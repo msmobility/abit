@@ -168,7 +168,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param coefficients
      * @return
      */
-    private double getPredictor(Person pp, Map<String, Double> coefficients) {
+    public double getPredictor(Person pp, Map<String, Double> coefficients) {
         Household hh = pp.getHousehold();
         double predictor = 0.;
 

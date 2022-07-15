@@ -16,7 +16,7 @@ public class Household {
     private List<Vehicles> vehicles; //uses MATSim vehicles for now
 
 
-    public Household(int id, MicroscopicLocation location, int numberOfCars) {
+    public Household(int id, Location location, int numberOfCars) {
         this.id = id;
         this.numberOfCars = numberOfCars;
         this.persons = new ArrayList<>();
