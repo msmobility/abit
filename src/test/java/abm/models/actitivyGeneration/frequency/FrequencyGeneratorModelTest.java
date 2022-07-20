@@ -1,4 +1,4 @@
-package abm.models.actitivyGeneration;
+package abm.models.actitivyGeneration.frequency;
 
 import abm.data.DataSet;
 import abm.data.geo.Zone;
