@@ -25,7 +25,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     //extends RandomizableConcurrentFunction<Tuple<Purpose, Map<Person, List<Activity>>>>
 
     private static final Logger logger = Logger.getLogger(FrequencyGeneratorModel.class);
-    private Map<Person, List<Activity>> ActivityByPP = new HashMap<>();
+
 
     private final DataSet dataSet;
     private final Purpose purpose;

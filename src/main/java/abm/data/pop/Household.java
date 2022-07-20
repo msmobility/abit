@@ -36,4 +36,11 @@ public class Household {
     }
 
 
+    public EconomicStatus getEconomicStatus() {
+        return EconomicStatus.HIGH;
+    }
+
+    public int getNumberOfCars() {
+        return numberOfCars;
+    }
 }
