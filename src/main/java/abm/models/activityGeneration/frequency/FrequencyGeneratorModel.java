@@ -16,8 +16,6 @@ import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -35,7 +33,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
 
     public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose) {
-        //super(AbitUtils.getRandomObject().nextLong());
         this.dataSet = dataSet;
         this.purpose = purpose;
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
@@ -46,10 +43,18 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             this.countCoef =
                     new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
                             Path.of(AbitResources.instance.getString("actgen.mand.count"))).readCoefficients();
+        } else if (purpose.equals(Purpose.ACCOMPANY)){
+            this.zeroCoef =
+                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
+                            Path.of(AbitResources.instance.getString("actgen.ac-rr.zero"))).readCoefficients();
+
+            this.countCoef =
+                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
+                            Path.of(AbitResources.instance.getString("actgen.ac-rr.count"))).readCoefficients();
         } else {
             this.countCoef =
                     new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.disc.count"))).readCoefficients();
+                            Path.of(AbitResources.instance.getString("actgen.sh-re-ot.count"))).readCoefficients();
         }
     }
 
@@ -59,8 +64,10 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
             numOfActivity = polrEstimateTrips(person);
+        } else if (purpose.equals(Purpose.ACCOMPANY)){
+          numOfActivity = hurdleEstimateTrips(person);
         } else {
-            numOfActivity = hurdleEstimateTrips(person);
+            numOfActivity = nbEstimateTrips(person);
         }
 
         return numOfActivity;
@@ -119,25 +126,23 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         double mu = Math.exp(getPredictor(pp, countCoef));
         double theta = countCoef.get("theta");
 
-        //Todo Corin is figuring out how to implement the hurdle model without the p0_zero part
-//        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
-//
-//        double p0_zero = Math.log(phi);
-//        double p0_count = Math.log(1 - nb.cdf(0));
-//        double logphi = p0_zero - p0_count;
-//
-//        int i = 0;
-//        double cumProb = 0;
-//        double prob = 1 - Math.exp(p0_zero);
-//        cumProb += prob;
-//
-//        while(randomNumber > cumProb) {
-//            i++;
-//            prob = Math.exp(logphi + Math.log(nb.prob(i)));
-//            cumProb += prob;
-//        }
-//        return(i);
-        return 0;
+        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+
+        double p0_zero = Math.log(phi);
+        double p0_count = Math.log(1 - nb.cdf(0));
+        double logphi = p0_zero - p0_count;
+
+        int i = 0;
+        double cumProb = 0;
+        double prob = 1 - Math.exp(p0_zero);
+        cumProb += prob;
+
+        while(randomNumber > cumProb) {
+            i++;
+            prob = Math.exp(logphi + Math.log(nb.prob(i)));
+            cumProb += prob;
+        }
+        return(i);
     }
 
     /**
@@ -161,6 +166,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         }
         return(i);
     }
+
     /**
      * Calculate the linear predictor for the model ()
      *
