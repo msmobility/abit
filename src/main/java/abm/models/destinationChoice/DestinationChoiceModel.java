@@ -24,7 +24,7 @@ public class DestinationChoiceModel implements DestinationChoice {
     private final Map<Zone, Double> zoneAttractors;
     private final IndexedDoubleMatrix2D utilityMatrix;
 
-    private static final double BETA = -0.0001;
+    private static final double BETA = -0.0005;
 
     public DestinationChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -40,7 +40,7 @@ public class DestinationChoiceModel implements DestinationChoice {
                 final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
                 final double attractor = zoneAttractors.get(destination);
                 double utility = attractor * Math.exp(BETA * travelDistanceInMeters);
-                utilityMatrix.setIndexed(origin.getId(), destination.getId(), travelDistanceInMeters);
+                utilityMatrix.setIndexed(origin.getId(), destination.getId(), utility);
             }
         }
 

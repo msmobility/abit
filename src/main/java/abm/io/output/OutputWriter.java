@@ -16,6 +16,7 @@ public class OutputWriter {
     public void run(){
         try {
             new ActivityPrinter(dataSet).print("output/activities.csv");
+            new LegPrinter(dataSet).print("output/legs.csv");
             new PlansToMATSimPlans(dataSet).print();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

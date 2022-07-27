@@ -39,9 +39,6 @@ public class DefaultModelSetup implements ModelSetup{
         habitualModeChoice = new SimpleHabitualModeChoice();
         dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
 
-
-
-
         frequencyGenerators = new HashedMap();
         for (Purpose purpose : Purpose.getAllPurposes()){
             frequencyGenerators.put(purpose, new FrequencyGeneratorModel(dataSet, purpose));
