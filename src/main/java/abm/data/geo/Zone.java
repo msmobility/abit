@@ -71,7 +71,6 @@ public class Zone implements Location, Id {
     }
 
     public Coordinate getRandomCoordinate(Random random) {
-        //TODO:this can be optimized by using the same (static) points builder multiple times instead of recreating it
         RandomPointsBuilder randomPointsBuilder = new SeededRandomPointsBuilder(new GeometryFactory(), random);
         randomPointsBuilder.setNumPoints(1);
         randomPointsBuilder.setExtent(geometry);

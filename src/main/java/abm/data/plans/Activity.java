@@ -91,6 +91,8 @@ public class Activity implements Comparable<Activity> {
             builder.append(-1).append(AbitUtils.SEPARATOR);
         }
 
+        builder.append(location.getZoneId()).append(AbitUtils.SEPARATOR);
+
         if (discretionaryActivityType != null) {
             builder.append(discretionaryActivityType);
         } else {
@@ -114,6 +116,7 @@ public class Activity implements Comparable<Activity> {
         builder.append("zone_id").append(AbitUtils.SEPARATOR);
         builder.append("x").append(AbitUtils.SEPARATOR);
         builder.append("y").append(AbitUtils.SEPARATOR);
+        builder.append("zone").append(AbitUtils.SEPARATOR);
         builder.append("activity_type");
         return builder.toString();
     }
