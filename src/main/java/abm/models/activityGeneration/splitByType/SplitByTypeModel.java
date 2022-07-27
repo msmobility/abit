@@ -46,10 +46,30 @@ public class SplitByTypeModel implements SplitByType{
                 return DiscretionaryActivityType.PRIMARY;
             } else {
                 //todo the choice will based on the number of tours and the purpose order, plus some parameters to be integrated here
-                if (AbitUtils.getRandomObject().nextDouble() < 0.5){
-                    return DiscretionaryActivityType.ON_DISCRETIONARY_TOUR;
-                } else {
+                double p = 1.0;
+                switch (activity.getPurpose()){
+                    case HOME:
+                    case WORK:
+                    case EDUCATION:
+                        throw new RuntimeException("This was intended only for discretionary activities");
+                    case ACCOMPANY:
+                        p = 1.0;
+                        break;
+                    case SHOPPING:
+                        p = 0.75;
+                        break;
+                    case OTHER:
+                        p = 0.65;
+                        break;
+                    case RECREATION:
+                        p = 0.55;
+                        break;
+                }
+
+                if (AbitUtils.getRandomObject().nextDouble() < p){
                     return DiscretionaryActivityType.PRIMARY;
+                } else {
+                    return DiscretionaryActivityType.ON_DISCRETIONARY_TOUR;
                 }
 
             }

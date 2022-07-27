@@ -36,14 +36,14 @@ public class SplitStopByTypeModel implements SplitStopType {
             BufferedReader br = new BufferedReader(new FileReader(AbitResources.instance.getString("start.time.distributions")));
             String[] firstLine = br.readLine().split(",");
 
-            timeIndex = MitoUtil.findPositionInArray("time", firstLine);
+            timeIndex = MitoUtil.findPositionInArray("time_week_min", firstLine);
             purposeIndex = MitoUtil.findPositionInArray("purpose", firstLine);
-            probabilityIndex = MitoUtil.findPositionInArray("probability", firstLine);
+            probabilityIndex = MitoUtil.findPositionInArray("start_time_prob", firstLine);
 
             String line;
             while ((line = br.readLine()) != null) {
                 int time = Integer.parseInt(line.split(",")[timeIndex]);
-                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex]);
+                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex].toUpperCase());
                 double probability = Double.parseDouble(line.split(",")[probabilityIndex]);
 
                 timeOfWeekDistributionMap.putIfAbsent(purpose, new TimeOfWeekDistribution());
