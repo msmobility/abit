@@ -109,4 +109,13 @@ public class PlansToMATSimPlans {
             convertPlansToMATSim(day, ConfigUtils.createConfig());
         }
     }
+
+    void createMatsimConfig(DayOfWeek dayOfWeek){
+
+        int midnight_min =  dayOfWeek.ordinal() * 60 * 24;;
+        ConfigUtils.createConfig();
+
+
+
+    }
 }

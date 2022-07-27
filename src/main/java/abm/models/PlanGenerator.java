@@ -62,7 +62,8 @@ public class PlanGenerator {
 
     public void run() {
         AtomicInteger counter = new AtomicInteger(0);
-        for (Household household : dataSet.getHouseholds().values()) {
+        //for (Household household : dataSet.getHouseholds().values()) {
+        dataSet.getHouseholds().values().parallelStream().forEach(household -> {
             for (Person person : household.getPersons()) {
                 if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)){
                     createPlanForOnePerson(person);
@@ -75,7 +76,9 @@ public class PlanGenerator {
                 }
 
             }
-        }
+        });
+
+
     }
 
     private void createPlanForOnePerson(Person person) {

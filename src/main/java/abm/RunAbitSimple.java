@@ -26,7 +26,7 @@ public class RunAbitSimple {
         DataSet dataSet = new SimpleDataReaderManager(Integer.parseInt(args[0])).readData();
 
         logger.info("Generating plans");
-        new PlanGenerator(dataSet, new SimpleModelSetup()).run();
+        new PlanGenerator(dataSet, new SimpleModelSetup(dataSet)).run();
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();

@@ -4,6 +4,7 @@ import abm.data.DataSet;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
 import abm.models.DefaultModelSetup;
+import abm.models.ModelSetup;
 import abm.models.PlanGenerator;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -29,8 +30,11 @@ public class RunAbit {
         logger.info("Reading data");
         DataSet dataSet = new DefaultDataReaderManager().readData();
 
+        logger.info("Creating the sub-models");
+        ModelSetup modelSetup = new DefaultModelSetup(dataSet);
+
         logger.info("Generating plans");
-        new PlanGenerator(dataSet, new DefaultModelSetup(dataSet)).run();
+        new PlanGenerator(dataSet, modelSetup).run();
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();

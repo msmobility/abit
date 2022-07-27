@@ -72,6 +72,8 @@ public class Leg {
             builder.append(-1).append(AbitUtils.SEPARATOR);
         }
 
+        builder.append(previousLocation.getZoneId()).append(AbitUtils.SEPARATOR);
+
         builder.append(nextActivity.getPurpose()).append(AbitUtils.SEPARATOR);
 
         if (nextActivity.getPurpose() != Purpose.HOME) {
@@ -90,6 +92,8 @@ public class Leg {
             builder.append(-1).append(AbitUtils.SEPARATOR);
             builder.append(-1).append(AbitUtils.SEPARATOR);
         }
+
+        builder.append(nextLocation.getZoneId()).append(AbitUtils.SEPARATOR);
 
         builder.append(legMode).append(AbitUtils.SEPARATOR);
         builder.append(travelTime_min).append(AbitUtils.SEPARATOR);
@@ -113,10 +117,12 @@ public class Leg {
         builder.append("start_time_min").append(AbitUtils.SEPARATOR);
         builder.append("start_x").append(AbitUtils.SEPARATOR);
         builder.append("start_y").append(AbitUtils.SEPARATOR);
+        builder.append("start_zone").append(AbitUtils.SEPARATOR);
         builder.append("next_purpose").append(AbitUtils.SEPARATOR);
         builder.append("end_time").append(AbitUtils.SEPARATOR);
         builder.append("end_x").append(AbitUtils.SEPARATOR);
         builder.append("end_y").append(AbitUtils.SEPARATOR);
+        builder.append("end_zone").append(AbitUtils.SEPARATOR);
         builder.append("mode").append(AbitUtils.SEPARATOR);
         builder.append("time_min").append(AbitUtils.SEPARATOR);
         builder.append("distance_m");
