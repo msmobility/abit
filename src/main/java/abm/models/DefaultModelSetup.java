@@ -32,7 +32,6 @@ public class DefaultModelSetup implements ModelSetup{
 
     public DefaultModelSetup(DataSet dataSet) {
 
-        stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
 
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
         tourModeChoice = new SimpleTourModeChoice();
@@ -43,6 +42,7 @@ public class DefaultModelSetup implements ModelSetup{
         for (Purpose purpose : Purpose.getAllPurposes()){
             frequencyGenerators.put(purpose, new FrequencyGeneratorModel(dataSet, purpose));
         }
+        stopSplitType = new SplitStopByTypeModel();
         splitByType = new SplitByTypeModel(dataSet);
         destinationChoice = new DestinationChoiceModel(dataSet);
         timeAssignment = new TimeAssignmentModel(dataSet);
