@@ -1,5 +1,6 @@
 package abm.models;
 
+import abm.data.DataSet;
 import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
@@ -31,14 +32,14 @@ public class SimpleModelSetup implements ModelSetup {
     private static SplitByType splitByType;
     private static SplitStopType stopSplitType;
 
-    public SimpleModelSetup() {
+    public SimpleModelSetup(DataSet dataSet) {
 
         stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
         splitByType = new SimpleSplitByType();
         timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
         destinationChoice = new SimpleDestinationChoice();
-        tourModeChoice = new SimpleTourModeChoice();
+        tourModeChoice = new SimpleTourModeChoice(dataSet);
         habitualModeChoice = new SimpleHabitualModeChoice();
         frequencyGenerators = new HashedMap();
         for (Purpose purpose : Purpose.getAllPurposes()){

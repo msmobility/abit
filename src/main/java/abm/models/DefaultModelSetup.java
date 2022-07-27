@@ -8,7 +8,6 @@ import abm.models.activityGeneration.splitByType.*;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
 import abm.models.destinationChoice.DestinationChoiceModel;
-import abm.models.destinationChoice.SimpleDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
@@ -34,7 +33,7 @@ public class DefaultModelSetup implements ModelSetup{
 
 
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
-        tourModeChoice = new SimpleTourModeChoice();
+        tourModeChoice = new SimpleTourModeChoice(dataSet);
         habitualModeChoice = new SimpleHabitualModeChoice();
         dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
 
