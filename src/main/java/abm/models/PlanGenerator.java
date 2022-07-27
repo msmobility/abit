@@ -14,12 +14,15 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
 import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.properties.AbitResources;
+import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import org.apache.log4j.Logger;
 
 
 import java.time.DayOfWeek;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlanGenerator {
 
@@ -58,14 +61,19 @@ public class PlanGenerator {
     }
 
     public void run() {
-        int counter = 0;
+        AtomicInteger counter = new AtomicInteger(0);
         for (Household household : dataSet.getHouseholds().values()) {
             for (Person person : household.getPersons()) {
-                createPlanForOnePerson(person);
-                counter++;
-                if ((counter % 1000) == 0) {
-                    logger.info("Completed " + counter + " persons.");
+                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)){
+                    createPlanForOnePerson(person);
+                    counter.incrementAndGet();
+                    final int i = counter.get();
+                    if ((i % 1000) == 0) {
+                        logger.info("Completed " + i + " persons.");
+                    }
+
                 }
+
             }
         }
     }

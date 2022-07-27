@@ -38,6 +38,11 @@ public class PlansToMATSimPlans {
         for (Household hh : dataSet.getHouseholds().values()){
 
            for (Person pp : hh.getPersons()){
+
+               if (pp.getPlan() == null){
+                   continue;
+               }
+
                org.matsim.api.core.v01.population.Person matsimPerson = matsimPopulation.getFactory().createPerson(Id.createPersonId(pp.getId()));
                matsimPopulation.addPerson(matsimPerson);
 

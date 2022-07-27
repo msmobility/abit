@@ -25,14 +25,14 @@ public class ActivityPrinter {
 
 
         for (Person person : dataSet.getPersons().values()) {
-            for (Tour tour : person.getPlan().getTours().values()) {
-                for (Activity activity : tour.getActivities().values()) {
-                    pw.println(activity.toString());
+            if (person.getPlan() != null){
+                for (Tour tour : person.getPlan().getTours().values()) {
+                    for (Activity activity : tour.getActivities().values()) {
+                        pw.println(activity.toString());
+                    }
+
                 }
-
             }
-
-
         }
 
         pw.close();

@@ -4,12 +4,10 @@ import abm.data.DataSet;
 import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
-import abm.models.activityGeneration.splitByType.SimpleSplitByType;
-import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeModelWithAvailability;
-import abm.models.activityGeneration.splitByType.SplitByType;
-import abm.models.activityGeneration.splitByType.SplitStopType;
+import abm.models.activityGeneration.splitByType.*;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
+import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SimpleDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SimpleHabitualModeChoice;
@@ -26,7 +24,7 @@ public class DefaultModelSetup implements ModelSetup{
     private static DestinationChoice destinationChoice;
     private static TourModeChoice tourModeChoice;
     private static DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
-    private static DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+    private static DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment;
     private static TimeAssignment timeAssignment;
     private static SplitByType splitByType;
     private static SplitStopType stopSplitType;
@@ -34,15 +32,12 @@ public class DefaultModelSetup implements ModelSetup{
 
     public DefaultModelSetup(DataSet dataSet) {
 
-
-
         stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
-        splitByType = new SimpleSplitByType();
-        timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
+
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
-        destinationChoice = new SimpleDestinationChoice();
         tourModeChoice = new SimpleTourModeChoice();
         habitualModeChoice = new SimpleHabitualModeChoice();
+        dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
 
 
 
@@ -51,6 +46,9 @@ public class DefaultModelSetup implements ModelSetup{
         for (Purpose purpose : Purpose.getAllPurposes()){
             frequencyGenerators.put(purpose, new FrequencyGeneratorModel(dataSet, purpose));
         }
+        splitByType = new SplitByTypeModel(dataSet);
+        destinationChoice = new DestinationChoiceModel(dataSet);
+        timeAssignment = new TimeAssignmentModel(dataSet);
 
     }
 

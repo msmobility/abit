@@ -4,7 +4,9 @@ import java.util.*;
 
 public enum Mode {
 
-    PT,
+    TRAIN,
+    TRAM_METRO,
+    BUS,
     CAR,
     BIKE,
     WALK,
@@ -19,7 +21,9 @@ public enum Mode {
     // would be non-static, so an instance of the used Mode (here Mode as interface) shoudl exist e.g. in the dataset.
     public static SortedSet<Mode> getModes(){
         SortedSet<Mode> modes = new TreeSet<>();
-        modes.add(PT);
+        modes.add(TRAIN);
+        modes.add(TRAM_METRO);
+        modes.add(BUS);
         modes.add(CAR);
         modes.add(BIKE);
         modes.add(WALK);
