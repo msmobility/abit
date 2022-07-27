@@ -17,6 +17,7 @@ public class OutputWriter {
         try {
             new ActivityPrinter(dataSet).print("output/activities.csv");
             new LegPrinter(dataSet).print("output/legs.csv");
+            //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
             new PlansToMATSimPlans(dataSet).print();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
