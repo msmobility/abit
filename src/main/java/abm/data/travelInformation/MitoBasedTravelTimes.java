@@ -20,7 +20,15 @@ public class MitoBasedTravelTimes implements TravelTimes {
         de.tum.bgu.msm.data.Location mitoOrigin = new MitoZone(origin.getZoneId(), null);
         de.tum.bgu.msm.data.Location mitoDestination = new MitoZone(destination.getZoneId(), null);
 
-        return (int) mitoTravelTimes.getTravelTime(mitoOrigin, mitoDestination, time, mode.toString());
+        double factor = 1.;
+        if (mode.equals(Mode.UNKNOWN)){
+            //todo quick solution to the queries before mode selection: 80% of travel time by car;
+            mode = Mode.CAR;
+            factor = 0.8;
+        }
+
+
+        return (int) (factor * mitoTravelTimes.getTravelTime(mitoOrigin, mitoDestination, time, mode.toString()));
     }
 
 

@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class SplitByTypeModel implements SplitByType{
 
@@ -36,15 +37,21 @@ public class SplitByTypeModel implements SplitByType{
         double utilityOfBeingOnMandatoryTour = calculateUtilityOfBeingOnMandatoryTour(activity, person);
         double probabilityOfBeingOnMandatoryTour = Math.exp(utilityOfBeingOnMandatoryTour) / (1 + Math.exp(utilityOfBeingOnMandatoryTour));
 
-        if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnMandatoryTour){
+        long mandatoryTours = person.getPlan().getTours().values().stream().filter(t -> Purpose.getMandatoryPurposes().contains(t.getMainActivity().getPurpose())).count();
+        if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnMandatoryTour && mandatoryTours > 0){
             return DiscretionaryActivityType.ON_MANDATORY_TOUR;
         } else {
             if (person.getPlan().getTours().values().stream().filter(tour ->
                     Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).count() == 0){
                 return DiscretionaryActivityType.PRIMARY;
             } else {
-                //do the choice based on the number of tours and the purpose order, plus some coefficients
-                return null;
+                //todo the choice will based on the number of tours and the purpose order, plus some parameters to be integrated here
+                if (AbitUtils.getRandomObject().nextDouble() < 0.5){
+                    return DiscretionaryActivityType.ON_DISCRETIONARY_TOUR;
+                } else {
+                    return DiscretionaryActivityType.PRIMARY;
+                }
+
             }
         }
     }
@@ -155,7 +162,7 @@ public class SplitByTypeModel implements SplitByType{
                     if (workTour.getMainActivity().getDuration() > 6 * 60) {
                         utility += coefficients.get("p.occupationStatus_Employed");
                     } else {
-                        utility += coefficients.get("p.occupationStatus_HalfTime");
+                        utility += coefficients.get("p.occupationStatus_Halftime");
                     }
                 }
                 break;
@@ -196,7 +203,9 @@ public class SplitByTypeModel implements SplitByType{
 
         switch (person.getHabitualMode()){
             //todo this should be the time on the habitual mode instead, not a dummy variable!
-            case PT:
+            case BUS:
+            case TRAIN:
+            case TRAM_METRO:
                 utility += coefficients.get("p.t_mand_habmode_PT");
                 break;
             case CAR:

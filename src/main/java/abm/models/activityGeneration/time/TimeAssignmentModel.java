@@ -64,23 +64,19 @@ public class TimeAssignmentModel implements TimeAssignment {
         throw new RuntimeException("The start time is not in the day");
     }
 
-    private class StartTimeInterval implements Comparable<Integer>{
+    private class StartTimeInterval implements Comparable<StartTimeInterval>{
 
         int from;
         int to;
-
 
         StartTimeInterval(int from, int to){
             this.from = from;
             this.to = to;
         }
 
-
-
-
         @Override
-        public int compareTo(Integer o) {
-            return Integer.compare(from, o);
+        public int compareTo(StartTimeInterval o) {
+            return Integer.compare(this.from, o.from);
         }
 
         @Override
@@ -117,7 +113,7 @@ public class TimeAssignmentModel implements TimeAssignment {
             String line;
             while((line = br.readLine())!= null){
                 int time = Integer.parseInt(line.split(",")[timeIndex]);
-                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex]);
+                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex].toUpperCase());
                 int from_h = Integer.parseInt(line.split(",")[fromIndex]);
                 int to_h = Integer.parseInt(line.split(",")[toIndex]);
 
@@ -148,14 +144,14 @@ public class TimeAssignmentModel implements TimeAssignment {
             BufferedReader br = new BufferedReader(new FileReader(AbitResources.instance.getString("start.time.distributions")));
             String[] firstLine = br.readLine().split(",");
 
-            timeIndex = MitoUtil.findPositionInArray("time", firstLine);
+            timeIndex = MitoUtil.findPositionInArray("time_week_min", firstLine);
             purposeIndex = MitoUtil.findPositionInArray("purpose", firstLine);
-            probabilityIndex = MitoUtil.findPositionInArray("probability", firstLine);
+            probabilityIndex = MitoUtil.findPositionInArray("start_time_prob", firstLine);
 
             String line;
             while((line = br.readLine())!= null){
                 int time = Integer.parseInt(line.split(",")[timeIndex]);
-                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex]);
+                Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex].toUpperCase());
                 double probability = Double.parseDouble(line.split(",")[probabilityIndex]);
 
                 timeOfWeekDistributionMap.putIfAbsent(purpose, new TimeOfWeekDistribution());
@@ -184,7 +180,8 @@ public class TimeAssignmentModel implements TimeAssignment {
         timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
         startTime = timeOfWeekDistribution.selectTime();
 
-        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval(startTime/60)).selectTime();
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
+        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60)).selectTime();
         int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
                 Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
 
