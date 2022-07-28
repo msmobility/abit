@@ -58,7 +58,7 @@ public class PlansToMATSimPlans {
                            //only if this is the first leg of the tour, the previous activity is added
                            final Activity previousActivity = leg.getPreviousActivity();
                            org.matsim.api.core.v01.population.Activity previousMatsimActivity = convertActivityToMATSim(previousActivity);
-                           previousMatsimActivity.setEndTime(leg.getNextActivity().getStartTime_min() * 60 - leg.getTravelTime_min() * 60);
+                           previousMatsimActivity.setEndTime(leg.getNextActivity().getStartTime_min() * 60 - leg.getTravelTime_min() * 60 - midnight_min);
                            matsimPlan.addActivity(previousMatsimActivity);
 
                        }
@@ -71,7 +71,7 @@ public class PlansToMATSimPlans {
                            //only if this is not the last leg, the next activity is added
                            final Activity nextActivity = leg.getNextActivity();
                            org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(nextActivity);
-                           nextMatsimActivity.setEndTime(nextActivity.getEndTime_min() * 60);
+                           nextMatsimActivity.setEndTime(nextActivity.getEndTime_min() * 60 - midnight_min);
                            matsimPlan.addActivity(nextMatsimActivity);
                        }
 
@@ -110,9 +110,8 @@ public class PlansToMATSimPlans {
         }
     }
 
-    void createMatsimConfig(DayOfWeek dayOfWeek){
+    void createMatsimConfig(){
 
-        int midnight_min =  dayOfWeek.ordinal() * 60 * 24;;
         ConfigUtils.createConfig();
 
 
