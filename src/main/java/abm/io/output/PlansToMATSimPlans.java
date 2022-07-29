@@ -8,6 +8,8 @@ import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.properties.AbitResources;
+import abm.utils.AbitUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
@@ -39,6 +41,10 @@ public class PlansToMATSimPlans {
            for (Person pp : hh.getPersons()){
 
                if (pp.getPlan() == null){
+                   continue;
+               }
+
+               if (AbitUtils.getRandomObject().nextDouble() > AbitResources.instance.getDouble("matsim.scale.factor", 1.0)){
                    continue;
                }
 
