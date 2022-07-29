@@ -1,5 +1,7 @@
 package abm.matsim;
 
+import abm.properties.AbitResources;
+import abm.utils.AbitUtils;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
@@ -14,7 +16,12 @@ public class RunMATSim {
 
     public static void main(String[] args) {
 
+        AbitResources.initializeResources(args[0]);
+
         Config config = ConfigUtils.loadConfig("./configBase.xml");
+        config.controler().setOutputDirectory("./output/" + AbitResources.instance.getString("run.id")  + "/matsim/");
+
+        config.plans().setInputFile("./output/" + AbitResources.instance.getString("run.id")  + "/matsimPlan_tuesday.xml");
 
         //for some reason this was not stored in the config created by CreateConfig.java
 
@@ -53,7 +60,7 @@ public class RunMATSim {
         walkParams.setTeleportedModeSpeed(5 / 3.6);
         config.plansCalcRoute().addTeleportedModeParams(walkParams);
 
-        config.plans().setInputFile("./output/matsimPlan_tuesday.xml");
+
         Scenario scenario = ScenarioUtils.createScenario(config);
         ScenarioUtils.loadScenario(scenario);
         Controler controler = new Controler(scenario);

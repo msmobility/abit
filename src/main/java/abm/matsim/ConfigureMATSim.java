@@ -38,7 +38,7 @@ public class ConfigureMATSim {
         config.controler().setWriteEventsInterval(config.controler().getLastIteration());
 
         config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
-        config.controler().setOutputDirectory("./output/matsim");
+
 
         {
             StrategyConfigGroup.StrategySettings strategySettings = new StrategyConfigGroup.StrategySettings();

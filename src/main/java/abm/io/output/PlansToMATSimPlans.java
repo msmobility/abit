@@ -8,28 +8,16 @@ import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.properties.AbitResources;
-import de.tum.bgu.msm.data.Mode;
-import de.tum.bgu.msm.resources.Properties;
-import de.tum.bgu.msm.resources.Resources;
 import org.locationtech.jts.geom.Coordinate;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
-import org.matsim.api.core.v01.population.Plan;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.api.core.v01.population.PopulationWriter;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
-import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
-import org.matsim.core.config.groups.QSimConfigGroup;
-import org.matsim.core.config.groups.StrategyConfigGroup;
-import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.population.PopulationUtils;
 
 import java.time.DayOfWeek;
-import java.util.HashSet;
-import java.util.Set;
 
 public class PlansToMATSimPlans {
 
@@ -40,7 +28,7 @@ public class PlansToMATSimPlans {
         this.dataSet = dataSet;
     }
 
-    void convertPlansToMATSim(DayOfWeek dayOfWeek, Config config){
+    void convertPlansToMATSim(DayOfWeek dayOfWeek, Config config, String folder){
 
         int midnight_min =  dayOfWeek.ordinal() * 60 * 24;;
         Population matsimPopulation = PopulationUtils.createPopulation(config);
@@ -100,7 +88,7 @@ public class PlansToMATSimPlans {
            }
        }
 
-        new PopulationWriter(matsimPopulation).write("output/matsimPlan_" + dayOfWeek.toString().toLowerCase() + ".xml");
+        new PopulationWriter(matsimPopulation).write(folder + "/matsimPlan_" + dayOfWeek.toString().toLowerCase() + ".xml");
 
     }
 
@@ -113,9 +101,9 @@ public class PlansToMATSimPlans {
     }
 
 
-    public void print() {
+    public void print(String folder) {
         for (DayOfWeek day : DayOfWeek.values()){
-            convertPlansToMATSim(day, ConfigUtils.createConfig());
+            convertPlansToMATSim(day, ConfigUtils.createConfig(), folder);
         }
     }
 
