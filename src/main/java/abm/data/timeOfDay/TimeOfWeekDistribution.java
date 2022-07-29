@@ -1,6 +1,8 @@
 package abm.data.timeOfDay;
 
+import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
+import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
@@ -22,7 +24,7 @@ public class TimeOfWeekDistribution {
 
     public TimeOfWeekDistribution() {
         internalMap = new TreeMap<>();
-        for (int i = 0; i < MAX_VALUE; i = i+InternalProperties.SEARCH_INTERVAL_MIN) {
+        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
             internalMap.put(i, 0.);
         }
     }
@@ -49,7 +51,7 @@ public class TimeOfWeekDistribution {
 
     public int selectTime() {
         if (MitoUtil.getSum(internalMap.values()) > 0){
-            return MitoUtil.select(internalMap);
+            return MitoUtil.select(internalMap) + (int) ((AbitUtils.getRandomObject().nextDouble()-0.5) * InternalProperties.SEARCH_INTERVAL_MIN);
         } else {
             return -1;
         }

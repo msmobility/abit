@@ -176,7 +176,7 @@ public class PlanTools {
 
 
     /**
-     * Adds one stop before the previous main activity, modifying the home activity accordingly
+     * Adds one stop after the last activity, modifying the home activity accordingly
      * Changes the inbound trip and splits it into two subtrips
      *
      * @param stopAfter

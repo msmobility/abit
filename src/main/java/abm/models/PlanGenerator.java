@@ -174,8 +174,7 @@ public class PlanGenerator {
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
 
             StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-            timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-
+            timeAssignment.assignDurationToStop(activity);
             if (stopType != null) {
                 if (stopType.equals(StopType.BEFORE)) {
                     int tempTime = selectedTour.getActivities().firstKey();
@@ -186,7 +185,6 @@ public class PlanGenerator {
                     int tempTime = selectedTour.getActivities().lastKey();
                     Activity lastActivity = selectedTour.getActivities().get(tempTime);
                     destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
-                    //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
             }

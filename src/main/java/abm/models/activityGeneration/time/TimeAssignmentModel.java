@@ -28,7 +28,7 @@ public class TimeAssignmentModel implements TimeAssignment {
     private final Map<Purpose, Map<StartTimeInterval, DurationDistribution>> durationDistributionMap;
     private final Map<Purpose, Integer> typicalDuration;
     private final DataSet dataSet;
-    private SortedSet<StartTimeInterval> startTimeIntervals = new TreeSet<>();
+    //private SortedSet<StartTimeInterval> startTimeIntervals = new TreeSet<>();
 
 
 
@@ -55,8 +55,8 @@ public class TimeAssignmentModel implements TimeAssignment {
 
     }
 
-    StartTimeInterval getInterval(int time_h){
-        for (StartTimeInterval timeInterval : startTimeIntervals){
+    StartTimeInterval getInterval(int time_h, Purpose purpose){
+        for (StartTimeInterval timeInterval : durationDistributionMap.get(purpose).keySet()){
             if (time_h < timeInterval.to){
                 return timeInterval;
             }
@@ -118,7 +118,7 @@ public class TimeAssignmentModel implements TimeAssignment {
                 int to_h = Integer.parseInt(line.split(",")[toIndex]);
 
                 StartTimeInterval interval = new StartTimeInterval(from_h, to_h);
-                startTimeIntervals.add(interval);
+                //startTimeIntervals.add(interval);
 
                 double probability = Double.parseDouble(line.split(",")[probabilityIndex]);
 
@@ -181,7 +181,7 @@ public class TimeAssignmentModel implements TimeAssignment {
         startTime = timeOfWeekDistribution.selectTime();
 
         int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
-        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60)).selectTime();
+        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
         int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
                 Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
 
@@ -205,8 +205,9 @@ public class TimeAssignmentModel implements TimeAssignment {
 
         int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
         int startTime = 0;
-        //assumes a duration if starting in the morning - this would only be relevant if the stop was a mandatory activity, for discretionary tehre is probably not a differentiation of durations by start time.
-        int duration = durationDistributionMap.get(activity.getPurpose()).get(startTimeIntervals.first()).selectTime();
+        //assumes a duration if starting in the morning - this would only be relevant if the stop was a mandatory activity, for discretionary there is probably not a differentiation of durations by start time.
+        StartTimeInterval first = durationDistributionMap.get(activity.getPurpose()).keySet().stream().findFirst().get();
+        int duration = durationDistributionMap.get(activity.getPurpose()).get(first).selectTime();
 
         activity.setStartTime_min(midnight + startTime);
         activity.setEndTime_min(midnight + startTime + duration);

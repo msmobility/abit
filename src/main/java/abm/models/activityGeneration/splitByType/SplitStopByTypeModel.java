@@ -73,7 +73,7 @@ public class SplitStopByTypeModel implements SplitStopType {
         //count periods before
         int nBefore = 0;
         double pBefore = 0;
-        for (int t = tourStart_min - InternalProperties.SEARCH_INTERVAL_MIN; t > midnight; t -= InternalProperties.SEARCH_INTERVAL_MIN) {
+        for (int t = tourStart_min - InternalProperties.SEARCH_INTERVAL_MIN; t > midnight; t = t - InternalProperties.SEARCH_INTERVAL_MIN) {
             if (availableTimeOfDay.isAvailable(t) == 1) {
                 nBefore++;
                 pBefore += timeOfWeekDistributionMap.get(activity.getPurpose()).probability(t);
@@ -82,6 +82,7 @@ public class SplitStopByTypeModel implements SplitStopType {
                 break;
             }
         }
+        double travelTimeBefore_min = tour.getLegs().get(tour.getLegs().firstKey()).getTravelTime_min() * 2; //approximation
 
         //count periods after
         int nAfter = 0;
@@ -95,9 +96,12 @@ public class SplitStopByTypeModel implements SplitStopType {
                 break;
             }
         }
+        double travelTimeAfter_min = lastLeg.getTravelTime_min() * 2; //approximation
 
 
-        if (nAfter * 15 > activity.getDuration() && nBefore * 15 > activity.getDuration()) {
+        final int searchIntervalMin = InternalProperties.SEARCH_INTERVAL_MIN;
+        final int duration = activity.getDuration();
+        if (nAfter * searchIntervalMin > duration + travelTimeAfter_min && nBefore * searchIntervalMin > duration + travelTimeBefore_min) {
             double probabilityBefore = pBefore / (pBefore + pAfter);
             if (AbitUtils.randomObject.nextDouble() < probabilityBefore) {
                 return StopType.BEFORE;
@@ -105,9 +109,9 @@ public class SplitStopByTypeModel implements SplitStopType {
                 return StopType.AFTER;
             }
 
-        } else if (nAfter * 15 > activity.getDuration()) {
+        } else if (nAfter * searchIntervalMin > duration + travelTimeAfter_min) {
             return StopType.AFTER;
-        } else if (nBefore * 15 > activity.getDuration()) {
+        } else if (nBefore * searchIntervalMin > duration + travelTimeBefore_min) {
             return StopType.BEFORE;
         } else {
             counterErrors++;
