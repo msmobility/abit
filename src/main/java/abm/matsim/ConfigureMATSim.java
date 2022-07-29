@@ -3,7 +3,9 @@ package abm.matsim;
 import abm.properties.AbitResources;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigGroup;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.ConfigWriter;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
 import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.config.groups.StrategyConfigGroup;
@@ -25,7 +27,7 @@ public class ConfigureMATSim {
         new ConfigureMATSim().createMatsimConfig();
     }
 
-    void createMatsimConfig(){
+    void createMatsimConfig() {
 
         Config config = ConfigUtils.createConfig();
 
@@ -60,53 +62,74 @@ public class ConfigureMATSim {
 //            config.strategy().addStrategySettings(strategySettings);
 //        }
 
-        StrategyConfigGroup.StrategySettings strategy =
-                new StrategyConfigGroup.StrategySettings();
-        strategy.setStrategyName(
-                DefaultPlanStrategiesModule.DefaultStrategy.ChangeTripMode);
-        strategy.setWeight(0.2);
-        config.changeMode().setModes(new String[]{"car", "bike", "walk","bus", "tram_metro","train"});
-        config.strategy().addStrategySettings(strategy);
+//        StrategyConfigGroup.StrategySettings strategy =
+//                new StrategyConfigGroup.StrategySettings();
+//        strategy.setStrategyName(
+//                DefaultPlanStrategiesModule.DefaultStrategy.ChangeTripMode);
+//        strategy.setWeight(0.2);
+//        config.changeMode().setModes(new String[]{"car", "bike", "walk", "bus", "tram_metro", "train"});
+//        config.strategy().addStrategySettings(strategy);
 
         config.strategy().setFractionOfIterationsToDisableInnovation(0.7);
         config.strategy().setMaxAgentPlanMemorySize(4);
 
         PlanCalcScoreConfigGroup.ActivityParams homeActivity = new PlanCalcScoreConfigGroup.ActivityParams("home");
-        homeActivity.setTypicalDuration(12 * 60 * 60);
+        homeActivity.setTypicalDuration(0.5 * 60 * 60);
+        homeActivity.setScoringThisActivityAtAll(false);
         config.planCalcScore().addActivityParams(homeActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams workActivity = new PlanCalcScoreConfigGroup.ActivityParams("work");
-        workActivity.setTypicalDuration(8 * 60 * 60);
+        workActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(workActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams educationActivity = new PlanCalcScoreConfigGroup.ActivityParams("education");
-        educationActivity.setTypicalDuration(8 * 60 * 60);
+        educationActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(educationActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams shoppingActivity = new PlanCalcScoreConfigGroup.ActivityParams("shopping");
-        shoppingActivity.setTypicalDuration(8 * 60 * 60);
+        shoppingActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(shoppingActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams otherActivity = new PlanCalcScoreConfigGroup.ActivityParams("other");
-        otherActivity.setTypicalDuration(8 * 60 * 60);
+        otherActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(otherActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams recreationActivity = new PlanCalcScoreConfigGroup.ActivityParams("recreation");
-        recreationActivity.setTypicalDuration(8 * 60 * 60);
+        recreationActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(recreationActivity);
 
         PlanCalcScoreConfigGroup.ActivityParams accompanyActivity = new PlanCalcScoreConfigGroup.ActivityParams("accompany");
-        accompanyActivity.setTypicalDuration(8 * 60 * 60);
+        accompanyActivity.setTypicalDuration(0.5 * 60 * 60);
         config.planCalcScore().addActivityParams(accompanyActivity);
+
+        config.plansCalcRoute().setNetworkModes(Set.of(TransportMode.car));
+
+
 
         PlansCalcRouteConfigGroup.TeleportedModeParams carPassengerParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("car_passenger");
         carPassengerParams.setTeleportedModeFreespeedFactor(1.0);
         config.plansCalcRoute().addTeleportedModeParams(carPassengerParams);
 
-//        PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("pt");
-//        ptParams.setBeelineDistanceFactor(1.5);
-//        ptParams.setTeleportedModeSpeed(50 / 3.6);
-//        config.plansCalcRoute().addTeleportedModeParams(ptParams);
+        {
+            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("train");
+            ptParams.setBeelineDistanceFactor(1.5);
+            ptParams.setTeleportedModeSpeed(50 / 3.6);
+            config.plansCalcRoute().addTeleportedModeParams(ptParams);
+        }
+
+        {
+            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("tram_metro");
+            ptParams.setBeelineDistanceFactor(1.5);
+            ptParams.setTeleportedModeSpeed(30 / 3.6);
+            config.plansCalcRoute().addTeleportedModeParams(ptParams);
+        }
+
+        {
+            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bus");
+            ptParams.setBeelineDistanceFactor(1.5);
+            ptParams.setTeleportedModeSpeed(15 / 3.6);
+            config.plansCalcRoute().addTeleportedModeParams(ptParams);
+        }
 
         PlansCalcRouteConfigGroup.TeleportedModeParams bicycleParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bike");
         bicycleParams.setBeelineDistanceFactor(1.3);
@@ -145,22 +168,26 @@ public class ConfigureMATSim {
         config.global().setCoordinateSystem("EPSG:31468");
 
         config.qsim().setNumberOfThreads(16);
+        config.qsim().setEndTime(30 * 60 * 60);
         config.global().setNumberOfThreads(16);
         config.parallelEventHandling().setNumberOfThreads(16);
 
         double abitScaleFactor = AbitResources.instance.getDouble("scale.factor", 1.0);
-        config.qsim().setFlowCapFactor(1.0);
-        config.qsim().setStorageCapFactor(1.0);
+        config.qsim().setFlowCapFactor(Math.max(abitScaleFactor, 0.01));
+        config.qsim().setStorageCapFactor(Math.max(abitScaleFactor, 0.01));
 
-        config.plansCalcRoute().setNetworkModes(Set.of(TransportMode.car));
 
-        config.transit().setUseTransit(true);
-        config.transit().setTransitScheduleFile(AbitResources.instance.getString("matsim.pt.schedule"));
-        config.transit().setVehiclesFile(AbitResources.instance.getString("matsim.pt.vehicles"));
-        config.transit().setTransitModes(Set.of("train", "bus", "tram_metro"));
-        config.transit().setUsingTransitInMobsim(false);
 
-        ConfigUtils.writeConfig(config, "./configBase.xml");
+        config.transit().setUseTransit(false);
+//        config.transit().setTransitScheduleFile(AbitResources.instance.getString("matsim.pt.schedule"));
+//        config.transit().setVehiclesFile(AbitResources.instance.getString("matsim.pt.vehicles"));
+//        config.transit().setTransitModes(Set.of("train", "bus", "tram_metro"));
+//        config.transit().setUsingTransitInMobsim(false);
+
+        new ConfigWriter(config).write("./configBase.xml");
+
+
+        //ConfigUtils.writeConfig(config, "./configBase.xml");
 
     }
 }
