@@ -5,6 +5,7 @@ import abm.data.geo.MicroscopicLocation;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
+import abm.data.travelInformation.SimpleTravelDistances;
 import abm.data.travelInformation.SimpleTravelTimes;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Gender;
@@ -36,6 +37,7 @@ public class SimpleDataReaderManager implements DataReaderManager {
 
 
         dataSet.setTravelTimes(new SimpleTravelTimes());
+        dataSet.setTravelDistances(new SimpleTravelDistances());
 
         return dataSet;
 

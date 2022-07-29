@@ -4,7 +4,7 @@ import abm.data.DataSet;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.SimpleDataReaderManager;
-import abm.io.output.OutputWriter;
+import abm.io.output.*;
 import abm.models.DefaultModelSetup;
 import abm.models.ModelSetup;
 import abm.models.PlanGenerator;
@@ -15,6 +15,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
 import org.apache.log4j.Logger;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ public class RunAbitSimple {
 
     /**
      * Runs a simple implementation of the AB model with dummy parameters and with no location-specific data or properties
+     *
      * @param args
      */
     public static void main(String[] args) {
@@ -48,11 +50,10 @@ public class RunAbitSimple {
 
         for (Household household : dataSet.getHouseholds().values()) {
             for (Person person : household.getPersons()) {
-                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-                    final int i = AbitUtils.getRandomObject().nextInt(threads);
-                    personsByThread.putIfAbsent(i, new ArrayList<>());
-                    personsByThread.get(i).add(person);
-                }
+                final int i = 0;
+                personsByThread.putIfAbsent(i, new ArrayList<>());
+                personsByThread.get(i).add(person);
+
 
             }
 
@@ -64,7 +65,17 @@ public class RunAbitSimple {
 
         executor.execute();
 
+        String outputFolder = "./output";
+
         logger.info("Printing out results");
-        new OutputWriter(dataSet).run();
+        try {
+            new ActivityPrinter(dataSet).print(outputFolder + "/activities.csv");
+            new LegPrinter(dataSet).print(outputFolder + "/legs.csv");
+            new PersonUseOfTimePrinter(dataSet).print(outputFolder + "/use_of_time.csv");
+            new PlansToMATSimPlans(dataSet).print(outputFolder);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
     }
 }
