@@ -173,8 +173,9 @@ public class ConfigureMATSim {
         config.parallelEventHandling().setNumberOfThreads(16);
 
         double abitScaleFactor = AbitResources.instance.getDouble("scale.factor", 1.0);
-        config.qsim().setFlowCapFactor(Math.max(abitScaleFactor, 0.01));
-        config.qsim().setStorageCapFactor(Math.max(abitScaleFactor, 0.01));
+        double matsimScaleFactor = AbitResources.instance.getDouble("matsim.scale.factor", 1.0);
+        config.qsim().setFlowCapFactor(Math.max(abitScaleFactor * matsimScaleFactor, 0.01));
+        config.qsim().setStorageCapFactor(Math.max(abitScaleFactor * matsimScaleFactor, 0.01));
 
 
 

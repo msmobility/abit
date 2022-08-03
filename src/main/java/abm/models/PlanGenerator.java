@@ -2,17 +2,12 @@ package abm.models;
 
 import abm.data.DataSet;
 import abm.data.plans.*;
-import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
-import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.*;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
-import abm.models.destinationChoice.SimpleDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
-import abm.models.modeChoice.SimpleHabitualModeChoice;
-import abm.models.modeChoice.SimpleTourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -22,9 +17,10 @@ import org.apache.log4j.Logger;
 
 import java.time.DayOfWeek;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class PlanGenerator {
+public class PlanGenerator implements Callable {
 
     private static Logger logger = Logger.getLogger(PlanGenerator.class);
 
@@ -40,14 +36,21 @@ public class PlanGenerator {
 
     PlanTools planTools;
 
+    private AtomicInteger counter;
+    private AtomicInteger stopWithoutTypecounter;
 
     private final DataSet dataSet;
+    private List<Person> persons;
+    private final int thread;
 
 
-    public PlanGenerator(DataSet dataSet, ModelSetup modelSetup) {
+    public PlanGenerator(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
         this.planTools = new PlanTools(dataSet.getTravelTimes());
+        this.thread = thread;
 
+        counter = new AtomicInteger(0);
+        stopWithoutTypecounter = new AtomicInteger(0);
 
         this.stopSplitType = modelSetup.getStopSplitType();
         this.splitByType = modelSetup.getSplitByType();
@@ -60,25 +63,9 @@ public class PlanGenerator {
 
     }
 
-    public void run() {
-        AtomicInteger counter = new AtomicInteger(0);
-        //for (Household household : dataSet.getHouseholds().values()) {
-        dataSet.getHouseholds().values().parallelStream().forEach(household -> {
-            for (Person person : household.getPersons()) {
-                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)){
-                    createPlanForOnePerson(person);
-                    counter.incrementAndGet();
-                    final int i = counter.get();
-                    if ((i % 1000) == 0) {
-                        logger.info("Completed " + i + " persons.");
-                    }
-
-                }
-
-            }
-        });
-
-
+    public Callable setPersons(List<Person> persons) {
+        this.persons = persons;
+        return this;
     }
 
     private void createPlanForOnePerson(Person person) {
@@ -168,11 +155,11 @@ public class PlanGenerator {
                 }
         );
 
+
         stopsOnDiscretionaryTours.forEach(activity -> {
 
             Tour selectedTour = planTools.findDiscretionaryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-
             StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
             timeAssignment.assignDurationToStop(activity);
             if (stopType != null) {
@@ -187,6 +174,8 @@ public class PlanGenerator {
                     destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
+            } else {
+                //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
             }
 
         });
@@ -198,4 +187,18 @@ public class PlanGenerator {
     }
 
 
+    @Override
+    public Object call() throws Exception {
+        AtomicInteger counter = new AtomicInteger(0);
+        for (Person person : this.persons){
+            createPlanForOnePerson(person);
+            counter.incrementAndGet();
+            final int i = counter.get();
+            if ((i % 1000) == 0) {
+                logger.info("Completed " + i + " persons by thread " + thread);
+            }
+
+        }
+        return null;
+    }
 }

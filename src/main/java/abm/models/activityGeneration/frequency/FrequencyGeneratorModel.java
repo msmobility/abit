@@ -7,11 +7,13 @@ import abm.data.geo.UrbanRuralType;
 import abm.data.geo.Zone;
 import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
@@ -255,7 +257,37 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             }
         }
 
+        switch (pp.getOccupation()){
 
+
+            case STUDENT:
+                predictor += coefficients.get("p.occupationStatus_Student");
+                break;
+            case EMPLOYED:
+                //todo move this into the person reader and then define a partTime variable status?
+                final Tour workTour = pp.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.WORK)).findAny().orElse(null);
+                if (workTour != null){
+                    if (workTour.getMainActivity().getDuration() > 6 * 60) {
+                        predictor += coefficients.get("p.occupationStatus_Employed");
+                    } else {
+                        predictor += coefficients.get("p.occupationStatus_Halftime");
+                    }
+                }
+                break;
+            case UNEMPLOYED:
+                predictor += coefficients.get("p.occupationStatus_Unemployed");
+                break;
+            case RETIREE:
+                //todo is this like unemployed?
+                predictor += coefficients.get("p.occupationStatus_Unemployed");
+                break;
+            case TODDLER:
+                //todo is this like unemployed?
+                predictor += coefficients.get("p.occupationStatus_Unemployed");
+                break;
+        }
+        //carlos added this for testing - needs check
 
 
 //        // Household in urban region

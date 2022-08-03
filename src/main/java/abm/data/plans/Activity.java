@@ -72,9 +72,8 @@ public class Activity implements Comparable<Activity> {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-
-        builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
         builder.append(person.getId()).append(AbitUtils.SEPARATOR);
+        builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
         builder.append(tour.getActivities().firstKey()).append(AbitUtils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(AbitUtils.SEPARATOR);
         builder.append(startTime_min).append(AbitUtils.SEPARATOR);
