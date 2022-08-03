@@ -37,7 +37,7 @@ public class PlanGenerator implements Callable {
     PlanTools planTools;
 
     private AtomicInteger counter;
-
+    private AtomicInteger stopWithoutTypecounter;
 
     private final DataSet dataSet;
     private List<Person> persons;
@@ -50,6 +50,7 @@ public class PlanGenerator implements Callable {
         this.thread = thread;
 
         counter = new AtomicInteger(0);
+        stopWithoutTypecounter = new AtomicInteger(0);
 
         this.stopSplitType = modelSetup.getStopSplitType();
         this.splitByType = modelSetup.getSplitByType();
@@ -154,11 +155,11 @@ public class PlanGenerator implements Callable {
                 }
         );
 
+
         stopsOnDiscretionaryTours.forEach(activity -> {
 
             Tour selectedTour = planTools.findDiscretionaryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-
             StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
             timeAssignment.assignDurationToStop(activity);
             if (stopType != null) {
@@ -173,6 +174,8 @@ public class PlanGenerator implements Callable {
                     destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
+            } else {
+                //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
             }
 
         });
