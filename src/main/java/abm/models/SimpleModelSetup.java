@@ -1,12 +1,11 @@
 package abm.models;
 
+import abm.data.DataSet;
 import abm.data.plans.Purpose;
-import abm.models.DefaultModelSetup;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
-import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
-import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeWithTimeAvailability;
+import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeModelWithAvailability;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
@@ -33,14 +32,14 @@ public class SimpleModelSetup implements ModelSetup {
     private static SplitByType splitByType;
     private static SplitStopType stopSplitType;
 
-    public SimpleModelSetup() {
+    public SimpleModelSetup(DataSet dataSet) {
 
-        stopSplitType = new SimpleSplitStopTypeWithTimeAvailability();
+        stopSplitType = new SimpleSplitStopTypeModelWithAvailability();
         splitByType = new SimpleSplitByType();
         timeAssignment = new SimpleTimeAssignmentWithTimeAvailability();
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
         destinationChoice = new SimpleDestinationChoice();
-        tourModeChoice = new SimpleTourModeChoice();
+        tourModeChoice = new SimpleTourModeChoice(dataSet);
         habitualModeChoice = new SimpleHabitualModeChoice();
         frequencyGenerators = new HashedMap();
         for (Purpose purpose : Purpose.getAllPurposes()){

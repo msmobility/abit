@@ -112,4 +112,7 @@ public class Person {
     }
 
 
+    public boolean hasBicycle() {
+        return true;
+    }
 }

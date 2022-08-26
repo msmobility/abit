@@ -1,6 +1,7 @@
 package abm.data.plans;
 
 
+import abm.data.geo.Zone;
 import abm.utils.AbitUtils;
 import abm.data.geo.Location;
 import abm.data.geo.MicroscopicLocation;
@@ -71,9 +72,8 @@ public class Activity implements Comparable<Activity> {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-
-        builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
         builder.append(person.getId()).append(AbitUtils.SEPARATOR);
+        builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
         builder.append(tour.getActivities().firstKey()).append(AbitUtils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(AbitUtils.SEPARATOR);
         builder.append(startTime_min).append(AbitUtils.SEPARATOR);
@@ -89,6 +89,8 @@ public class Activity implements Comparable<Activity> {
             builder.append(-1).append(AbitUtils.SEPARATOR);
             builder.append(-1).append(AbitUtils.SEPARATOR);
         }
+
+        builder.append(location.getZoneId()).append(AbitUtils.SEPARATOR);
 
         if (discretionaryActivityType != null) {
             builder.append(discretionaryActivityType);
@@ -113,6 +115,7 @@ public class Activity implements Comparable<Activity> {
         builder.append("zone_id").append(AbitUtils.SEPARATOR);
         builder.append("x").append(AbitUtils.SEPARATOR);
         builder.append("y").append(AbitUtils.SEPARATOR);
+        builder.append("zone").append(AbitUtils.SEPARATOR);
         builder.append("activity_type");
         return builder.toString();
     }

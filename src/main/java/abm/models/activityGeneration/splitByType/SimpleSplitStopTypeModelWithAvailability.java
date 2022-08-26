@@ -1,17 +1,17 @@
 package abm.models.activityGeneration.splitByType;
 
-import abm.properties.InternalProperties;
-import abm.utils.AbitUtils;
 import abm.data.plans.Activity;
 import abm.data.plans.Leg;
 import abm.data.plans.StopType;
 import abm.data.plans.Tour;
 import abm.data.pop.Person;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
+import abm.properties.InternalProperties;
+import abm.utils.AbitUtils;
 
 import java.time.DayOfWeek;
 
-public class SimpleSplitStopTypeWithTimeAvailability implements SplitStopType {
+public class SimpleSplitStopTypeModelWithAvailability implements SplitStopType {
 
     private int counterErrors = 0;
 

@@ -1,8 +1,17 @@
 package abm.data.geo;
 
+import de.tum.bgu.msm.data.Id;
+import de.tum.bgu.msm.utils.SeededRandomPointsBuilder;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.shape.random.RandomPointsBuilder;
+import org.matsim.core.utils.geometry.geotools.MGC;
 
-public class Zone implements Location {
+import java.util.Random;
+
+public class Zone implements Location, Id {
 
     private int id;
     private BBSRType BBSRType;
@@ -54,5 +63,19 @@ public class Zone implements Location {
 
     public UrbanRuralType getUrbanRuralType() {
         return urbanRuralType;
+    }
+
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    public Coordinate getRandomCoordinate(Random random) {
+        RandomPointsBuilder randomPointsBuilder = new SeededRandomPointsBuilder(new GeometryFactory(), random);
+        randomPointsBuilder.setNumPoints(1);
+        randomPointsBuilder.setExtent(geometry);
+        Coordinate coordinate = randomPointsBuilder.getGeometry().getCoordinates()[0];
+        Point p = MGC.coordinate2Point(coordinate);
+        return new Coordinate(p.getX(), p.getY());
     }
 }
