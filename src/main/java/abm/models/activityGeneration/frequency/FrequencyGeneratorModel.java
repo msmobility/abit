@@ -11,7 +11,6 @@ import abm.data.pop.*;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
-import de.tum.bgu.msm.data.AreaTypes;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
@@ -429,7 +428,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         }
 
         switch (pp.getHabitualMode()){
-            case CAR:
+            case CAR_DRIVER:
                 predictor += coefficients.get("p.t_mand_habmode_car");
                 break;
             case BIKE:
