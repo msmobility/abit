@@ -23,7 +23,7 @@ public class MitoBasedTravelTimes implements TravelTimes {
         double factor = 1.;
         if (mode.equals(Mode.UNKNOWN)){
             //todo quick solution to the queries before mode selection: 80% of travel time by car;
-            mode = Mode.CAR;
+            mode = Mode.CAR_DRIVER;
             factor = 0.8;
         }
 
