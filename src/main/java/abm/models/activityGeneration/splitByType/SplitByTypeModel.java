@@ -15,7 +15,6 @@ import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class SplitByTypeModel implements SplitByType{
 
@@ -88,16 +87,16 @@ public class SplitByTypeModel implements SplitByType{
         //missing area type variables here (not significant!)
 
         switch (person.getHousehold().getEconomicStatus()){
-            case VERY_LOW:
+            case from0to800:
                 utility += coefficients.get("hh.econStatus_1");
                 break;
-            case LOW:
+            case from801to1600:
                 utility += coefficients.get("hh.econStatus_2");
                 break;
-            case HIGH:
+            case from1601to2400:
                 utility += coefficients.get("hh.econStatus_3");
                 break;
-            case VERY_HIGH:
+            case from2401:
                 utility += coefficients.get("hh.econStatus_4");
                 break;
         }
@@ -228,7 +227,7 @@ public class SplitByTypeModel implements SplitByType{
             case TRAM_METRO:
                 utility += coefficients.get("p.t_mand_habmode_PT");
                 break;
-            case CAR:
+            case CAR_DRIVER:
                 utility += coefficients.get("p.t_mand_habmode_car");
                 break;
             case BIKE:

@@ -41,7 +41,7 @@ public class SimpleTourModeChoice implements TourModeChoice {
             } else if (randomNumber < 0.4){
                 mode = Mode.BIKE;
             } else  if (randomNumber < 0.7){
-                mode = Mode.CAR;
+                mode = Mode.CAR_DRIVER;
             } else  if (randomNumber < 0.8){
                 mode = Mode.BUS;
             } else  if (randomNumber < 0.9){
@@ -53,7 +53,7 @@ public class SimpleTourModeChoice implements TourModeChoice {
             if (randomNumber < 0.3){
                 mode = Mode.BIKE;
             } else  if (randomNumber < 0.6){
-                mode = Mode.CAR;
+                mode = Mode.CAR_DRIVER;
             } else  if (randomNumber < 0.75){
                 mode = Mode.BUS;
             } else  if (randomNumber < 0.85){
@@ -66,7 +66,7 @@ public class SimpleTourModeChoice implements TourModeChoice {
             if (randomNumber < 0.1){
                 mode = Mode.BIKE;
             } else  if (randomNumber < 0.6){
-                mode = Mode.CAR;
+                mode = Mode.CAR_DRIVER;
             } else  if (randomNumber < 0.75){
                 mode = Mode.BUS;
             } else  if (randomNumber < 0.85){
@@ -79,7 +79,7 @@ public class SimpleTourModeChoice implements TourModeChoice {
             if (randomNumber < 0.05){
                 mode = Mode.BIKE;
             } else  if (randomNumber < 0.8){
-                mode = Mode.CAR;
+                mode = Mode.CAR_DRIVER;
             } else  if (randomNumber < 0.85){
                 mode = Mode.BUS;
             } else  if (randomNumber < 0.90){
