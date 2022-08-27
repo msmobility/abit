@@ -15,8 +15,9 @@ public class Zone implements Location, Id {
 
     private int id;
     private BBSRType BBSRType;
-    private RegionalType regioType;
-    private UrbanRuralType urbanRuralType;
+    private RegioStaR2 regioStaR2Type;
+    private RegioStaR7 regioStaR7Type;
+    private RegioStaRGem5 regioStaRGem5Type;
     private Geometry geometry;
     private String name;
 
@@ -57,12 +58,16 @@ public class Zone implements Location, Id {
         this.name = name;
     }
 
-    public RegionalType getRegionalType() {
-        return regioType;
+    public RegioStaR7 getRegioStaR7Type() {
+        return regioStaR7Type;
     }
 
-    public UrbanRuralType getUrbanRuralType() {
-        return urbanRuralType;
+    public RegioStaR2 getRegioStaR2Type() {
+        return regioStaR2Type;
+    }
+
+    public RegioStaRGem5 getRegioStaRGem5Type() {
+        return regioStaRGem5Type;
     }
 
     @Override
