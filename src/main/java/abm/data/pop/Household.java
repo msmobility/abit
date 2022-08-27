@@ -37,7 +37,7 @@ public class Household {
 
 
     public EconomicStatus getEconomicStatus() {
-        return EconomicStatus.HIGH;
+        return EconomicStatus.from1601to2400;
     }
 
     public int getNumberOfCars() {
