@@ -19,4 +19,4 @@ public enum AgeGroup {
             return from70;
         }
     }
-    }
+}
