@@ -13,9 +13,9 @@ import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
-public class SplitByTypeModeTest {
+public class SplitByTypeModelTest {
 
-    final static Logger logger = Logger.getLogger(SplitByTypeModeTest.class);
+    final static Logger logger = Logger.getLogger(SplitByTypeModelTest.class);
 
     @Test
     public void test() {
