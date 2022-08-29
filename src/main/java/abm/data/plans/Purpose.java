@@ -16,7 +16,8 @@ public enum Purpose implements Id {
     ACCOMPANY,
     SHOPPING,
     OTHER,
-    RECREATION;
+    RECREATION,
+    SUBTOUR;
 
     public static Set<Purpose> getMandatoryPurposes(){
         Set<Purpose> purposes = new HashSet<>();
