@@ -7,7 +7,8 @@ public enum Mode {
     TRAIN,
     TRAM_METRO,
     BUS,
-    CAR,
+    CAR_DRIVER,
+    CAR_PASSENGER,
     BIKE,
     WALK,
     UNKNOWN;
@@ -24,7 +25,8 @@ public enum Mode {
         modes.add(TRAIN);
         modes.add(TRAM_METRO);
         modes.add(BUS);
-        modes.add(CAR);
+        modes.add(CAR_DRIVER);
+        modes.add(CAR_PASSENGER);
         modes.add(BIKE);
         modes.add(WALK);
         return modes;

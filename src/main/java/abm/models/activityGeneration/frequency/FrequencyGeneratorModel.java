@@ -1,24 +1,26 @@
 package abm.models.activityGeneration.frequency;
 
 import abm.data.DataSet;
-import abm.data.geo.BBSRType;
-import abm.data.geo.RegionalType;
-import abm.data.geo.UrbanRuralType;
+import abm.data.geo.RegioStaR2;
+import abm.data.geo.RegioStaR7;
+import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
-import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
-import abm.data.pop.Household;
-import abm.data.pop.Person;
+import abm.data.pop.*;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
+import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class FrequencyGeneratorModel implements FrequencyGenerator {
@@ -26,13 +28,11 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     private static final Logger logger = Logger.getLogger(FrequencyGeneratorModel.class);
 
-
     private final DataSet dataSet;
     private final Purpose purpose;
 
     private Map<String, Double> zeroCoef;
     private final Map<String, Double> countCoef;
-
 
     public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose) {
         this.dataSet = dataSet;
@@ -45,7 +45,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             this.countCoef =
                     new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
                             Path.of(AbitResources.instance.getString("actgen.mand.count"))).readCoefficients();
-        } else if (purpose.equals(Purpose.ACCOMPANY)){
+        } else if (purpose.equals(Purpose.ACCOMPANY)) {
             this.zeroCoef =
                     new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
                             Path.of(AbitResources.instance.getString("actgen.ac-rr.zero"))).readCoefficients();
@@ -66,8 +66,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
             numOfActivity = polrEstimateTrips(person);
-        } else if (purpose.equals(Purpose.ACCOMPANY)){
-          numOfActivity = hurdleEstimateTrips(person);
+        } else if (purpose.equals(Purpose.ACCOMPANY)) {
+            numOfActivity = hurdleEstimateTrips(person);
         } else {
             numOfActivity = nbEstimateTrips(person);
         }
@@ -139,16 +139,17 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         double prob = 1 - Math.exp(p0_zero);
         cumProb += prob;
 
-        while(randomNumber > cumProb) {
+        while (randomNumber > cumProb) {
             i++;
             prob = Math.exp(logphi + Math.log(nb.prob(i)));
             cumProb += prob;
         }
-        return(i);
+        return (i);
     }
 
     /**
      * Negative binomial
+     *
      * @param pp
      * @return
      */
@@ -162,11 +163,11 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         int i = 0;
         double cumProb = nb.prob(0);
 
-        while(randomNumber > cumProb) {
+        while (randomNumber > cumProb) {
             i++;
             cumProb += nb.prob(i);
         }
-        return(i);
+        return (i);
     }
 
     /**
@@ -183,36 +184,103 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         // Intercept
         predictor += coefficients.get("(Intercept)");
 
-        //Area type
         Zone zone = dataSet.getZones().get(hh.getLocation().getZoneId());
 
-        BBSRType bbsr = zone.getBBSRType(); //hh.municipalityType_51-54
-        switch (bbsr) {
-            case CORE_CITY:
-                predictor += coefficients.get("hh.municipalityType_51");
-                break;
-            case MEDIUM_SIZED_CITY:
-                predictor += coefficients.get("hh.municipalityType_52");
-                break;
-            case TOWN:
-                predictor += coefficients.get("hh.municipalityType_53");
-                break;
-            case RURAL:
-                predictor += coefficients.get("hh.municipalityType_54");
+        //Todo It seems like MOP doesn't have BBSR type, but the regioStaRGem5. Ask Joanna for double checking
+//        BBSRType bbsr = zone.getBBSRType(); //hh.municipalityType_51-54
+//        switch (bbsr) {
+//            case CORE_CITY:
+//                predictor += coefficients.get("hh.municipalityType_51");
+//                break;
+//            case MEDIUM_SIZED_CITY:
+//                predictor += coefficients.get("hh.municipalityType_52");
+//                break;
+//            case TOWN:
+//                predictor += coefficients.get("hh.municipalityType_53");
+//                break;
+//            case RURAL:
+//                predictor += coefficients.get("hh.municipalityType_54");
+//                break;
+//        }
+
+        RegioStaR2 regioStrR2 = zone.getRegioStaR2Type();
+        switch (regioStrR2){
+            case URBAN:
+                predictor += coefficients.get("hh.urban");
                 break;
         }
 
-        RegionalType regioType = zone.getRegionalType();
-        //todo add switch after the definition is added
+        RegioStaR7 regioStaR7 = zone.getRegioStaR7Type();
+        switch (regioStaR7) {
+            case URBAN_METROPOLIS:
+                predictor += coefficients.get("hh.regionType_71");
+                break;
+            case URBAN_REGIOPOLIS:
+                predictor += coefficients.get("hh.regionType_72");
+                break;
+            case URBAN_MEDIUM_SIZED_CITY:
+                predictor += coefficients.get("hh.regionType_73");
+                break;
+            case URBAN_PROVINCIAL:
+                predictor += coefficients.get("hh.regionType_74");
+                break;
+            case RURAL_CENTRAL_CITY:
+                predictor += coefficients.get("hh.regionType_75");
+                break;
+            case RURAL_URBAN_AREA:
+                predictor += coefficients.get("hh.regionType_76");
+                break;
+            case RURAL_PROVICIAL:
+                predictor += coefficients.get("hh.regionType_77");
+                break;
+        }
 
-        UrbanRuralType urbanRuralType = zone.getUrbanRuralType();
-        //todo add switch after the definition is added
+        RegioStaRGem5 regioStaRGem5 = zone.getRegioStaRGem5Type();
+        switch (regioStaRGem5) {
+            case METROPOLIS:
+                predictor += coefficients.get("hh.municipalityType_51");
+                break;
+            case REGIOPOLIS_LARGE_CITY:
+                predictor += coefficients.get("hh.municipalityType_52");
+                break;
+            case CENTRAL_CITY:
+                predictor += coefficients.get("hh.municipalityType_53");
+                break;
+            case URBAN_AREA:
+                predictor += coefficients.get("hh.municipalityType_54");
+                break;
+            case PROVINCIAL_RURAL:
+                predictor += coefficients.get("hh.municipalityType_55");
+                break;
+        }
 
-        //Economic status
-        //todo still missing oecstatus object
+        // Refer to the EconomicStatus class for more information
+        EconomicStatus economicStatus = pp.getHousehold().getEconomicStatus();
+        switch (economicStatus){
+            case from0to800:
+                predictor += coefficients.get("hh.econStatus_1");
+                break;
+            case from801to1600:
+                predictor += coefficients.get("hh.econStatus_2");
+                break;
+            case from1601to2400:
+                predictor += coefficients.get("hh.econStatus_3");
+                break;
+            case from2401:
+                predictor += coefficients.get("hh.econStatus_4");
+                break;
+        }
+
+        //Todo check with Joanna, what is hh.notEmployed
+        int numUnemployedInHh = 0;
+        for (Person person: pp.getHousehold().getPersons()){
+            if (!person.getOccupation().equals(Occupation.EMPLOYED)){
+                numUnemployedInHh += 1;
+            }
+        }
+        predictor += numUnemployedInHh * coefficients.get("hh.notEmployed");
 
 
-        // Household size
         int householdSize = hh.getPersons().size();
         if (householdSize == 2) {
             predictor += coefficients.get("hh.size_2");
@@ -257,9 +325,57 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             }
         }
 
-        switch (pp.getOccupation()){
+        int age = pp.getAge();
+        predictor += age * coefficients.get("p.age");
 
+        AgeGroup ageGroup = AgeGroup.assignAgeGroup(age);
+        switch (ageGroup) {
+            case from0to18:
+                predictor += coefficients.get("p.age_gr_1");
+                break;
+            case from19to29:
+                predictor += coefficients.get("p.age_gr_2");
+                break;
+            case from30to49:
+                predictor += coefficients.get("p.age_gr_3");
+                break;
+            case from50to59:
+                predictor += coefficients.get("p.age_gr_4");
+                break;
+            case from60to69:
+                predictor += coefficients.get("p.age_gr_5");
+                break;
+            case from70:
+                predictor += coefficients.get("p.age_gr_6");
+                break;
+        }
 
+        AgeGroupFine ageGroupFine = AgeGroupFine.assignAgeGroupFine(age);
+        switch (ageGroupFine) {
+            case from0to18:
+                predictor += coefficients.get("p.age_gr_fine_1");
+                break;
+            case from19to24:
+                predictor += coefficients.get("p.age_gr_fine_2");
+                break;
+            case from25to29:
+                predictor += coefficients.get("p.age_gr_fine_3");
+                break;
+            case from30to49:
+                predictor += coefficients.get("p.age_gr_fine_4");
+                break;
+            case from50to59:
+                predictor += coefficients.get("p.age_gr_fine_5");
+                break;
+            case from60to69:
+                predictor += coefficients.get("p.age_gr_fine_6");
+                break;
+            case from70:
+                predictor += coefficients.get("p.age_gr_fine_7");
+                break;
+        }
+
+        switch (pp.getOccupation()) {
             case STUDENT:
                 predictor += coefficients.get("p.occupationStatus_Student");
                 break;
@@ -267,7 +383,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 //todo move this into the person reader and then define a partTime variable status?
                 final Tour workTour = pp.getPlan().getTours().values().stream().
                         filter(t -> t.getMainActivity().getPurpose().equals(Purpose.WORK)).findAny().orElse(null);
-                if (workTour != null){
+                if (workTour != null) {
                     if (workTour.getMainActivity().getDuration() > 6 * 60) {
                         predictor += coefficients.get("p.occupationStatus_Employed");
                     } else {
@@ -290,115 +406,99 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         //carlos added this for testing - needs check
 
 
-//        // Household in urban region
-//        if(!(hh.getHomeZone().getAreaTypeR().equals(AreaTypes.RType.RURAL))) {
-//            predictor += coefficients.get("hh.urban");
-//        }
-//
-//        // Household autos
-//        int householdAutos = hh.getAutos();
-//        if(householdAutos == 1) {
-//            predictor += coefficients.get("hh.cars_1");
-//        }
-//        else if(householdAutos == 2) {
-//            predictor += coefficients.get("hh.cars_2");
-//        }
-//        else if(householdAutos >= 3) {
-//            predictor += coefficients.get("hh.cars_3");
-//        }
-//
-//        // Autos per adult
-//        int householdAdults = householdSize - householdChildren;
-//        double autosPerAdult = Math.min((double) hh.getAutos() / (double) householdAdults , 1.0);
-//        predictor += autosPerAdult * coefficients.get("hh.autosPerAdult");
-//
-//        // Age
-//        int age = pp.getAge();
-//        if (age <= 18) {
-//            predictor += coefficients.get("p.age_gr_1");
-//        }
-//        else if (age <= 29) {
-//            predictor += coefficients.get("p.age_gr_2");
-//        }
-//        else if (age <= 49) {
-//            predictor += coefficients.get("p.age_gr_3");
-//        }
-//        else if (age <= 59) {
-//            predictor += coefficients.get("p.age_gr_4");
-//        }
-//        else if (age <= 69) {
-//            predictor += coefficients.get("p.age_gr_5");
-//        }
-//        else {
-//            predictor += coefficients.get("p.age_gr_6");
-//        }
-//
-//        // Female
-//        if (pp.getMitoGender().equals(MitoGender.FEMALE)) {
-//            predictor += coefficients.get("p.female");
-//        }
-//
-//        // Has drivers Licence
-//        if (pp.hasDriversLicense()) {
-//            predictor += coefficients.get("p.driversLicense");
-//        }
-//
-//        // Has bicycle
-//        if (pp.hasBicycle()) {
-//            predictor += coefficients.get("p.ownBicycle");
-//        }
-//
-//        // Mito occupation Status
-//        MitoOccupationStatus occupationStatus = pp.getMitoOccupationStatus();
-//        if (occupationStatus.equals(MitoOccupationStatus.STUDENT)) {
-//            predictor += coefficients.get("p.occupationStatus_Student");
-//        } else if (occupationStatus.equals(MitoOccupationStatus.UNEMPLOYED)) {
-//            predictor += coefficients.get("p.occupationStatus_Unemployed");
-//        }
-//
-//        // Work trips & mean distance
-//        List<MitoTrip> workTrips = pp.getTripsForPurpose(Purpose.HBW);
-//        int workTripCount = workTrips.size();
-//        if(workTripCount > 0) {
-//            if (workTripCount == 1) {
-//                predictor += coefficients.get("p.workTrips_1");
-//            } else if (workTripCount == 2) {
-//                predictor += coefficients.get("p.workTrips_2");
-//            } else if (workTripCount == 3) {
-//                predictor += coefficients.get("p.workTrips_3");
-//            } else if (workTripCount == 4) {
-//                predictor += coefficients.get("p.workTrips_4");
-//            } else {
-//                predictor += coefficients.get("p.workTrips_5");
-//            }
-//            int homeZoneId = pp.getHousehold().getZoneId();
-//            double meanWorkKm = workTrips.stream().
-//                    mapToDouble(t -> dataSet.getTravelDistancesNMT().
-//                            getTravelDistance(homeZoneId, t.getTripDestination().getZoneId())).average().getAsDouble();
-//            predictor += Math.log(meanWorkKm) * coefficients.get("p.log_km_mean_HBW");
-//        }
-//
-//        // Education trips & mean distance
-//        List<MitoTrip> eduTrips = pp.getTripsForPurpose(Purpose.HBE);
-//        int eduTripCount = eduTrips.size();
-//        if(eduTripCount > 0) {
-//            if (eduTripCount == 1) {
-//                predictor += coefficients.get("p.eduTrips_1");
-//            } else if (eduTripCount == 2) {
-//                predictor += coefficients.get("p.eduTrips_2");
-//            } else if (eduTripCount == 3) {
-//                predictor += coefficients.get("p.eduTrips_3");
-//            } else if (eduTripCount == 4) {
-//                predictor += coefficients.get("p.eduTrips_4");
-//            } else {
-//                predictor += coefficients.get("p.eduTrips_5");
-//            }
-//            int homeZoneId = pp.getHousehold().getZoneId();
-//            double meanWorkKm = eduTrips.stream().
-//                    mapToDouble(t -> dataSet.getTravelDistancesNMT().
-//                            getTravelDistance(homeZoneId, t.getTripDestination().getZoneId())).average().getAsDouble();
-//            predictor += Math.log(meanWorkKm) * coefficients.get("p.log_km_mean_HBW");
-//        }
+        if (pp.getGender().equals(Gender.FEMALE)) {
+            predictor += coefficients.get("p.female");
+        }
+
+        if (pp.isHasLicense()) {
+            predictor += coefficients.get("p.driversLicense");
+        }
+
+        if (pp.hasBicycle()) {
+            predictor += coefficients.get("p.ownBicycle");
+        }
+
+        int householdAutos = hh.getNumberOfCars();
+        if (householdAutos == 1) {
+            predictor += coefficients.get("hh.cars_1");
+        } else if (householdAutos == 2) {
+            predictor += coefficients.get("hh.cars_2");
+        } else if (householdAutos >= 3) {
+            predictor += coefficients.get("hh.cars_3");
+        }
+
+        switch (pp.getHabitualMode()){
+            case CAR_DRIVER:
+                predictor += coefficients.get("p.t_mand_habmode_car");
+                break;
+            case BIKE:
+                predictor += coefficients.get("p.t_mand_habmode_cycle");
+                break;
+            case BUS:
+            case TRAM_METRO:
+            case TRAIN:
+                predictor += coefficients.get("p.t_mand_habmode_PT");
+                break;
+            case WALK:
+                predictor += coefficients.get("p.t_mand_habmode_walk");
+                break;
+        }
+
+        switch (purpose) {
+            case WORK:
+                predictor += coefficients.get("act.purpose_work");
+                break;
+            case EDUCATION:
+                predictor += coefficients.get("act.purpose_education");
+                break;
+            case ACCOMPANY:
+                predictor += coefficients.get("act.purpose_accompany");
+                break;
+            case SHOPPING:
+                predictor += coefficients.get("act.purpose_shop");
+                break;
+            case RECREATION:
+                predictor += coefficients.get("act.purpose_recreation");
+                break;
+            case OTHER:
+                predictor += coefficients.get("act.purpose_other");
+                break;
+            case HOME:
+                predictor += coefficients.get("act.purpose_home");
+                break;
+        }
+
+        int numDaysWork = 0;
+        int numDaysEducation = 0;
+
+        if (Purpose.getDiscretionaryPurposes().contains(purpose)) {
+
+            final List<Tour> tourList = pp.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+
+            int[] daysOfWork = new int[]{0, 0, 0, 0, 0, 0, 0};
+            int[] daysOfEducation = new int[]{0, 0, 0, 0, 0, 0, 0};
+
+            for (Tour tour : tourList) {
+
+                if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
+                    int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
+                    if (daysOfWork[dayOfWeek - 1] == 0) {
+                        daysOfWork[dayOfWeek - 1] = 1;
+                    }
+                } else {
+                    int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
+                    if (daysOfEducation[dayOfWeek - 1] == 0) {
+                        daysOfEducation[dayOfWeek - 1] = 1;
+                    }
+                }
+            }
+
+            numDaysWork = Arrays.stream(daysOfWork).sum();
+            numDaysEducation = Arrays.stream(daysOfEducation).sum();
+        }
+
+        predictor += numDaysWork * coefficients.get("num_days_edu");
+        predictor += numDaysEducation * coefficients.get("num_days_work");
 
         return predictor;
     }

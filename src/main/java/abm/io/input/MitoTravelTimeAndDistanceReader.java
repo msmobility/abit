@@ -31,7 +31,7 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
 
         String carFile = AbitResources.instance.getString("car.omx.file");
         String carMatrixName  = AbitResources.instance.getString("car.omx.matrix");
-        travelTimes.readSkim(Mode.CAR.toString(), carFile, carMatrixName, 1/60.);
+        travelTimes.readSkim(Mode.CAR_DRIVER.toString(), carFile, carMatrixName, 1/60.);
 
         String busFile  = AbitResources.instance.getString("car.omx.file");
         String busMatrixName  = AbitResources.instance.getString("car.omx.matrix");

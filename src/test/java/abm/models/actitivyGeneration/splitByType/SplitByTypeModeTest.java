@@ -6,12 +6,10 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
-import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
-import junitx.framework.Assert;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 
@@ -33,7 +31,7 @@ public class SplitByTypeModeTest {
         Person person = new Person(1, household, 36, Gender.FEMALE,
                 Relationship.married, Occupation.EMPLOYED, true, null, 10000, null);
         Plan.initializePlan(person);
-        person.setHabitualMode(Mode.CAR);
+        person.setHabitualMode(Mode.CAR_DRIVER);
         Activity activity = new Activity(person, Purpose.ACCOMPANY);
 
         DiscretionaryActivityType discretionaryActivityType = new SplitByTypeModel(dataSet).assignActivityType(activity, person);
@@ -69,7 +67,7 @@ public class SplitByTypeModeTest {
                     workActivity.setStartTime_min(9*60);
                     workActivity.setEndTime_min(18*60);
                     person.getPlan().getTours().put(8*60, new Tour(workActivity));
-                    person.setHabitualMode(Mode.CAR);
+                    person.setHabitualMode(Mode.CAR_DRIVER);
                     household.getPersons().add(person);
                 }
 
