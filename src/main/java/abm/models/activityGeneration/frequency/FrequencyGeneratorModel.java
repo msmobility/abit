@@ -288,8 +288,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             predictor += coefficients.get("hh.size_3");
         } else if (householdSize == 4) {
             predictor += coefficients.get("hh.size_4");
-        } else {
-            assert (householdSize >= 5);
+        } else if (householdSize >= 5){
+            //assert (householdSize >= 5); what is assert?
             predictor += coefficients.get("hh.size_5");
         }
 
@@ -362,7 +362,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 predictor += coefficients.get("p.age_gr_fine_3");
                 break;
             case from30to49:
-                predictor += coefficients.get("p.age_gr_fine_4");
+                //predictor += coefficients.get("p.age_gr_fine_4");
+                //is the reference and it is not added to the tables (perhaps it should)
                 break;
             case from50to59:
                 predictor += coefficients.get("p.age_gr_fine_5");
@@ -444,7 +445,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 break;
         }
 
-        switch (purpose) {
+        /*switch (purpose) {
             case WORK:
                 predictor += coefficients.get("act.purpose_work");
                 break;
@@ -466,7 +467,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             case HOME:
                 predictor += coefficients.get("act.purpose_home");
                 break;
-        }
+        }*/
+        //these coefficients do not exist in the act generation models
 
         int numDaysWork = 0;
         int numDaysEducation = 0;

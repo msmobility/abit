@@ -1,8 +1,7 @@
 package abm.io.input;
 
 import abm.data.DataSet;
-import abm.data.geo.BBSRType;
-import abm.data.geo.Zone;
+import abm.data.geo.*;
 import abm.properties.AbitResources;
 import org.apache.log4j.Logger;
 import org.locationtech.jts.geom.Geometry;
@@ -49,6 +48,12 @@ public class ZoneReader implements Reader {
             if (areaType != null) {
                 zone.setAreaType1(BBSRType.valueOf(Integer.parseInt(areaType.toString())));
             }
+
+            //todo temporary assignment of zones, need to be extracted from the shapefile or any other file
+            zone.setRegioStaR2Type(RegioStaR2.URBAN);
+            zone.setRegioStaRGem5Type(RegioStaRGem5.METROPOLIS);
+            zone.setRegioStaR7Type(RegioStaR7.URBAN_METROPOLIS);
+
 
             dataSet.getZones().put(zoneId, zone);
             zoneCounter++;

@@ -86,36 +86,39 @@ public class PlanTools {
      *
      * @param subTourActivity
      */
-    public void addSubtour(Plan plan, Activity subTourActivity) {
-        Activity mainActivity = null;
-        Tour tour = null;
-        //the search in the following may be not necessary or need to be adapted later
-        for (Tour candidateTour : plan.getTours().values()) {
-            Activity candidateActivity = candidateTour.getMainActivity();
-            if (subTourActivity.getStartTime_min() > candidateActivity.getStartTime_min() && subTourActivity.getEndTime_min() < candidateActivity.getEndTime_min()) {
-                mainActivity = candidateActivity;
-                tour = candidateTour;
-                break;
-            }
-        }
-        //add subtour
-        Tour subtour = new Tour(subTourActivity);
-        tour.getSubtours().put(subTourActivity.getStartTime_min(), subtour);
+    public void addSubtour(Plan plan, Activity subTourActivity, Tour tour) {
+        Activity mainActivity = tour.getMainActivity();
+
+
+
         //add the new activity and break the main activity of the tour
-
-
         if (mainActivity != null) {
             int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
             int previousEndOfMainActivity = mainActivity.getEndTime_min();
-            mainActivity.setEndTime_min(subTourActivity.getStartTime_min() - timeToSubTourActivity);
             Leg previousLegFromMainActivity = tour.getLegs().get(mainActivity);
-            subtour.getLegs().put(mainActivity.getEndTime_min(), new Leg(mainActivity, subTourActivity));
+
+            //cut the main activity to its first part
+            mainActivity.setEndTime_min(subTourActivity.getStartTime_min() - timeToSubTourActivity);
+
+            //adds a leg to the subtour
+            tour.getLegs().put(mainActivity.getEndTime_min(), new Leg(mainActivity, subTourActivity));
+
+            //adds the subtour activity
+            tour.getActivities().put(subTourActivity.getStartTime_min(), subTourActivity);
+
+            //adds the second part of the main activity
             Activity secondMainActivity = new Activity(mainActivity.getPerson(), mainActivity.getPurpose());
             secondMainActivity.setStartTime_min(subTourActivity.getEndTime_min() + timeToSubTourActivity);
             secondMainActivity.setEndTime_min(previousEndOfMainActivity);
             secondMainActivity.setLocation(mainActivity.getLocation());
             tour.getActivities().put(secondMainActivity.getStartTime_min(), secondMainActivity);
-            subtour.getLegs().put(subTourActivity.getEndTime_min(), new Leg(subTourActivity, secondMainActivity));
+
+
+            //adds the return leg from the subtour
+            final Leg secondSubtourLeg = new Leg(subTourActivity, secondMainActivity);
+            tour.getLegs().put(subTourActivity.getEndTime_min(), secondSubtourLeg);
+
+            //adds the final leg (and remove the older one, since it is indexed by the previous main activity)
             tour.getLegs().remove(mainActivity);
             tour.getLegs().put(secondMainActivity.getEndTime_min(), new Leg(secondMainActivity, previousLegFromMainActivity.getNextActivity()));
         } else {

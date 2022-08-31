@@ -120,9 +120,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             logger.error("Negative probabilities for person " + person.getId() + "'s habitual mode");
             person.setHabitualMode(Mode.UNKNOWN);
         }
-
-        person.setHabitualMode(Mode.UNKNOWN);
-
     }
 
     private double calculateUtilityForThisMode(Mode mode, Person person) {

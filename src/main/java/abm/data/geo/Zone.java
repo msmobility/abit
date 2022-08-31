@@ -70,6 +70,18 @@ public class Zone implements Location, Id {
         return regioStaRGem5Type;
     }
 
+    public void setRegioStaR2Type(RegioStaR2 regioStaR2Type) {
+        this.regioStaR2Type = regioStaR2Type;
+    }
+
+    public void setRegioStaR7Type(RegioStaR7 regioStaR7Type) {
+        this.regioStaR7Type = regioStaR7Type;
+    }
+
+    public void setRegioStaRGem5Type(RegioStaRGem5 regioStaRGem5Type) {
+        this.regioStaRGem5Type = regioStaRGem5Type;
+    }
+
     @Override
     public int getId() {
         return id;
