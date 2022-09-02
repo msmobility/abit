@@ -47,7 +47,7 @@ public class DestinationChoiceModel implements DestinationChoice {
         return utilityMatrix;
     }
 
-    Map<Zone, Double> loadBasicAttraction() {
+    private Map<Zone, Double> loadBasicAttraction() {
 
         Map<Zone, Double> zoneAttractors = new HashMap<>();
         for (Zone z : dataSet.getZones().values()) {

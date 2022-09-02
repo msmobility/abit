@@ -86,12 +86,20 @@ public class PlanTools {
      *
      * @param subTourActivity
      */
-    public void addSubtour(Plan plan, Activity subTourActivity, Tour tour) {
+    public void addSubtour(Activity subTourActivity, Tour tour) {
         Activity mainActivity = tour.getMainActivity();
 
+        int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
+
+        final Subtour subtour = new Subtour(mainActivity, subTourActivity, timeToSubTourActivity);
+        mainActivity.setSubtour(subtour);
+        subtour.getOutboundLeg().setTravelTime_min(timeToSubTourActivity);
+        subtour.getInboundLeg().setTravelTime_min(timeToSubTourActivity);
 
 
-        //add the new activity and break the main activity of the tour
+
+
+       /* //add the new activity and break the main activity of the tour
         if (mainActivity != null) {
             int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
             int previousEndOfMainActivity = mainActivity.getEndTime_min();
@@ -124,7 +132,7 @@ public class PlanTools {
         } else {
             //trying to add a subtour without having a tour!
         }
-
+*/
     }
 
     /**

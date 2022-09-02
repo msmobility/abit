@@ -4,13 +4,14 @@ import abm.data.DataSet;
 import abm.data.plans.*;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
+import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.*;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
+import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
+import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
-import abm.properties.AbitResources;
-import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import org.apache.log4j.Logger;
 
@@ -19,6 +20,7 @@ import java.time.DayOfWeek;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class PlanGenerator implements Callable {
 
@@ -34,6 +36,11 @@ public class PlanGenerator implements Callable {
     private SplitByType splitByType;
     private SplitStopType stopSplitType;
 
+    private SubtourGenerator subtourGenerator;
+    private SubtourTimeAssignment subtourTimeAssignment;
+    private SubtourDestinationChoice subtourDestinationChoice;
+
+
     PlanTools planTools;
 
     private AtomicInteger counter;
@@ -42,6 +49,7 @@ public class PlanGenerator implements Callable {
     private final DataSet dataSet;
     private List<Person> persons;
     private final int thread;
+    private final SubtourModeChoice subtourModeChoice;
 
 
     public PlanGenerator(DataSet dataSet, ModelSetup modelSetup, int thread) {
@@ -60,6 +68,10 @@ public class PlanGenerator implements Callable {
         this.tourModeChoice = modelSetup.getTourModeChoice();
         this.habitualModeChoice = modelSetup.getHabitualModeChoice();
         this.frequencyGenerators = modelSetup.getFrequencyGenerator();
+        this.subtourGenerator = modelSetup.getSubtourGenerator();
+        this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
+        this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
+        this.subtourModeChoice = modelSetup.getSubtourModeChoice();
 
     }
 
@@ -183,6 +195,25 @@ public class PlanGenerator implements Callable {
         plan.getTours().values().forEach(tour -> {
             tourModeChoice.chooseMode(person, tour);
         });
+
+
+        List<Tour> mandatoryTours = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+
+        for (Tour tour : mandatoryTours){
+            boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour.getMainActivity());
+            if (hasSubtour){
+                Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
+                subtourActivity.setTour(tour);
+
+                subtourTimeAssignment.assignTimeToSubtourActivity(subtourActivity, tour.getMainActivity());
+                subtourDestinationChoice.chooseSubtourDestination(subtourActivity, tour.getMainActivity());
+                planTools.addSubtour(subtourActivity, tour);
+                subtourModeChoice.chooseSubtourMode(subtourActivity, tour.getMainActivity());
+
+
+            }
+        }
+
 
     }
 

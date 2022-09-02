@@ -46,8 +46,8 @@ public class TimeAssignmentModel implements TimeAssignment {
 
     private void calculateTypicalDurations() {
         //do not calculate but provide an average?
-        typicalDuration.put(Purpose.WORK, 8 * 60);
-        typicalDuration.put(Purpose.EDUCATION, 8 * 60);
+        typicalDuration.put(Purpose.WORK, 12 * 60);
+        typicalDuration.put(Purpose.EDUCATION, 12 * 60);
         typicalDuration.put(Purpose.SHOPPING, 25);
         typicalDuration.put(Purpose.RECREATION, 2 * 60);
         typicalDuration.put(Purpose.ACCOMPANY, 15);
@@ -172,7 +172,7 @@ public class TimeAssignmentModel implements TimeAssignment {
 
         //define duration
         int startTime;
-        int initialDuration = 2 * 60;
+        int initialDuration = typicalDuration.get(activity.getPurpose());
         TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
         AvailableTimeOfWeek availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
         availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration);

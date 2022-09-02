@@ -106,6 +106,14 @@ public class Leg {
             builder.append(-1);
         }
 
+        if (nextActivity.getSubtour() != null){
+            builder.append("\n");
+            builder.append(nextActivity.getSubtour().getOutboundLeg().toString());
+            builder.append("\n");
+            builder.append(nextActivity.getSubtour().getInboundLeg().toString());
+
+        }
+
         return builder.toString();
     }
 
