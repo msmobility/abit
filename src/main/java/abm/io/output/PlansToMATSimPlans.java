@@ -69,14 +69,52 @@ public class PlansToMATSimPlans {
 
                            matsimPlan.addLeg(PopulationUtils.createLeg(leg.getLegMode().toString().toLowerCase()));
 
-
                            if (!tour.getLegs().get(tour.getLegs().lastKey()).equals(leg)){
                                //only if this is not the last leg, the next activity is added
                                final Activity nextActivity = leg.getNextActivity();
-                               org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(nextActivity);
-                               nextMatsimActivity.setEndTime(nextActivity.getEndTime_min() * 60 - midnight_min * 60);
-                               matsimPlan.addActivity(nextMatsimActivity);
+                               if (nextActivity.getSubtour() != null){
+                                   //this activity has a subtour
+
+                                   final Leg outboundLeg = nextActivity.getSubtour().getOutboundLeg();
+
+
+
+                                   final Activity mainActivityPart1 = outboundLeg.getPreviousActivity();
+
+                                   org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(mainActivityPart1);
+                                   nextMatsimActivity.setEndTime(mainActivityPart1.getEndTime_min() * 60 - midnight_min * 60);
+                                   matsimPlan.addActivity(nextMatsimActivity);
+
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
+
+
+                                   final Activity subtourActivity = nextActivity.getSubtour().getSubtourActivity();
+
+                                   nextMatsimActivity = convertActivityToMATSim(subtourActivity);
+                                   nextMatsimActivity.setEndTime(subtourActivity.getEndTime_min() * 60 - midnight_min * 60);
+                                   matsimPlan.addActivity(nextMatsimActivity);
+
+                                   final Leg inboundLeg = nextActivity.getSubtour().getInboundLeg();
+
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
+
+                                   final Activity mainActivityPart2 = inboundLeg.getNextActivity();
+
+                                   nextMatsimActivity = convertActivityToMATSim(mainActivityPart2);
+                                   nextMatsimActivity.setEndTime(mainActivityPart2.getEndTime_min() * 60 - midnight_min * 60);
+                                   matsimPlan.addActivity(nextMatsimActivity);
+
+
+                               } else {
+                                   org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(nextActivity);
+                                   nextMatsimActivity.setEndTime(nextActivity.getEndTime_min() * 60 - midnight_min * 60);
+                                   matsimPlan.addActivity(nextMatsimActivity);
+                               }
+
+
+
                            }
+
                        }
                    }
                }
