@@ -91,7 +91,12 @@ public class PlanTools {
 
         int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
 
-        mainActivity.setSubtour(new Subtour(mainActivity, subTourActivity, timeToSubTourActivity));
+        final Subtour subtour = new Subtour(mainActivity, subTourActivity, timeToSubTourActivity);
+        mainActivity.setSubtour(subtour);
+        subtour.getOutboundLeg().setTravelTime_min(timeToSubTourActivity);
+        subtour.getInboundLeg().setTravelTime_min(timeToSubTourActivity);
+
+
 
 
        /* //add the new activity and break the main activity of the tour

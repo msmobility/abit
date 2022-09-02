@@ -4,6 +4,8 @@ import abm.data.DataSet;
 import abm.data.plans.Purpose;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
+import abm.models.activityGeneration.frequency.SimpleSubtourGenerator;
+import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SimpleSplitByType;
 import abm.models.activityGeneration.splitByType.SimpleSplitStopTypeModelWithAvailability;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -11,10 +13,9 @@ import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.DestinationChoice;
 import abm.models.destinationChoice.SimpleDestinationChoice;
-import abm.models.modeChoice.HabitualModeChoice;
-import abm.models.modeChoice.SimpleHabitualModeChoice;
-import abm.models.modeChoice.SimpleTourModeChoice;
-import abm.models.modeChoice.TourModeChoice;
+import abm.models.destinationChoice.SimpleSubtourDestination;
+import abm.models.destinationChoice.SubtourDestinationChoice;
+import abm.models.modeChoice.*;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -31,6 +32,10 @@ public class SimpleModelSetup implements ModelSetup {
     private static TimeAssignment timeAssignment;
     private static SplitByType splitByType;
     private static SplitStopType stopSplitType;
+    private final SubtourGenerator subtourGenerator;
+    private final SubtourTimeAssignment subtourTimeAssignment;
+    private final SubtourDestinationChoice subtourDestinationChoice;
+    private SubtourModeChoice subtourModeChoice;
 
     public SimpleModelSetup(DataSet dataSet) {
 
@@ -45,6 +50,10 @@ public class SimpleModelSetup implements ModelSetup {
         for (Purpose purpose : Purpose.getAllPurposes()){
             frequencyGenerators.put(purpose, new SimpleFrequencyGenerator());
         }
+        subtourGenerator = new SimpleSubtourGenerator();
+        subtourTimeAssignment = new SimpleSubtourTimeAssignment();
+        subtourDestinationChoice = new SimpleSubtourDestination();
+        subtourModeChoice = new SimpleSubtourModeChoice();
 
     }
 
@@ -82,5 +91,25 @@ public class SimpleModelSetup implements ModelSetup {
 
     public SplitStopType getStopSplitType() {
         return stopSplitType;
+    }
+
+    @Override
+    public SubtourGenerator getSubtourGenerator() {
+        return subtourGenerator;
+    }
+
+    @Override
+    public SubtourTimeAssignment getSubtourTimeAssignment() {
+        return subtourTimeAssignment;
+    }
+
+    @Override
+    public SubtourDestinationChoice getSubtourDestinationChoice() {
+        return subtourDestinationChoice;
+    }
+
+    @Override
+    public SubtourModeChoice getSubtourModeChoice() {
+        return subtourModeChoice;
     }
 }
