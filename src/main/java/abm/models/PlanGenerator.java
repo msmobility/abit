@@ -19,6 +19,7 @@ import java.time.DayOfWeek;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class PlanGenerator implements Callable {
 
@@ -183,6 +184,27 @@ public class PlanGenerator implements Callable {
         plan.getTours().values().forEach(tour -> {
             tourModeChoice.chooseMode(person, tour);
         });
+
+
+        List<Tour> mandatoryTours = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+
+        for (Tour tour : mandatoryTours){
+            boolean hasSubtour = true;
+            if (hasSubtour){
+                Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
+                subtourActivity.setTour(tour);
+                subtourActivity.setDayOfWeek(tour.getMainActivity().getDayOfWeek());
+                subtourActivity.setStartTime_min((tour.getMainActivity().getStartTime_min() + tour.getMainActivity().getEndTime_min())/2);
+                subtourActivity.setEndTime_min(subtourActivity.getStartTime_min() + 5);
+                subtourActivity.setLocation(tour.getMainActivity().getLocation());
+                planTools.addSubtour(subtourActivity, tour);
+
+                tour.getMainActivity().getSubtour().getInboundLeg().setLegMode(Mode.WALK);
+                tour.getMainActivity().getSubtour().getOutboundLeg().setLegMode(Mode.WALK);
+
+            }
+        }
+
 
     }
 
