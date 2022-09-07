@@ -127,8 +127,8 @@ public class PlanGenerator implements Callable {
                         Tour selectedTour = planTools.findMandatoryTour(plan);
                         activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                         //the order of time assignment and stopSplitByType is not yet decided
-                        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
                         timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
 
                         if (stopType != null) {
                             if (stopType.equals(StopType.BEFORE)) {
@@ -172,8 +172,8 @@ public class PlanGenerator implements Callable {
 
             Tour selectedTour = planTools.findDiscretionaryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
             timeAssignment.assignDurationToStop(activity);
+            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
             if (stopType != null) {
                 if (stopType.equals(StopType.BEFORE)) {
                     int tempTime = selectedTour.getActivities().firstKey();

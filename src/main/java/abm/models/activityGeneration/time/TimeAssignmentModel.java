@@ -169,32 +169,32 @@ public class TimeAssignmentModel implements TimeAssignment {
     public void assignStartTimeAndDuration(Activity activity) {
 
         final DayOfWeek dayOfWeek = activity.getDayOfWeek();
+        int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
+                Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
 
         //define duration
         int startTime;
         int initialDuration = typicalDuration.get(activity.getPurpose());
         TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
         AvailableTimeOfWeek availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
-        availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration);
+        availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration + travelTime);
         timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
         timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
         startTime = timeOfWeekDistribution.selectTime();
 
         int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
         int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
-        int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
-                Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
 
         if (newDuration + travelTime > initialDuration){
             //tour does not fit here! Make it shorter
-            newDuration = initialDuration - travelTime;
+            newDuration = initialDuration;
         }
 
-        if (newDuration < 0){
-            int minActDuration = 5;
-            startTime = startTime - newDuration - minActDuration;
-            newDuration = minActDuration;
-        }
+//        if (newDuration < 0){
+//            int minActDuration = 5;
+//            startTime = startTime - newDuration - minActDuration;
+//            newDuration = minActDuration;
+//        }
 
         activity.setStartTime_min(startTime);
         activity.setEndTime_min(startTime + newDuration);
