@@ -49,6 +49,8 @@ public class RunAbit {
 
         logger.info("Running plan generator using " + threads + " threads");
 
+        long start = System.currentTimeMillis();
+
         for (Household household : dataSet.getHouseholds().values()) {
             for (Person person : household.getPersons()) {
                 if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
@@ -67,6 +69,11 @@ public class RunAbit {
 
         executor.execute();
 
+        long end = System.currentTimeMillis();
+
+        long time = (end - start)/1000;
+
+        logger.info("Runtime = " + time + " Persons = " + dataSet.getPersons().size());
 
         logger.info("Printing out results");
         new OutputWriter(dataSet).run();
