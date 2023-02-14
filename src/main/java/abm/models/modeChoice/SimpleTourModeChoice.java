@@ -3,6 +3,7 @@ package abm.models.modeChoice;
 import abm.data.DataSet;
 import abm.data.plans.Leg;
 import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.Person;
 import abm.properties.InternalProperties;
@@ -16,6 +17,15 @@ public class SimpleTourModeChoice implements TourModeChoice {
         this.dataSet = dataSet;
     }
 
+    @Override
+    public void chooseMode(Person person, Tour tour, Purpose purpose) {
+
+    }
+
+    @Override
+    public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
+        return null;
+    }
 
     @Override
     public void chooseMode(Person person, Tour tour) {
