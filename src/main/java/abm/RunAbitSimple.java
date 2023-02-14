@@ -65,7 +65,7 @@ public class RunAbitSimple {
 
         executor.execute();
 
-        String outputFolder = "./output";
+        String outputFolder = AbitResources.instance.getString("base.directory") + "/output/";
 
         logger.info("Printing out results");
         try {
