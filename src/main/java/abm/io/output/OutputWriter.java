@@ -21,7 +21,7 @@ public class OutputWriter {
         try {
             final String runId = AbitResources.instance.getString("run.id");
             String outputFolder = AbitResources.instance.getString("base.directory") + "/output/" + runId + "/";
-            new File(outputFolder).mkdir();
+            new File(outputFolder).mkdirs();
 
             new ActivityPrinter(dataSet).print(outputFolder + "/activities.csv");
             new LegPrinter(dataSet).print(outputFolder + "/legs.csv");
