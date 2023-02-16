@@ -505,6 +505,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         return predictor;
     }
 
+
 //    @Override
 //    public Object call() throws Exception {
 //        return null;

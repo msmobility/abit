@@ -33,7 +33,8 @@ public class SimpleTourModeChoice implements TourModeChoice {
         double distance = 0;
 
         for (Leg leg : tour.getLegs().values()) {
-            distance += dataSet.getTravelDistances().getTravelDistanceInMeters(leg.getPreviousActivity().getLocation(), leg.getNextActivity().getLocation(), Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN);
+            distance += dataSet.getTravelDistances().getTravelDistanceInMeters(leg.getPreviousActivity().getLocation(),
+                    leg.getNextActivity().getLocation(), Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN);
         }
 
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
