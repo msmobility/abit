@@ -24,9 +24,11 @@ import de.tum.bgu.msm.data.MitoZone;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.matsim.core.utils.collections.Tuple;
+import org.matsim.households.Income;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class NestedLogitModeChoiceModel implements TourModeChoice{
@@ -83,14 +85,13 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     }
 
     @Override
-    public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable, double travelDistanceAuto) {
+    public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
         Household household = person.getHousehold();
 
         EnumMap<Mode, Double> utilities = new EnumMap<Mode, Double>(Mode.class);
         for (Mode mode : Mode.getModes()){
             if (mode == Mode.CAR_DRIVER && carAvailable) {
-                utilities.put(mode, calculateUtilityForThisMode(person, tour, purpose, mode, household,
-                travelDistanceAuto));
+                utilities.put(mode, calculateUtilityForThisMode(person, tour, purpose, mode, household));
             } else {
                 utilities.put(mode,Double.NEGATIVE_INFINITY);
             }
@@ -108,7 +109,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     }
 
     private double calculateUtilityForThisMode(Person person, Tour tour, Purpose purpose, Mode mode,
-                                               Household household, double travelDistanceAuto) {
+                                               Household household) {
     // Intercept
         double utility = purposeModeCoefficients.get(purpose).get(mode).get("INTERCEPT");
 
@@ -165,66 +166,114 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
             utility += 0;
         }
 
-        //todo. Change the calculator with data from the tour and person
-        EnumMap<Mode, Double> generalizedCosts = calculateGeneralizedCosts(purpose, household, travelDistanceAuto, tour);
+        //generalized costs
+        EnumMap<Mode, Double> generalizedCosts = calculateGeneralizedCosts(purpose, household, tour);
 
-        //todo. Calculate tours of the person to get utilities of mobility related attributes (missing)
             double gc = generalizedCosts.get(mode);
         utility += gc * purposeModeCoefficients.get(purpose).get(mode).get("gc");
+        
+        //number of days with work or education tours
+        int numDaysWork = 0;
+        int numDaysEducation = 0;
+        int numDaysMandatory = 0;
 
+        final List<Tour> tourList = person.getPlan().getTours().values().stream().filter(tourMandatory -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+
+        int[] daysOfWork = new int[]{0, 0, 0, 0, 0, 0, 0};
+        int[] daysOfEducation = new int[]{0, 0, 0, 0, 0, 0, 0};
+
+        for (Tour tourMandatory : tourList) {
+
+            if (tourMandatory.getMainActivity().getPurpose().equals(Purpose.WORK)) {
+                int dayOfWeek = tourMandatory.getMainActivity().getDayOfWeek().getValue();
+                if (daysOfWork[dayOfWeek - 1] == 0) {
+                        daysOfWork[dayOfWeek - 1] = 1;
+                }
+            } else {
+                int dayOfWeek = tourMandatory.getMainActivity().getDayOfWeek().getValue();
+                if (daysOfEducation[dayOfWeek - 1] == 0) {
+                    daysOfEducation[dayOfWeek - 1] = 1;
+                }
+            }
+        }
+
+        numDaysWork = Arrays.stream(daysOfWork).sum();
+        numDaysEducation = Arrays.stream(daysOfEducation).sum();
+        numDaysMandatory = numDaysWork + numDaysEducation;
+
+        utility += numDaysWork * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_edu",0.);
+        utility += numDaysEducation * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_work",0.);
+        utility += numDaysMandatory * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_mand",0.);
+
+        //tour purpose
+        if (purpose.equals(Purpose.EDUCATION)) {
+            utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("tour.purpose_education",0.);
+        } else{
+            utility += 0;
+        }
+
+        //number of stops on tour
+        if (tour.getActivities().size() >= 2) {
+            utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("tour.stops2orMore",0.);
+        } else{
+            utility += 0;
+        }
+
+
+
+        //habitual mode
+        switch (person.getHabitualMode()){
+            case CAR_DRIVER:
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_carD", 0.);
+                break;
+            case CAR_PASSENGER:
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_carP", 0.);
+                break;
+            case BIKE:
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_cycle", 0.);
+                break;
+            case BUS:
+            case TRAM_METRO:
+            case TRAIN:
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_PT", 0.);
+                break;
+            case WALK:
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_walk", 0.);
+                break;
+        }
 
         return utility;
     }
 
-    //todo. Remove the pointers to msm and replace by abit specific objects
+    //calculates generalized costs
     public EnumMap<Mode, Double> calculateGeneralizedCosts(Purpose purpose, Household household,
-                                                           double travelDistanceAuto, Tour tour) {
-        double timeAutoD = 0;
-        double timeAutoP = 0;
+                                                           Tour tour) {
+
+        double travelDistanceAuto = 0;
 
         for (Leg leg : tour.getLegs().values()) {
-            timeAutoD += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.CAR_DRIVER, leg.getPreviousActivity().getEndTime_min());
-            timeAutoP = timeAutoD;
+            travelDistanceAuto += dataSet.getTravelDistances().getTravelDistanceInMeters(leg.getPreviousActivity().getLocation(),
+                    leg.getNextActivity().getLocation(), Mode.CAR_DRIVER,leg.getPreviousActivity().getEndTime_min());
         }
 
-        double timeBus = 0;
-
-        for (Leg leg : tour.getLegs().values()) {
-            timeBus += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.BUS, leg.getPreviousActivity().getEndTime_min());
+        EnumMap<Mode, Double> tourTravelTimes = new EnumMap<Mode, Double>(Mode.class);
+        for (Mode mode : Mode.getModes()){
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                double travelTimeCarDriver = 0;
+                for (Leg leg : tour.getLegs().values()) {
+                    travelTimeCarDriver += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
+                            leg.getNextActivity().getLocation(), Mode.CAR_DRIVER, leg.getPreviousActivity().getEndTime_min());
+                }
+                tourTravelTimes.put(mode, travelTimeCarDriver);
+            } else {
+                double travelTimeMode = 0;
+                for (Leg leg : tour.getLegs().values()) {
+                    travelTimeMode += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
+                            leg.getNextActivity().getLocation(), mode, leg.getPreviousActivity().getEndTime_min());
+                }
+                tourTravelTimes.put(mode, travelTimeMode);
+            }
         }
-
-        double timeTrain = 0;
-
-        for (Leg leg : tour.getLegs().values()) {
-            timeTrain += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.TRAIN, leg.getPreviousActivity().getEndTime_min());
-        }
-
-        double timeTramMetro = 0;
-
-        for (Leg leg : tour.getLegs().values()) {
-            timeTramMetro += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.TRAM_METRO, leg.getPreviousActivity().getEndTime_min());
-        }
-
-        double gcWalk = 0;
-
-        for (Leg leg : tour.getLegs().values()) {
-            gcWalk += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.WALK, leg.getPreviousActivity().getEndTime_min());
-        }
-
-        double gcBicycle = 0;
-
-        for (Leg leg : tour.getLegs().values()) {
-            gcBicycle += dataSet.getTravelTimes().getTravelTimeInMinutes(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.BIKE, leg.getPreviousActivity().getEndTime_min());
-        }
-
-        int monthlyIncome_EUR = household.getPersons().stream().mapToInt(Person::getMonthlyIncome_eur).sum();
-
 
         double gcAutoD;
         double gcAutoP;
@@ -232,36 +281,37 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         double gcTrain;
         double gcTramMetro;
 
+        double monthlyIncome_EUR = household.getPersons().stream().mapToInt(Person::getMonthlyIncome_eur).sum();
 
         //todo. Add VOT table with the coefficients and rename
         if (monthlyIncome_EUR <= 1500) {
-            gcAutoD = timeAutoD + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
-            gcAutoP = timeAutoP + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
-            gcBus = timeBus + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
-            gcTrain = timeTrain + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
-            gcTramMetro = timeTramMetro + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
+            gcAutoD = tourTravelTimes.get(Mode.CAR_DRIVER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
+            gcAutoP = tourTravelTimes.get(Mode.CAR_PASSENGER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
+            gcBus = tourTravelTimes.get(Mode.BUS) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
+            gcTrain = tourTravelTimes.get(Mode.TRAIN) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
+            gcTramMetro = tourTravelTimes.get(Mode.TRAM_METRO) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
         } else if (monthlyIncome_EUR <= 5000) {
-            gcAutoD = timeAutoD + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_5_to_10");
-            gcAutoP = timeAutoP + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_5_to_10");
-            gcBus = timeBus + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_5_to_10");
-            gcTrain = timeTrain + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_5_to_10");
-            gcTramMetro = timeTramMetro + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_5_to_10");
+            gcAutoD = tourTravelTimes.get(Mode.CAR_DRIVER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_5_to_10");
+            gcAutoP = tourTravelTimes.get(Mode.CAR_PASSENGER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_5_to_10");
+            gcBus = tourTravelTimes.get(Mode.BUS) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_5_to_10");
+            gcTrain = tourTravelTimes.get(Mode.TRAIN) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_5_to_10");
+            gcTramMetro = tourTravelTimes.get(Mode.TRAM_METRO) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_5_to_10");
         } else {
-            gcAutoD = timeAutoD + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_greater_10");
-            gcAutoP = timeAutoP + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_greater_10");
-            gcBus = timeBus + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_greater_10");
-            gcTrain = timeTrain + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_greater_10");
-            gcTramMetro = timeTramMetro + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_greater_10");
+            gcAutoD = tourTravelTimes.get(Mode.CAR_DRIVER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_greater_10");
+            gcAutoP = tourTravelTimes.get(Mode.CAR_PASSENGER) + (travelDistanceAuto * fuelCostEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_greater_10");
+            gcBus = tourTravelTimes.get(Mode.BUS) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_greater_10");
+            gcTrain = tourTravelTimes.get(Mode.TRAIN) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_greater_10");
+            gcTramMetro = tourTravelTimes.get(Mode.TRAM_METRO)  + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_greater_10");
         }
 
         EnumMap<Mode, Double> generalizedCosts = new EnumMap<Mode, Double>(Mode.class);
         generalizedCosts.put(Mode.CAR_DRIVER, gcAutoD);
         generalizedCosts.put(Mode.CAR_PASSENGER, gcAutoP);
-        generalizedCosts.put(Mode.BIKE, gcBicycle);
+        generalizedCosts.put(Mode.BIKE, tourTravelTimes.get(Mode.BIKE));
         generalizedCosts.put(Mode.BUS, gcBus);
         generalizedCosts.put(Mode.TRAIN, gcTrain);
         generalizedCosts.put(Mode.TRAM_METRO, gcTramMetro);
-        generalizedCosts.put(Mode.WALK, gcWalk);
+        generalizedCosts.put(Mode.WALK, tourTravelTimes.get(Mode.WALK));
         return generalizedCosts;
 
     }
