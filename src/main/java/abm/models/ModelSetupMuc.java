@@ -42,7 +42,7 @@ public class ModelSetupMuc implements ModelSetup{
 
         dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
         tourModeChoice = new NestedLogitModeChoiceModel(dataSet);
-        habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
+        habitualModeChoice = new SimpleHabitualModeChoice();
         dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
 
         frequencyGenerators = new HashedMap();

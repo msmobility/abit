@@ -70,6 +70,12 @@ public class RunAbit {
 
         executor.execute();
 
+        //todo. summary (trip length frequency distribution, etc.)
+
+        //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
+
+        //todo. auto calibration outputs
+
         long end = System.currentTimeMillis();
 
         long time = (end - start)/1000;
