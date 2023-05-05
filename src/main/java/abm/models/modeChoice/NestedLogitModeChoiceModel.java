@@ -53,9 +53,14 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         for (Purpose purpose: Purpose.getAllPurposes()) {
             Map<Mode, Map<String, Double>> modeCoefficients = new HashMap<>();
             List<Tuple<EnumSet<abm.data.plans.Mode>, Double>> nestsByPurpose = new ArrayList<>();
-            Path pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "_" + purpose + ".csv");
+            Path pathToFilePurpose;
+            if (purpose == Purpose.EDUCATION || purpose == Purpose.WORK){
+                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "mandatoryMode_nestedLogit.csv");
+            } else {
+                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + purpose.toString().toLowerCase() + "Mode_nestedLogit.csv");
+            }
             for (Mode mode : Mode.getModes()) {
-                String columnName = mode.toString().toLowerCase() + "_" + purpose.toString().toLowerCase(); //todo review this
+                String columnName = mode.toString(); //todo review this
                 Map<String, Double> coefficients = new CoefficientsReader(dataSet, columnName, pathToFilePurpose).readCoefficients();
                 modeCoefficients.put(mode, coefficients);
                 if (mode == Mode.CAR_DRIVER){
@@ -171,7 +176,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
 
             double gc = generalizedCosts.get(mode);
         utility += gc * purposeModeCoefficients.get(purpose).get(mode).get("gc");
-        
+
         //number of days with work or education tours
         int numDaysWork = 0;
         int numDaysEducation = 0;

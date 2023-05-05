@@ -271,7 +271,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 break;
         }
 
-        //Todo check with Joanna, what is hh.notEmployed
         int numUnemployedInHh = 0;
         for (Person person: pp.getHousehold().getPersons()){
             if (!person.getOccupation().equals(Occupation.EMPLOYED)){
@@ -400,7 +399,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 predictor += coefficients.get("p.occupationStatus_Unemployed");
                 break;
             case TODDLER:
-                //todo is this like unemployed?
+                //todo is this like unemployed? Joanna: MOP has data from age 11+
                 predictor += coefficients.get("p.occupationStatus_Unemployed");
                 break;
         }
