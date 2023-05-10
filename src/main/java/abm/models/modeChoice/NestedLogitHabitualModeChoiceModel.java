@@ -64,7 +64,8 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         double expsumNestActive =
                 Math.exp(utilityBicycle / nestingCoefficientActiveModes) +
-                        Math.exp(utilityWalk / nestingCoefficientActiveModes);
+                        Math.exp(utilityWalk / nestingCoefficientActiveModes) +
+                        Math.exp(utilityPT / nestingCoefficientActiveModes) ;
 
         double expsumTopLevel =
                 Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) +
@@ -83,18 +84,23 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             probabilityAutoP = 0.0;
         }
 
-        double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
+        //double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
 
         double probabilityBike;
         double probabilityWalk;
+        double probabilityPT;
         if (expsumNestActive > 0) {
             probabilityBike =
                     (Math.exp(utilityBicycle / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
             probabilityWalk =
                     (Math.exp(utilityWalk / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
-        } else {
+            probabilityPT =
+                    (Math.exp(utilityPT / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
+
+    } else {
             probabilityBike = 0.0;
             probabilityWalk = 0.0;
+            probabilityPT = 0.0;
         }
 
         EnumMap<Mode, Double> probabilities = new EnumMap<>(Mode.class);
@@ -131,8 +137,11 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         utility += household.getPersons().size() * coefficients.get(mode).get("hh.size");
 
         int numAdults = (int) household.getPersons().stream().filter(p -> p.getAge() >= 18).count();
-        int numAutos = household.getNumberOfCars();
+        double numAutos = household.getNumberOfCars();
         double autosPerAdult = numAutos / numAdults;
+        if (autosPerAdult > 1) {
+            autosPerAdult = 1.0;
+        }
 
         utility += autosPerAdult * coefficients.get(mode).get("hh.autosPerAdult");
 
