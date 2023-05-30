@@ -53,10 +53,7 @@ public class RunAbitSimple {
                 final int i = 0;
                 personsByThread.putIfAbsent(i, new ArrayList<>());
                 personsByThread.get(i).add(person);
-
-
             }
-
         }
 
         for (int i = 0; i < threads; i++) {
