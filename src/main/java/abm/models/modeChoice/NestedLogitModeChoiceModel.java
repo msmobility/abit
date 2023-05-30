@@ -43,6 +43,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     private final static double fuelCostEurosPerKm = 0.065;
     private final static double transitFareEurosPerKm = 0.12;
 
+
     public NestedLogitModeChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
         this.purposeModeCoefficients = new HashMap<>();
