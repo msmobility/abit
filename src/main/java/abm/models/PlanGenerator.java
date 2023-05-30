@@ -104,7 +104,7 @@ public class PlanGenerator implements Callable {
         //List<Activity> discretionaryActivities = new ArrayList<>();
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             int numAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
-            for (int i = 0; i <= numAct; i++) {
+            for (int i = 0; i < numAct; i++) {
                 Activity activity = new Activity(person, purpose);
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
                 discretionaryActivitiesMap.get(purpose).add(activity);
