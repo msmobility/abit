@@ -22,7 +22,7 @@ public class Person {
     private boolean hasLicense;
     private Job job;
     private int monthlyIncome_eur;
-    private School schol;
+    private School school;
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
@@ -30,7 +30,7 @@ public class Person {
 //        this.id = id;
 //        this.household = household;
 //    }
-    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School schol) {
+    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School school) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -40,7 +40,7 @@ public class Person {
         this.hasLicense = hasLicense;
         this.job = job;
         this.monthlyIncome_eur = monthlyIncome_eur;
-        this.schol = schol;
+        this.school = school;
     }
 
     public int getAge() {
@@ -71,8 +71,8 @@ public class Person {
         return monthlyIncome_eur;
     }
 
-    public School getSchol() {
-        return schol;
+    public School getSchool() {
+        return school;
     }
 
     public Attributes getAttributes() {
