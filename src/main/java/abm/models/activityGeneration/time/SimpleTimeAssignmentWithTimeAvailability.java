@@ -31,7 +31,7 @@ public class SimpleTimeAssignmentWithTimeAvailability implements TimeAssignment 
         int probabilityIndex;
 
         try {
-            BufferedReader br = new BufferedReader(new FileReader("input/tod_dummy.csv"));
+            BufferedReader br = new BufferedReader(new FileReader("D:/code/abit/input/tod_dummy.csv"));
             String[] firstLine = br.readLine().split(",");
 
             timeIndex = MitoUtil.findPositionInArray("time", firstLine);
