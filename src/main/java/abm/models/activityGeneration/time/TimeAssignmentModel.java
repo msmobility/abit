@@ -10,10 +10,7 @@ import abm.data.timeOfDay.TimeOfDayUtils;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
-import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
-import org.locationtech.jts.awt.PointShapeFactory;
-import org.matsim.contrib.drt.optimizer.Waypoint;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
