@@ -13,6 +13,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
@@ -85,6 +86,8 @@ public class PlanGenerator implements Callable {
         Plan plan = Plan.initializePlan(person);
 
         habitualModeChoice.chooseHabitualMode(person);
+
+        //logger.info("Habitual mode completed for " + person.getId());
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
