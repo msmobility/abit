@@ -14,7 +14,6 @@ import abm.data.pop.Relationship;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 
 import abm.properties.AbitResources;
-import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import junitx.framework.Assert;

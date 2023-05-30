@@ -104,7 +104,7 @@ public class PlanGenerator implements Callable {
         //List<Activity> discretionaryActivities = new ArrayList<>();
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             int numAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
-            for (int i = 0; i <= numAct; i++) {
+            for (int i = 0; i < numAct; i++) {
                 Activity activity = new Activity(person, purpose);
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
                 discretionaryActivitiesMap.get(purpose).add(activity);
@@ -199,9 +199,9 @@ public class PlanGenerator implements Callable {
 
         List<Tour> mandatoryTours = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
-        for (Tour tour : mandatoryTours){
+        for (Tour tour : mandatoryTours) {
             boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour.getMainActivity());
-            if (hasSubtour){
+            if (hasSubtour) {
                 Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
                 subtourActivity.setTour(tour);
 
@@ -221,7 +221,7 @@ public class PlanGenerator implements Callable {
     @Override
     public Object call() throws Exception {
         AtomicInteger counter = new AtomicInteger(0);
-        for (Person person : this.persons){
+        for (Person person : this.persons) {
             createPlanForOnePerson(person);
             counter.incrementAndGet();
             final int i = counter.get();
