@@ -40,7 +40,7 @@ public class ModelSetupMuc implements ModelSetup{
     public ModelSetupMuc(DataSet dataSet) {
 
 
-        dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
+        dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
         tourModeChoice = new NestedLogitModeChoiceModel(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
