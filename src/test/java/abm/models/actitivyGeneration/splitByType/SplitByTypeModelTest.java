@@ -34,7 +34,7 @@ public class SplitByTypeModelTest {
         person.setHabitualMode(Mode.CAR_DRIVER);
         Activity activity = new Activity(person, Purpose.ACCOMPANY);
 
-        DiscretionaryActivityType discretionaryActivityType = new SplitByTypeModel(dataSet).assignActivityType(activity, person);
+        DiscretionaryActivityType discretionaryActivityType = new SplitByTypeModel(dataSet).assignActivityTypeOntoMandatory(activity, person);
 
         logger.info(discretionaryActivityType);
 

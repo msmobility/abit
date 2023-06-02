@@ -247,4 +247,10 @@ public class PlanTools {
         Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }
+
+    public static Tour findDiscretionaryTourByPurpose (Plan plan, Purpose purpose) {
+        final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose()==purpose).collect(Collectors.toList());
+        Collections.shuffle(tourList, AbitUtils.getRandomObject());
+        return tourList.stream().findFirst().orElse(null);
+    }
 }

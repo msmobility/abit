@@ -13,7 +13,6 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
-import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
@@ -122,7 +121,7 @@ public class PlanGenerator implements Callable {
 
         for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
             for (Activity activity : discretionaryActivitiesMap.get(purpose)) {
-                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActivityType(activity, person);
+                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActivityTypeOntoMandatory(activity, person);
                 activity.setDiscretionaryActivityType(discretionaryActivityType);
                 switch (discretionaryActivityType) {
                     case ON_MANDATORY_TOUR:
