@@ -94,9 +94,9 @@ public class PlanGenerator implements Callable {
 
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
-                destinationChoice.selectMainActivityDestination(person, activity);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignStartTimeAndDuration(activity);
+                destinationChoice.selectMainActivityDestination(person, activity);
                 planTools.addMainTour(plan, activity);
             }
         }
@@ -149,7 +149,6 @@ public class PlanGenerator implements Callable {
         }
 
         primaryDiscretionaryActivities.forEach(activity -> {
-            //Todo implement day of week model for primary discretionary act
             dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
             timeAssignment.assignStartTimeAndDuration(activity);
             destinationChoice.selectMainActivityDestination(person, activity);
