@@ -32,7 +32,7 @@ public class PlanGenerator implements Callable {
     private DestinationChoice destinationChoice;
     private TourModeChoice tourModeChoice;
     private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
-    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment;
     private TimeAssignment timeAssignment;
     private SplitByType splitByType;
     private SplitStopType stopSplitType;
@@ -65,6 +65,7 @@ public class PlanGenerator implements Callable {
         this.splitByType = modelSetup.getSplitByType();
         this.timeAssignment = modelSetup.getTimeAssignment();
         this.dayOfWeekMandatoryAssignment = modelSetup.getDayOfWeekMandatoryAssignment();
+        this.dayOfWeekDiscretionaryAssignment = modelSetup.getDayOfWeekDiscretionaryAssignment();
         this.destinationChoice = modelSetup.getDestinationChoice();
         this.tourModeChoice = modelSetup.getTourModeChoice();
         this.habitualModeChoice = modelSetup.getHabitualModeChoice();
@@ -100,10 +101,9 @@ public class PlanGenerator implements Callable {
             }
         }
 
-
         SortedMap<Purpose, List<Activity>> discretionaryActivitiesMap = new TreeMap<>();
-        List<Activity> stopsOnMandatory = new ArrayList<>();
         List<Activity> primaryDiscretionaryActivities = new ArrayList<>();
+        List<Activity> stopsOnMandatory = new ArrayList<>();
         List<Activity> stopsOnDiscretionaryTours = new ArrayList<>();
 
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
@@ -131,8 +131,7 @@ public class PlanGenerator implements Callable {
         }
 
         //Collections.shuffle(discretionaryActivities, Utils.getRandomObject());
-
-
+        //TODO remove the following?
         for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
             for (Activity activity : discretionaryActivitiesMap.get(purpose)) {
                 DiscretionaryActivityType discretionaryActivityType = activity.getDiscretionaryActivityType();
@@ -147,13 +146,11 @@ public class PlanGenerator implements Callable {
                         break;
                 }
             }
-
         }
 
         primaryDiscretionaryActivities.forEach(activity -> {
             //Todo implement day of week model for primary discretionary act
             dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-            //Todo Check whether time assignment follows duration > starting time
             timeAssignment.assignStartTimeAndDuration(activity);
             destinationChoice.selectMainActivityDestination(person, activity);
             planTools.addMainTour(plan, activity);
