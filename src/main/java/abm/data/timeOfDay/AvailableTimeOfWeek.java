@@ -16,6 +16,8 @@ if the window is available (true) or not (false)
 
 public class AvailableTimeOfWeek {
 
+
+
     private SortedMap<Integer, Boolean> internalMap;
     private static final int MAX_VALUE = (int) (7 * 24 * 60 );
 
@@ -74,4 +76,8 @@ public class AvailableTimeOfWeek {
         internalMap.values().forEach(v-> value.append(v?1:0));
         return value.toString();
     }*/
+
+    public SortedMap<Integer, Boolean> getInternalMap() {
+        return internalMap;
+    }
 }
