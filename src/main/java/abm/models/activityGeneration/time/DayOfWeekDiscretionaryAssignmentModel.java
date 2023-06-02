@@ -34,7 +34,7 @@ public class DayOfWeekDiscretionaryAssignmentModel implements DayOfWeekDiscretio
                     .getInternalMap().entrySet().stream()
                     .filter(x -> x.getValue().equals(true)).count();
 
-            if (activity.getPurpose().equals(Purpose.SHOPPING)) {
+            if (activity.getPurpose().equals(Purpose.SHOPPING) && dayOfWeek.equals(DayOfWeek.SUNDAY)) {
                 availableTimeSlots = 0.0;
             }
 
