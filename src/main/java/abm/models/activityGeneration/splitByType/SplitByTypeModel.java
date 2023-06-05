@@ -42,7 +42,7 @@ public class SplitByTypeModel implements SplitByType{
 
 
     @Override
-    public DiscretionaryActivityType assignActivityTypeOntoMandatory(Activity activity, Person person) {
+    public DiscretionaryActivityType assignActType(Activity activity, Person person) {
 
         double utilityOfBeingOnMandatoryTour = calculateUtilityOfBeingOnMandatoryTour(activity, person);
         double probabilityOfBeingOnMandatoryTour = Math.exp(utilityOfBeingOnMandatoryTour) / (1 + Math.exp(utilityOfBeingOnMandatoryTour));
@@ -56,7 +56,7 @@ public class SplitByTypeModel implements SplitByType{
 
     }
 
-    public DiscretionaryActivityType assignActivityTypeOntoDiscretionary(Activity activity, Person person, int numActsNotOnMandatoryTours) {
+    public DiscretionaryActivityType assignActTypeForDiscretionaryTourActs(Activity activity, Person person, int numActsNotOnMandatoryTours) {
         double utilityOfBeingOnDiscretionaryTour;
         double probabilityOfBeingOnDiscretionaryTour;
         switch (activity.getPurpose()) {

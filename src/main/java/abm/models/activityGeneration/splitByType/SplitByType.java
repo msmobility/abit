@@ -14,7 +14,7 @@ public interface SplitByType {
      */
 
 
-    DiscretionaryActivityType assignActivityTypeOntoMandatory(Activity activity, Person person);
+    DiscretionaryActivityType assignActType(Activity activity, Person person);
 
-    DiscretionaryActivityType assignActivityTypeOntoDiscretionary(Activity activity, Person person, int numActsNotOnMandatoryTours);
+    DiscretionaryActivityType assignActTypeForDiscretionaryTourActs(Activity activity, Person person, int numActsNotOnMandatoryTours);
 }
