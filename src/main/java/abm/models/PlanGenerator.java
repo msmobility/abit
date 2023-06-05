@@ -13,6 +13,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
@@ -31,7 +32,7 @@ public class PlanGenerator implements Callable {
     private DestinationChoice destinationChoice;
     private TourModeChoice tourModeChoice;
     private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
-    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment;
     private TimeAssignment timeAssignment;
     private SplitByType splitByType;
     private SplitStopType stopSplitType;
@@ -64,6 +65,7 @@ public class PlanGenerator implements Callable {
         this.splitByType = modelSetup.getSplitByType();
         this.timeAssignment = modelSetup.getTimeAssignment();
         this.dayOfWeekMandatoryAssignment = modelSetup.getDayOfWeekMandatoryAssignment();
+        this.dayOfWeekDiscretionaryAssignment = modelSetup.getDayOfWeekDiscretionaryAssignment();
         this.destinationChoice = modelSetup.getDestinationChoice();
         this.tourModeChoice = modelSetup.getTourModeChoice();
         this.habitualModeChoice = modelSetup.getHabitualModeChoice();
@@ -86,88 +88,79 @@ public class PlanGenerator implements Callable {
 
         habitualModeChoice.chooseHabitualMode(person);
 
-        //logger.info("Habitual mode completed for " + person.getId());
-
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
-            DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose);
+            //TODO Ana has new job properties, this model needs be killed after updating the sp reader
+            DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
-                destinationChoice.selectMainActivityDestination(person, activity);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignStartTimeAndDuration(activity);
+                destinationChoice.selectMainActivityDestination(person, activity);
                 planTools.addMainTour(plan, activity);
             }
         }
 
-
         SortedMap<Purpose, List<Activity>> discretionaryActivitiesMap = new TreeMap<>();
-        //List<Activity> discretionaryActivities = new ArrayList<>();
+        List<Activity> primaryDiscretionaryActivities = new ArrayList<>();
+        List<Activity> stopsOnMandatory = new ArrayList<>();
+        List<Activity> stopsOnDiscretionaryTours = new ArrayList<>();
+
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             int numAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             for (int i = 0; i < numAct; i++) {
                 Activity activity = new Activity(person, purpose);
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
                 discretionaryActivitiesMap.get(purpose).add(activity);
-            }
-        }
 
-        //Collections.shuffle(discretionaryActivities, Utils.getRandomObject());
-
-        List<Activity> stopsOnMandatory = new ArrayList<>();
-        List<Activity> primaryDiscretionaryActivities = new ArrayList<>();
-        List<Activity> stopsOnDiscretionaryTours = new ArrayList<>();
-
-        for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
-            for (Activity activity : discretionaryActivitiesMap.get(purpose)) {
-                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActivityTypeOntoMandatory(activity, person);
+                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActivityType(activity, person);
                 activity.setDiscretionaryActivityType(discretionaryActivityType);
+
                 switch (discretionaryActivityType) {
                     case ON_MANDATORY_TOUR:
                         stopsOnMandatory.add(activity);
-                        Tour selectedTour = planTools.findMandatoryTour(plan);
-                        activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                        //the order of time assignment and stopSplitByType is not yet decided
-                        timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-
-                        if (stopType != null) {
-                            if (stopType.equals(StopType.BEFORE)) {
-                                int tempTime = selectedTour.getActivities().firstKey();
-                                Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
-                                planTools.addStopBefore(plan, activity, selectedTour);
-                            } else {
-                                int tempTime = selectedTour.getActivities().lastKey();
-                                Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
-                                //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                                planTools.addStopAfter(plan, activity, selectedTour);
-                            }
-                        }
                         break;
                     case PRIMARY:
                         primaryDiscretionaryActivities.add(activity);
-                        //need to create the tour here otherwise it will not exist and no stops can be attached!
-                        destinationChoice.selectMainActivityDestination(person, activity);
-                        dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                        timeAssignment.assignStartTimeAndDuration(activity);
-                        planTools.addMainTour(plan, activity);
                         break;
                     case ON_DISCRETIONARY_TOUR:
                         stopsOnDiscretionaryTours.add(activity);
                         break;
                 }
             }
-
         }
 
+        primaryDiscretionaryActivities.forEach(activity -> {
+            dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
+            timeAssignment.assignStartTimeAndDuration(activity);
+            destinationChoice.selectMainActivityDestination(person, activity);
+            planTools.addMainTour(plan, activity);
+        });
+
+
         stopsOnMandatory.forEach(activity -> {
+            Tour selectedTour = planTools.findMandatoryTour(plan);
+            activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
+            //the order of time assignment and stopSplitByType is not yet decided
+            timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
 
-
+            if (stopType != null) {
+                if (stopType.equals(StopType.BEFORE)) {
+                    int tempTime = selectedTour.getActivities().firstKey();
+                    Activity firstActivity = selectedTour.getActivities().get(tempTime);
+                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                    planTools.addStopBefore(plan, activity, selectedTour);
+                } else {
+                    int tempTime = selectedTour.getActivities().lastKey();
+                    Activity lastActivity = selectedTour.getActivities().get(tempTime);
+                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                    //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                    planTools.addStopAfter(plan, activity, selectedTour);
                 }
-        );
+            }
+        });
 
 
         stopsOnDiscretionaryTours.forEach(activity -> {
