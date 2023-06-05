@@ -90,6 +90,7 @@ public class PlanGenerator implements Callable {
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
+            //TODO Ana has new job properties, this model needs be killed after updating the sp reader
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
             for (DayOfWeek day : dayOfWeeks) {
@@ -125,24 +126,6 @@ public class PlanGenerator implements Callable {
                         break;
                     case ON_DISCRETIONARY_TOUR:
                         stopsOnDiscretionaryTours.add(activity);
-                        break;
-                }
-            }
-        }
-
-        //Collections.shuffle(discretionaryActivities, Utils.getRandomObject());
-        //TODO remove the following?
-        for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
-            for (Activity activity : discretionaryActivitiesMap.get(purpose)) {
-                DiscretionaryActivityType discretionaryActivityType = activity.getDiscretionaryActivityType();
-                switch (discretionaryActivityType) {
-                    case ON_MANDATORY_TOUR:
-
-                        break;
-                    case PRIMARY:
-
-                        break;
-                    case ON_DISCRETIONARY_TOUR:
                         break;
                 }
             }
