@@ -17,7 +17,7 @@ import org.locationtech.jts.geom.Coordinate;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DestinationChoiceModel implements DestinationChoice {
+public class  DestinationChoiceModel implements DestinationChoice {
 
     private final DataSet dataSet;
     private final static Logger logger = Logger.getLogger(DestinationChoiceModel.class);
