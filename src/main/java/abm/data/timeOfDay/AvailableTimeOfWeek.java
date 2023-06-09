@@ -1,5 +1,6 @@
 package abm.data.timeOfDay;
 
+import abm.data.vehicle.Car;
 import abm.properties.InternalProperties;
 
 import java.time.DayOfWeek;
@@ -44,6 +45,24 @@ public class AvailableTimeOfWeek {
             int newIndex = Math.round(minute/InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
             return internalMap.get(newIndex) ? 1 : 0;
         }
+    }
+
+    public boolean isAvailable(int startMinute, int endMinute) {
+
+        for (int minute = startMinute; minute <= endMinute; minute++) {
+            if (internalMap.containsKey(minute)) {
+                if(!internalMap.get(minute)){
+                    return Boolean.FALSE;
+                }
+            } else {
+                int newIndex = Math.round(minute/InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
+                if(!internalMap.get(newIndex)){
+                    return Boolean.FALSE;
+                }
+            }
+        }
+
+        return Boolean.TRUE;
     }
 
     public List<Integer> getMinutes() {

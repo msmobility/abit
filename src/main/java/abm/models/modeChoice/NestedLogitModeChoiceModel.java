@@ -12,6 +12,8 @@ import abm.data.pop.EconomicStatus;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.travelInformation.TravelTimes;
+import abm.data.vehicle.Car;
+import abm.data.vehicle.Vehicle;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
@@ -88,6 +90,31 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     @Override
     public void chooseMode(Person person, Tour tour, Purpose purpose) {
 
+    }
+
+    @Override
+    public void checkCarAvailabilityAndChooseMode(Household household, Person person, Tour tour, Purpose purpose){
+        boolean carAvailable = Boolean.FALSE;
+        Vehicle selectedVehicle = null;
+        //TODO: how to define the car use start and end time
+        int carUseStartTime_min = tour.getLegs().get(tour.getLegs().firstKey()).getNextActivity().getStartTime_min() - tour.getLegs().get(tour.getLegs().firstKey()).getTravelTime_min();
+        int carUseEndTime_min = tour.getLegs().get(tour.getLegs().lastKey()).getPreviousActivity().getEndTime_min() + tour.getLegs().get(tour.getLegs().lastKey()).getTravelTime_min();
+
+        for (Vehicle vehicle : household.getVehicles()) {
+            if (vehicle instanceof Car) {
+                carAvailable = ((Car) vehicle).getAvailableTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
+                if (carAvailable) {
+                    selectedVehicle = vehicle;
+                    break;
+                }
+            }
+        }
+
+        Mode selectedMode = chooseMode(person, tour, purpose, carAvailable);
+        if (selectedVehicle != null & selectedMode.equals(Mode.CAR_DRIVER)) {
+            ((Car) selectedVehicle).getAvailableTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
+            tour.setCar(selectedVehicle);
+        }
     }
 
     @Override
