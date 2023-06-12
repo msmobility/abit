@@ -51,7 +51,7 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
         SkimTravelTimes travelDistances = new SkimTravelTimes();
         String nonMotorizedFile = AbitResources.instance.getString("car.omx.file");
         String nonMotorizedMatrixName  = AbitResources.instance.getString("car.distance.omx.matrix");
-        travelDistances.readSkim(Mode.UNKNOWN.toString(), nonMotorizedFile, nonMotorizedMatrixName, 1.);
+        travelDistances.readSkim(Mode.UNKNOWN.toString(), nonMotorizedFile, nonMotorizedMatrixName, 1/1000.);
 
         dataSet.setTravelDistances(new MitoBasedTravelDistances(travelDistances));
 

@@ -3,6 +3,7 @@ package abm.io.input;
 import abm.data.DataSet;
 import abm.data.pop.*;
 import abm.properties.AbitResources;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -57,7 +58,7 @@ public class PersonReader implements Reader {
         indexes.put("workplace", MitoUtil.findPositionInArray("workplace", header));
         indexes.put("income", MitoUtil.findPositionInArray("income", header));
         indexes.put("schoolplace", MitoUtil.findPositionInArray("schoolId", header));
-
+        indexes.put("disability", MitoUtil.findPositionInArray("disability", header));
     }
 
 
@@ -83,6 +84,8 @@ public class PersonReader implements Reader {
             Relationship relationship = Relationship.valueOf(splitLine[indexes.get("relationship")].replace("\"",""));
             Occupation occupation = Occupation.valueOf(Integer.parseInt(splitLine[indexes.get("occupation")]));
             boolean hasLicense = Boolean.parseBoolean(splitLine[indexes.get("driversLicense")]);
+            Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
+
 
             int jobId = Integer.parseInt(splitLine[indexes.get("workplace")]);
             Job jj = null;
@@ -99,7 +102,7 @@ public class PersonReader implements Reader {
                 school = dataSet.getSchools().getOrDefault(schoolId, null);
             }
 
-            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school);
+            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school, disability);
 
             hh.getPersons().add(person);
 

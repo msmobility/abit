@@ -23,6 +23,7 @@ import de.tum.bgu.msm.data.Location;
 import de.tum.bgu.msm.data.MitoHousehold;
 import de.tum.bgu.msm.data.MitoPerson;
 import de.tum.bgu.msm.data.MitoZone;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.matsim.core.utils.collections.Tuple;
@@ -44,6 +45,9 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
 
     private final static double fuelCostEurosPerKm = 0.065;
     private final static double transitFareEurosPerKm = 0.12;
+
+    private static final double SPEED_WALK_KMH = 4.;
+    private static final double SPEED_BICYCLE_KMH = 10.;
 
 
     public NestedLogitModeChoiceModel(DataSet dataSet) {
@@ -75,6 +79,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
                 }
             }
             purposeModeCoefficients.put(purpose, modeCoefficients);
+            nests.put(purpose, nestsByPurpose);
         }
         this.purposeModeCoefficients = purposeModeCoefficients;
         this.nests = nests;
@@ -120,20 +125,28 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     @Override
     public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
         Household household = person.getHousehold();
-
+        if (person.getId() == 1117){
+            System.out.println("!");
+        }
         EnumMap<Mode, Double> utilities = new EnumMap<Mode, Double>(Mode.class);
         for (Mode mode : Mode.getModes()){
-            if (mode == Mode.CAR_DRIVER && carAvailable) {
-                utilities.put(mode, calculateUtilityForThisMode(person, tour, purpose, mode, household));
-            } else {
+            if (mode == Mode.CAR_DRIVER && !carAvailable) {
                 utilities.put(mode,Double.NEGATIVE_INFINITY);
+            } else {
+                utilities.put(mode, calculateUtilityForThisMode(person, tour, purpose, mode, household));
             }
         }
+
+
 
         if(utilities == null) return null;
         EnumMap<Mode, Double>  probabilities = logitTools.getProbabilities(utilities, nests.get(purpose));
 
-        final Mode selected = MitoUtil.select(probabilities, AbitUtils.getRandomObject().nextDouble());
+        if(MitoUtil.getSum(probabilities.values())==0){
+            System.out.println("!");
+        }
+
+        final Mode selected = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
 
         tour.getLegs().values().forEach(leg -> leg.setLegMode(selected));
 
@@ -165,7 +178,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         }
 
         // Mobility restriction
-        if (person.getAttributes().getAttribute("mobilityRestricted").equals("yes")) {
+        if (!person.getDisability().equals(Disability.WITHOUT)) {
             utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mobilityRestricted",0.);
         }
 
@@ -286,7 +299,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
 
         for (Leg leg : tour.getLegs().values()) {
             travelDistanceAuto += dataSet.getTravelDistances().getTravelDistanceInMeters(leg.getPreviousActivity().getLocation(),
-                    leg.getNextActivity().getLocation(), Mode.CAR_DRIVER,leg.getPreviousActivity().getEndTime_min());
+                    leg.getNextActivity().getLocation(), Mode.UNKNOWN,leg.getPreviousActivity().getEndTime_min());
         }
 
         EnumMap<Mode, Double> tourTravelTimes = new EnumMap<Mode, Double>(Mode.class);
@@ -298,6 +311,17 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
                             leg.getNextActivity().getLocation(), Mode.CAR_DRIVER, leg.getPreviousActivity().getEndTime_min());
                 }
                 tourTravelTimes.put(mode, travelTimeCarDriver);
+            } else if(mode == Mode.WALK || mode == Mode.BIKE){
+                double travelDistanceMode = 0;
+                for (Leg leg : tour.getLegs().values()) {
+                    travelDistanceMode += dataSet.getTravelDistances().getTravelDistanceInMeters(leg.getPreviousActivity().getLocation(),
+                            leg.getNextActivity().getLocation(), Mode.UNKNOWN, leg.getPreviousActivity().getEndTime_min());
+                }
+
+                double travelTimeMode = travelDistanceMode / (mode == Mode.WALK? SPEED_WALK_KMH : SPEED_BICYCLE_KMH) * 60.;
+
+                tourTravelTimes.put(mode, travelTimeMode);
+
             } else {
                 double travelTimeMode = 0;
                 for (Leg leg : tour.getLegs().values()) {

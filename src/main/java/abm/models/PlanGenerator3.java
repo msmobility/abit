@@ -94,7 +94,7 @@ public class PlanGenerator3 implements Callable {
 
     private void createPlanForOneHousehold(Household household) {
 
-        for (Person person : persons){
+        for (Person person : household.getPersons()){
             createPlanForOnePerson(person);
         }
 
@@ -144,7 +144,7 @@ public class PlanGenerator3 implements Callable {
 
 
 
-        for (Person person : persons){
+        for (Person person : household.getPersons()){
             List<Tour> mandatoryTours = person.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
             for (Tour tour : mandatoryTours) {
@@ -457,6 +457,9 @@ public class PlanGenerator3 implements Callable {
                 planTools.addMainTour(plan, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_ACCOMPANY) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
+                if(selectedTour == null){
+
+                }
                 activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                 timeAssignment.assignDurationToStop(activity);
                 StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
