@@ -1,8 +1,11 @@
 package abm.data.pop;
 
 import abm.data.geo.Location;
-import abm.data.geo.MicroscopicLocation;
-import org.matsim.vehicles.Vehicles;
+import abm.data.vehicle.Car;
+import abm.data.vehicle.CarType;
+import abm.data.vehicle.Vehicle;
+import abm.data.vehicle.VehicleUtil;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +16,7 @@ public class Household {
     private List<Person> persons;
     private Location location;
     private final int numberOfCars;
-    private List<Vehicles> vehicles; //uses MATSim vehicles for now
+    private List<Vehicle> vehicles = new ArrayList<>();
 
 
     public Household(int id, Location location, int numberOfCars) {
@@ -21,6 +24,9 @@ public class Household {
         this.numberOfCars = numberOfCars;
         this.persons = new ArrayList<>();
         this.location = location;
+        for (int i = 0; i < numberOfCars; i++) {
+            vehicles.add(new Car(i, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
+        }
     }
 
     public int getId() {
@@ -43,4 +49,9 @@ public class Household {
     public int getNumberOfCars() {
         return numberOfCars;
     }
+
+    public List<Vehicle> getVehicles() {
+        return vehicles;
+    }
+
 }

@@ -56,6 +56,7 @@ public class SplitByTypeModel implements SplitByType{
 
     }
 
+    //TODO:
     public DiscretionaryActivityType assignActTypeForDiscretionaryTourActs(Activity activity, Person person, int numActsNotOnMandatoryTours) {
         double utilityOfBeingOnDiscretionaryTour;
         double probabilityOfBeingOnDiscretionaryTour;
@@ -81,6 +82,12 @@ public class SplitByTypeModel implements SplitByType{
             case SHOPPING:
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
+                    return DiscretionaryActivityType.SHOP_PRIMARY;
+                }
+
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     return DiscretionaryActivityType.SHOP_ON_ACCOMPANY;
                 }
@@ -88,6 +95,7 @@ public class SplitByTypeModel implements SplitByType{
                         filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
                     return DiscretionaryActivityType.SHOP_PRIMARY;
                 }
+
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.SHOP_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
@@ -98,11 +106,24 @@ public class SplitByTypeModel implements SplitByType{
             case OTHER:
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
+                    return DiscretionaryActivityType.OTHER_PRIMARY;
+                }
+
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     return DiscretionaryActivityType.OTHER_ON_ACCOMPANY;
                 }
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
+                    return DiscretionaryActivityType.OTHER_PRIMARY;
+                }
+
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.OTHER_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
+
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     return DiscretionaryActivityType.OTHER_ON_SHOP;
                 }
@@ -119,14 +140,32 @@ public class SplitByTypeModel implements SplitByType{
             case RECREATION:
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
+                    return DiscretionaryActivityType.RECREATION_PRIMARY;
+                }
+
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     return DiscretionaryActivityType.RECREATION_ON_ACCOMPANY;
                 }
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
+                    return DiscretionaryActivityType.RECREATION_PRIMARY;
+                }
+
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     return DiscretionaryActivityType.RECREATION_ON_SHOP;
                 }
+
+                if (person.getPlan().getTours().values().stream().
+                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.OTHER)).count() == 0) {
+                    return DiscretionaryActivityType.RECREATION_PRIMARY;
+                }
+
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_OTHER, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
@@ -143,6 +182,9 @@ public class SplitByTypeModel implements SplitByType{
                 }
                 return DiscretionaryActivityType.RECREATION_PRIMARY;
         }
+
+
+
         return null; //forced to have return statement or intellij throws an error
     }
 
