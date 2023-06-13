@@ -1,6 +1,9 @@
 package abm;
 
 import abm.data.DataSet;
+import abm.data.plans.Activity;
+import abm.data.plans.Leg;
+import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
@@ -15,10 +18,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RunAbit {
 
@@ -53,22 +53,64 @@ public class RunAbit {
         long start = System.currentTimeMillis();
 
         for (Household household : dataSet.getHouseholds().values()) {
-            for (Person person : household.getPersons()) {
-                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+            if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+                for (Person person : household.getPersons()) {
                     final int i = AbitUtils.getRandomObject().nextInt(threads);
                     personsByThread.putIfAbsent(i, new ArrayList<>());
                     personsByThread.get(i).add(person);
                 }
-
             }
 
         }
+
+//        for (Household household : dataSet.getHouseholds().values()) {
+//            for (Person person : household.getPersons()) {
+//                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+//                    final int i = AbitUtils.getRandomObject().nextInt(threads);
+//                    personsByThread.putIfAbsent(i, new ArrayList<>());
+//                    personsByThread.get(i).add(person);
+//                }
+//            }
+//
+//        }
 
         for (int i = 0; i < threads; i++) {
             executor.addTaskToQueue(new PlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
         }
 
         executor.execute();
+
+        //check schedule conflict_0531
+
+//        for (Person persons : dataSet.getPersons().values()){
+//            int[] weekTimeSlots = new int[11500];
+//            int numOfConflict = 0;
+//            if(persons.getPlan()!=null){
+//                for(Tour tour : persons.getPlan().getTours().values()){
+//                    for(Activity activity : tour.getActivities().values()){
+//                        int actStartTime = activity.getStartTime_min();
+//                        int actEndTime = activity.getEndTime_min();
+//                        for (int i=actStartTime;i<=actEndTime;i++){
+//
+//                            if (weekTimeSlots[i]!= 1){
+//                                weekTimeSlots[i] = 1;
+//                            } else {
+//                                numOfConflict+=1;
+//                            }
+//
+//                        }
+////                    Arrays.fill(weekTimeSlots,actStartTime,actEndTime+1,1);
+//                    }
+//
+////                for(Leg leg : tour.getLegs().values()){
+////                    int legStartTime = leg
+////                }
+//                }
+//            }
+//            System.out.println(numOfConflict);
+//        }
+
+
 
         long end = System.currentTimeMillis();
 
