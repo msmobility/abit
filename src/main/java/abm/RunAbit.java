@@ -1,25 +1,24 @@
 package abm;
 
-import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
+import abm.data.plans.Activity;
+import abm.data.plans.Leg;
+import abm.data.plans.Tour;
 import abm.data.pop.Household;
+import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
-import abm.io.output.*;
+import abm.io.output.OutputWriter;
+import abm.models.DefaultModelSetup;
 import abm.models.ModelSetup;
 import abm.models.ModelSetupMuc;
-import abm.io.output.OutputWriter;
-import abm.models.*;
+import abm.models.PlanGenerator;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
 import org.apache.log4j.Logger;
 
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RunAbit {
 
@@ -47,64 +46,73 @@ public class RunAbit {
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
         ConcurrentExecutor executor = ConcurrentExecutor.fixedPoolService(threads);
-        Map<Integer, List<Household>> householdsByThread = new HashMap();
+        Map<Integer, List<Person>> personsByThread = new HashMap();
 
         logger.info("Running plan generator using " + threads + " threads");
 
         long start = System.currentTimeMillis();
 
-        //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
-        if (AbitResources.instance.getDouble("scale.factor", 1.0) >= 1){
-            for (Household household : dataSet.getHouseholds().values()) {
-                if (household.getPartition() == 2){
+        for (Household household : dataSet.getHouseholds().values()) {
+            if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+                for (Person person : household.getPersons()) {
                     final int i = AbitUtils.getRandomObject().nextInt(threads);
-                    householdsByThread.putIfAbsent(i, new ArrayList<>());
-                    householdsByThread.get(i).add(household);
-                    household.setSimulated(Boolean.TRUE);
+                    personsByThread.putIfAbsent(i, new ArrayList<>());
+                    personsByThread.get(i).add(person);
                 }
             }
-        }else {
-            for (Household household : dataSet.getHouseholds().values()) {
-                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-                    final int i = AbitUtils.getRandomObject().nextInt(threads);
-                    householdsByThread.putIfAbsent(i, new ArrayList<>());
-                    householdsByThread.get(i).add(household);
-                    household.setSimulated(Boolean.TRUE);
-                }
-            }
+
         }
 
+//        for (Household household : dataSet.getHouseholds().values()) {
+//            for (Person person : household.getPersons()) {
+//                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+//                    final int i = AbitUtils.getRandomObject().nextInt(threads);
+//                    personsByThread.putIfAbsent(i, new ArrayList<>());
+//                    personsByThread.get(i).add(person);
+//                }
+//            }
+//
+//        }
+
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator3(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
         }
 
         executor.execute();
 
-        if (Boolean.parseBoolean(AbitResources.instance.getString("model.calibration"))){
-            CalibrationMuc calibrationMuc = new CalibrationMuc(dataSet);
-            calibrationMuc.runCalibration();
-        }
+        //check schedule conflict_0531
 
-        //todo. summary (trip length frequency distribution, etc.)
-        String outputFolder = AbitResources.instance.getString("base.directory") + "/output/";
+//        for (Person persons : dataSet.getPersons().values()){
+//            int[] weekTimeSlots = new int[11500];
+//            int numOfConflict = 0;
+//            if(persons.getPlan()!=null){
+//                for(Tour tour : persons.getPlan().getTours().values()){
+//                    for(Activity activity : tour.getActivities().values()){
+//                        int actStartTime = activity.getStartTime_min();
+//                        int actEndTime = activity.getEndTime_min();
+//                        for (int i=actStartTime;i<=actEndTime;i++){
+//
+//                            if (weekTimeSlots[i]!= 1){
+//                                weekTimeSlots[i] = 1;
+//                            } else {
+//                                numOfConflict+=1;
+//                            }
+//
+//                        }
+////                    Arrays.fill(weekTimeSlots,actStartTime,actEndTime+1,1);
+//                    }
+//
+////                for(Leg leg : tour.getLegs().values()){
+////                    int legStartTime = leg
+////                }
+//                }
+//            }
+//            System.out.println(numOfConflict);
+//        }
 
-        logger.info("Printing out results");
-        try {
 
-            new StatisticsPrinter(dataSet).print(outputFolder + "/distanceDistribution.csv");
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
-        //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
-
-        //todo. auto calibration outputs
 
         long end = System.currentTimeMillis();
-
-
 
         long time = (end - start)/1000;
 
