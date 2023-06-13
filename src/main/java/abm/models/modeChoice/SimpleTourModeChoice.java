@@ -5,6 +5,7 @@ import abm.data.plans.Leg;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
+import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.properties.InternalProperties;
 import abm.utils.AbitUtils;
@@ -25,6 +26,11 @@ public class SimpleTourModeChoice implements TourModeChoice {
     @Override
     public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
         return null;
+    }
+
+    @Override
+    public void checkCarAvailabilityAndChooseMode(Household household, Person person, Tour tour, Purpose purpose) {
+
     }
 
     @Override

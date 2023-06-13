@@ -1,5 +1,7 @@
 package abm.data.plans;
 
+import abm.data.vehicle.Vehicle;
+
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -11,6 +13,7 @@ public class Tour {
     private final Activity mainActivity;
     private final SortedMap<Integer, Tour> subtours;
     Mode tourMode;
+    private Vehicle car = null;
 
 
     public Tour(Activity mainActivity) {
@@ -52,5 +55,13 @@ public class Tour {
     @Override
     public int hashCode() {
         return Objects.hash(activities, legs, mainActivity, subtours, tourMode);
+    }
+
+    public Vehicle getCar() {
+        return car;
+    }
+
+    public void setCar(Vehicle car) {
+        this.car = car;
     }
 }

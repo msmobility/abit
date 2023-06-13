@@ -1,6 +1,7 @@
 package abm.models.activityGeneration.time;
 
 import abm.data.plans.Purpose;
+import abm.data.pop.Person;
 import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
@@ -12,7 +13,7 @@ public class SimpleDayOfWeekMandatoryAssignment implements DayOfWeekMandatoryAss
 
 
     @Override
-    public DayOfWeek[] assignDaysOfWeek(int numberOfDaysOfWeek, Purpose purpose) {
+    public DayOfWeek[] assignDaysOfWeek(int numberOfDaysOfWeek, Purpose purpose, Person person) {
 
         Map<DayOfWeek, Double> dayProbabilities = new HashMap<>();
 

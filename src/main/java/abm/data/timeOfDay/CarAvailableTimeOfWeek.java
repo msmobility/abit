@@ -1,13 +1,11 @@
 package abm.data.timeOfDay;
 
-import abm.data.vehicle.Car;
 import abm.properties.InternalProperties;
+import cern.colt.map.tint.OpenIntIntHashMap;
 
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 
 /**
@@ -15,35 +13,35 @@ This class defines a map of availability, with a key start time in minutes of th
 if the window is available (true) or not (false)
  **/
 
-public class AvailableTimeOfWeek {
+public class CarAvailableTimeOfWeek {
 
 
-
-    private SortedMap<Integer, Boolean> internalMap;
+    private OpenIntIntHashMap internalMap;
     private static final int MAX_VALUE = (int) (7 * 24 * 60 );
 
 
-    public AvailableTimeOfWeek() {
-        internalMap = new TreeMap<>();
+
+    public CarAvailableTimeOfWeek() {
+        internalMap = new OpenIntIntHashMap();
         for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
-            internalMap.put(i, true);
+            internalMap.put(i, 1);
         }
     }
 
     public void blockTime(int from, int until) {
         for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
             if (i >= from && i <= until) {
-                internalMap.put(i, false);
+                internalMap.put(i, 0);
             }
         }
     }
 
     public int isAvailable(int minute) {
         if (internalMap.containsKey(minute)) {
-            return internalMap.get(minute) ? 1 : 0;
+            return internalMap.get(minute);
         } else {
             int newIndex = Math.round(minute/InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
-            return internalMap.get(newIndex) ? 1 : 0;
+            return internalMap.get(newIndex);
         }
     }
 
@@ -51,12 +49,12 @@ public class AvailableTimeOfWeek {
 
         for (int minute = startMinute; minute <= endMinute; minute++) {
             if (internalMap.containsKey(minute)) {
-                if(!internalMap.get(minute)){
+                if(internalMap.get(minute) == 0){
                     return Boolean.FALSE;
                 }
             } else {
                 int newIndex = Math.round(minute/InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
-                if(!internalMap.get(newIndex)){
+                if(internalMap.get(newIndex) == 0){
                     return Boolean.FALSE;
                 }
             }
@@ -66,23 +64,24 @@ public class AvailableTimeOfWeek {
     }
 
     public List<Integer> getMinutes() {
-        return new ArrayList<>(internalMap.keySet());
+        return new ArrayList<>(internalMap.keys().toList());
     }
 
 
-    public AvailableTimeOfWeek getForThisDayOfWeek(DayOfWeek dayOfWeek){
+    public CarAvailableTimeOfWeek getForThisDayOfWeek(DayOfWeek dayOfWeek){
         int midnightBefore = (dayOfWeek.ordinal()) * 24*60;
-        AvailableTimeOfWeek availableTimeOfDay = new AvailableTimeOfWeek();
-        this.internalMap.keySet().forEach(m ->{
+        CarAvailableTimeOfWeek availableTimeOfDay = new CarAvailableTimeOfWeek();
+        this.internalMap.keys().forEach(m ->{
             if (m > midnightBefore && m < midnightBefore + 60 * 24){
-                if(this.internalMap.get(m)){
-                    availableTimeOfDay.internalMap.put(m, true);
+                if(this.internalMap.get(m) == 1){
+                    availableTimeOfDay.internalMap.put(m, 1);
                 } else {
-                    availableTimeOfDay.internalMap.put(m, false);
+                    availableTimeOfDay.internalMap.put(m, 0);
                 }
             } else {
-                availableTimeOfDay.internalMap.put(m, false);
+                availableTimeOfDay.internalMap.put(m, 0);
             }
+            return true;
         });
 
         return availableTimeOfDay;
@@ -96,7 +95,7 @@ public class AvailableTimeOfWeek {
         return value.toString();
     }*/
 
-    public SortedMap<Integer, Boolean> getInternalMap() {
+    public OpenIntIntHashMap getInternalMap() {
         return internalMap;
     }
 }

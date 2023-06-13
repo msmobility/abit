@@ -1,9 +1,9 @@
 package abm.data.plans;
 
 
-
 import de.tum.bgu.msm.data.Id;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -43,6 +43,17 @@ public enum Purpose implements Id {
         purposes.add(SHOPPING);
         purposes.add(ACCOMPANY);
         purposes.add(OTHER);
+        return purposes;
+    }
+
+    public static ArrayList<Purpose> getSortedPurposes(){
+        ArrayList<Purpose> purposes = new ArrayList<>();
+        purposes.add(WORK);
+        purposes.add(EDUCATION);
+        purposes.add(ACCOMPANY);
+        purposes.add(OTHER);
+        purposes.add(SHOPPING);
+        purposes.add(RECREATION);
         return purposes;
     }
 

@@ -2,6 +2,7 @@ package abm.data.pop;
 
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
@@ -23,6 +24,8 @@ public class Person {
     private Job job;
     private int monthlyIncome_eur;
     private School school;
+
+    private Disability disability;
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
@@ -30,7 +33,7 @@ public class Person {
 //        this.id = id;
 //        this.household = household;
 //    }
-    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School school) {
+    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School school, Disability disability) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -41,6 +44,7 @@ public class Person {
         this.job = job;
         this.monthlyIncome_eur = monthlyIncome_eur;
         this.school = school;
+        this.disability = disability;
     }
 
     public int getAge() {
@@ -114,5 +118,9 @@ public class Person {
 
     public boolean hasBicycle() {
         return true;
+    }
+
+    public Disability getDisability() {
+        return disability;
     }
 }

@@ -9,6 +9,8 @@ public enum EconomicStatus {
     from1601to2400,
     from2401;
 
+    private static final EconomicStatus[] ENUMS = values();
+
     public static EconomicStatus assignEconomicStatus(int EurPerAdjPerson) {
         if (EurPerAdjPerson <= 800) {
             return from0to800;
@@ -18,6 +20,14 @@ public enum EconomicStatus {
             return from1601to2400;
         } else {
             return from2401;
+        }
+    }
+
+    public static EconomicStatus of(int economicStatus) {
+        if (economicStatus >= 1 && economicStatus <= 4) {
+            return ENUMS[economicStatus - 1];
+        } else {
+            throw new IllegalArgumentException("Invalid value for economic status: " + economicStatus);
         }
     }
 
