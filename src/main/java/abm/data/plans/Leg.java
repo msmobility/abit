@@ -11,6 +11,9 @@ public class Leg {
     private Mode legMode;
     private int travelTime_min;
 
+
+    private double distance;
+
     public Leg(Activity previousActivity, Activity nextActivity) {
         this.previousActivity = previousActivity;
         this.nextActivity = nextActivity;
@@ -49,6 +52,13 @@ public class Leg {
         this.travelTime_min = travelTime_min;
     }
 
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
 
     public String toString() {
         StringBuilder builder = new StringBuilder();
