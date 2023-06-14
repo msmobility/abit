@@ -1,11 +1,10 @@
 package abm.models;
 
 import abm.data.DataSet;
+import abm.data.geo.Location;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
-import abm.data.vehicle.Vehicle;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -17,7 +16,6 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
-import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 import java.time.DayOfWeek;
@@ -100,37 +98,51 @@ public class PlanGenerator3 implements Callable {
 
         //Start: Vehicle assignment and mode choice
         if(household.getNumberOfCars() > 0) {
-            //Step 1: loop over all workers in the household, check car and transit travel time ratio
-            // car/pt ratio the smaller (more poor pt accessibility compared to car), then higher preference to use car
-            List<Person> workers = household.getPersons().stream().filter(pp -> pp.getOccupation().equals(Occupation.EMPLOYED)).collect(Collectors.toList());
-            Map<Person, Double> carUsePreference = new HashMap<>();
-            for (Person person : workers) {
-                int carTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
-                int transitTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
-                double carPtRatio = carTravelTime / (double) transitTravelTime;
-                carUsePreference.put(person, carPtRatio);
-            }
-
-            List<Map.Entry<Person, Double>> sortedPreference = new ArrayList<>(carUsePreference.entrySet());
-            Collections.sort(sortedPreference, Map.Entry.comparingByValue());
-
-            //Step 2: check availability and choose mode for Work tours by the order of preference
-            for(Map.Entry<Person, Double> entry : sortedPreference){
-                entry.getKey().getPlan().getTours().values().forEach(tour -> {
-                    if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
-                        tourModeChoice.checkCarAvailabilityAndChooseMode(household, entry.getKey(), tour, Purpose.WORK);
-                    }
-                });
-            }
-
-            //Step 3: check availability and choose mode for other tours by the order of (education > accompany > other > shopping > recreational)
             for(Purpose purpose : Purpose.getSortedPurposes()){
-                for(Person person : household.getPersons()){
-                    person.getPlan().getTours().values().forEach(tour -> {
-                        if (tour.getMainActivity().getPurpose().equals(purpose)) {
-                            tourModeChoice.checkCarAvailabilityAndChooseMode(household, person, tour, purpose);
+                if (purpose.equals(Purpose.WORK)){
+                    //Step 1: loop over all workers in the household, check car and transit travel time ratio
+                    // car/pt ratio the smaller (more poor pt accessibility compared to car), then higher preference to use car
+                    List<Person> workers = household.getPersons().stream().filter(pp -> pp.hasWorkActivity()).collect(Collectors.toList());
+                    Map<Person, Double> carUsePreference = new HashMap<>();
+                    for (Person person : workers) {
+                        Location jobLocation;
+                        double startTime;
+                        if(person.getJob()!=null){
+                            jobLocation = person.getJob().getLocation();
+                            startTime = person.getJob().getStartTime_min();
+                        }else {
+                            //job location for non-employed person but has a work tour, e.g. student go for interview or internship
+                            Activity workActivity = person.getPlan().getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose().equals(Purpose.WORK)).collect(Collectors.toList()).get(0).getMainActivity();
+                            jobLocation = workActivity.getLocation();
+                            startTime = workActivity.getStartTime_min();
                         }
-                    });
+
+                        int carTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.CAR_DRIVER, startTime);
+                        int transitTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.TRAIN, startTime);
+                        double carPtRatio = carTravelTime / (double) transitTravelTime;
+                        carUsePreference.put(person, carPtRatio);
+                    }
+
+                    List<Map.Entry<Person, Double>> sortedPreference = new ArrayList<>(carUsePreference.entrySet());
+                    Collections.sort(sortedPreference, Map.Entry.comparingByValue());
+
+                    //Step 2: check availability and choose mode for Work tours by the order of preference
+                    for(Map.Entry<Person, Double> entry : sortedPreference){
+                        entry.getKey().getPlan().getTours().values().forEach(tour -> {
+                            if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
+                                tourModeChoice.checkCarAvailabilityAndChooseMode(household, entry.getKey(), tour, Purpose.WORK);
+                            }
+                        });
+                    }
+                }else{
+                    //check availability and choose mode for other tours by the order of (education > accompany > other > shopping > recreational)
+                    for(Person person : household.getPersons()){
+                        person.getPlan().getTours().values().forEach(tour -> {
+                            if (tour.getMainActivity().getPurpose().equals(purpose)) {
+                                tourModeChoice.checkCarAvailabilityAndChooseMode(household, person, tour, purpose);
+                            }
+                        });
+                    }
                 }
             }
         }else{

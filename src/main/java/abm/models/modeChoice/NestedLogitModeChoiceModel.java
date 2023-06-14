@@ -125,9 +125,6 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     @Override
     public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
         Household household = person.getHousehold();
-        if (person.getId() == 1117){
-            System.out.println("!");
-        }
         EnumMap<Mode, Double> utilities = new EnumMap<Mode, Double>(Mode.class);
         for (Mode mode : Mode.getModes()){
             if (mode == Mode.CAR_DRIVER && !carAvailable) {
@@ -142,14 +139,11 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         if(utilities == null) return null;
         EnumMap<Mode, Double>  probabilities = logitTools.getProbabilities(utilities, nests.get(purpose));
 
-        if(MitoUtil.getSum(probabilities.values())==0){
-            System.out.println("!");
-        }
 
         final Mode selected = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
 
         tour.getLegs().values().forEach(leg -> leg.setLegMode(selected));
-
+        tour.setTourMode(selected);
         return selected;
 
     }
@@ -302,6 +296,8 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
                     leg.getNextActivity().getLocation(), Mode.UNKNOWN,leg.getPreviousActivity().getEndTime_min());
         }
 
+        travelDistanceAuto = travelDistanceAuto/1000.;
+
         EnumMap<Mode, Double> tourTravelTimes = new EnumMap<Mode, Double>(Mode.class);
         for (Mode mode : Mode.getModes()){
             if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
@@ -318,8 +314,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
                             leg.getNextActivity().getLocation(), Mode.UNKNOWN, leg.getPreviousActivity().getEndTime_min());
                 }
 
-                double travelTimeMode = travelDistanceMode / (mode == Mode.WALK? SPEED_WALK_KMH : SPEED_BICYCLE_KMH) * 60.;
-
+                double travelTimeMode = (travelDistanceMode/1000.) / (mode == Mode.WALK? SPEED_WALK_KMH : SPEED_BICYCLE_KMH) * 60.;
                 tourTravelTimes.put(mode, travelTimeMode);
 
             } else {
@@ -362,14 +357,24 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         }
 
         EnumMap<Mode, Double> generalizedCosts = new EnumMap<Mode, Double>(Mode.class);
-        generalizedCosts.put(Mode.CAR_DRIVER, gcAutoD);
-        generalizedCosts.put(Mode.CAR_PASSENGER, gcAutoP);
-        generalizedCosts.put(Mode.BIKE, tourTravelTimes.get(Mode.BIKE));
-        generalizedCosts.put(Mode.BUS, gcBus);
-        generalizedCosts.put(Mode.TRAIN, gcTrain);
-        generalizedCosts.put(Mode.TRAM_METRO, gcTramMetro);
-        generalizedCosts.put(Mode.WALK, tourTravelTimes.get(Mode.WALK));
-        return generalizedCosts;
 
+        if (purpose.equals(Purpose.ACCOMPANY) || purpose.equals(Purpose.RECREATION)){
+            generalizedCosts.put(Mode.CAR_DRIVER, Math.log(gcAutoD));
+            generalizedCosts.put(Mode.CAR_PASSENGER, Math.log(gcAutoP));
+            generalizedCosts.put(Mode.BIKE, Math.log(tourTravelTimes.get(Mode.BIKE)));
+            generalizedCosts.put(Mode.BUS, Math.log(gcBus));
+            generalizedCosts.put(Mode.TRAIN, Math.log(gcTrain));
+            generalizedCosts.put(Mode.TRAM_METRO, Math.log(gcTramMetro));
+            generalizedCosts.put(Mode.WALK, Math.log(tourTravelTimes.get(Mode.WALK)));
+        }else{
+            generalizedCosts.put(Mode.CAR_DRIVER, gcAutoD);
+            generalizedCosts.put(Mode.CAR_PASSENGER, gcAutoP);
+            generalizedCosts.put(Mode.BIKE, tourTravelTimes.get(Mode.BIKE));
+            generalizedCosts.put(Mode.BUS, gcBus);
+            generalizedCosts.put(Mode.TRAIN, gcTrain);
+            generalizedCosts.put(Mode.TRAM_METRO, gcTramMetro);
+            generalizedCosts.put(Mode.WALK, tourTravelTimes.get(Mode.WALK));
+        }
+        return generalizedCosts;
     }
 }

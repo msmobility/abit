@@ -1,6 +1,7 @@
 package abm.io.output;
 
 import abm.data.DataSet;
+import abm.data.plans.Tour;
 import abm.properties.AbitResources;
 
 import javax.naming.PartialResultException;
@@ -23,6 +24,7 @@ public class OutputWriter {
             String outputFolder = AbitResources.instance.getString("base.directory") + "/output/" + runId + "/";
             new File(outputFolder).mkdirs();
 
+            new TourPrinter(dataSet).print(outputFolder + "/tours.csv");
             new ActivityPrinter(dataSet).print(outputFolder + "/activities.csv");
             new LegPrinter(dataSet).print(outputFolder + "/legs.csv");
             //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
