@@ -2,6 +2,8 @@ package abm.data.pop;
 
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
+import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
@@ -122,5 +124,15 @@ public class Person {
 
     public Disability getDisability() {
         return disability;
+    }
+
+    public boolean hasWorkActivity(){
+        for(Tour tour : plan.getTours().values()){
+            if(tour.getMainActivity().getPurpose().equals(Purpose.WORK)){
+                return true;
+            }
+        }
+
+        return false;
     }
 }
