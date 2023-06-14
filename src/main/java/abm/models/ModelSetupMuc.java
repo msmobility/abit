@@ -2,10 +2,7 @@ package abm.models;
 
 import abm.data.DataSet;
 import abm.data.plans.Purpose;
-import abm.models.activityGeneration.frequency.FrequencyGenerator;
-import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
-import abm.models.activityGeneration.frequency.SimpleSubtourGenerator;
-import abm.models.activityGeneration.frequency.SubtourGenerator;
+import abm.models.activityGeneration.frequency.*;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.models.activityGeneration.splitByType.SplitStopByTypeModel;
@@ -54,7 +51,7 @@ public class ModelSetupMuc implements ModelSetup{
         destinationChoice = new DestinationChoiceModel(dataSet);
         timeAssignment = new TimeAssignmentModel(dataSet);
 
-        subtourGenerator = new SimpleSubtourGenerator();
+        subtourGenerator = new SubtourGeneratorModel(dataSet);
         subtourTimeAssignment = new SimpleSubtourTimeAssignment();
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SimpleSubtourModeChoice();

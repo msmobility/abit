@@ -194,7 +194,7 @@ public class PlanGenerator implements Callable {
         List<Tour> mandatoryTours = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
         for (Tour tour : mandatoryTours) {
-            boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour.getMainActivity());
+            boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour);
             if (hasSubtour) {
                 Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
                 subtourActivity.setTour(tour);
