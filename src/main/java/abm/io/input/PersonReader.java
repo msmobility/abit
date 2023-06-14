@@ -84,7 +84,7 @@ public class PersonReader implements Reader {
             Relationship relationship = Relationship.valueOf(splitLine[indexes.get("relationship")].replace("\"",""));
             Occupation occupation = Occupation.valueOf(Integer.parseInt(splitLine[indexes.get("occupation")]));
             boolean hasLicense = Boolean.parseBoolean(splitLine[indexes.get("driversLicense")]);
-            Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
+            //Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
 
 
             int jobId = Integer.parseInt(splitLine[indexes.get("workplace")]);
@@ -102,7 +102,7 @@ public class PersonReader implements Reader {
                 school = dataSet.getSchools().getOrDefault(schoolId, null);
             }
 
-            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school, disability);
+            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school, Disability.WITHOUT);
 
             hh.getPersons().add(person);
 
