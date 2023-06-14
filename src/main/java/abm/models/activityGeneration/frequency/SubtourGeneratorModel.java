@@ -64,6 +64,7 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
         double utility = 0.;
         Activity mandatoryActivity = mandatoryTour.getMainActivity();
+        int dayOfWeekOffset = (mandatoryActivity.getDayOfWeek().getValue() - 1) * 60 * 24;
 
         if (purpose.equals(Purpose.WORK)) {
 
@@ -73,11 +74,11 @@ public class SubtourGeneratorModel implements SubtourGenerator {
                 utility += workSubtourCoef.get("actDuration_6_24");
             }
 
-            if (mandatoryActivity.getStartTime_min() > 8 * 60 && mandatoryActivity.getStartTime_min() < 12 * 60) {
+            if (mandatoryActivity.getStartTime_min() - dayOfWeekOffset > 8 * 60 && mandatoryActivity.getStartTime_min() - dayOfWeekOffset < 12 * 60) {
                 utility += workSubtourCoef.get("actStart_8_12");
             }
 
-            if (mandatoryActivity.getEndTime_min() > 12 * 60 && mandatoryActivity.getEndTime_min() < 24 * 60) {
+            if (mandatoryActivity.getEndTime_min() - dayOfWeekOffset > 12 * 60 && mandatoryActivity.getEndTime_min() - dayOfWeekOffset < 24 * 60) {
                 utility += workSubtourCoef.get("actEnd_12_24");
             }
 
@@ -102,11 +103,11 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
             utility += eduSubtourCoef.get("ASC");
 
-            if (mandatoryActivity.getStartTime_min() > 7 * 60 && mandatoryActivity.getStartTime_min() < 12 * 60) {
+            if (mandatoryActivity.getStartTime_min()- dayOfWeekOffset  > 7 * 60 && mandatoryActivity.getStartTime_min() - dayOfWeekOffset < 12 * 60) {
                 utility += eduSubtourCoef.get("actStart_7_12");
             }
 
-            if (mandatoryActivity.getEndTime_min() > 12 * 60 && mandatoryActivity.getEndTime_min() < 24 * 60) {
+            if (mandatoryActivity.getEndTime_min()- dayOfWeekOffset  > 12 * 60 && mandatoryActivity.getEndTime_min() - dayOfWeekOffset < 24 * 60) {
                 utility += eduSubtourCoef.get("actEnd_12_24");
             }
 

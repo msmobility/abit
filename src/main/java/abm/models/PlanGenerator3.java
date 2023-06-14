@@ -161,9 +161,6 @@ public class PlanGenerator3 implements Callable {
 
             for (Tour tour : mandatoryTours) {
                 boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour);
-                if (hasSubtour){
-                    System.out.println("1");
-                }
 
                 if (hasSubtour) {
                     Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
