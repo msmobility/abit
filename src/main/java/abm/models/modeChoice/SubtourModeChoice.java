@@ -1,8 +1,8 @@
 package abm.models.modeChoice;
 
-import abm.data.plans.Activity;
+import abm.data.plans.Tour;
 
 public interface SubtourModeChoice {
 
-    void chooseSubtourMode(Activity subtourActivity, Activity mainActivity);
+    void chooseSubtourMode(Tour tour);
 }
