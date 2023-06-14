@@ -64,4 +64,8 @@ public class Tour {
     public void setCar(Vehicle car) {
         this.car = car;
     }
+
+    public Mode getTourMode() {
+        return tourMode;
+    }
 }
