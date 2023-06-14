@@ -24,7 +24,7 @@ public class Household {
         this.numberOfCars = numberOfCars;
         this.persons = new ArrayList<>();
         this.location = location;
-        for (int i = 0; i < numberOfCars; i++) {
+        for (int i = 1; i <= numberOfCars; i++) {
             vehicles.add(new Car(i, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
         }
     }

@@ -82,7 +82,6 @@ public class Activity implements Comparable<Activity> {
         StringBuilder builder = new StringBuilder();
         builder.append(person.getId()).append(AbitUtils.SEPARATOR);
         builder.append(person.getHousehold().getId()).append(AbitUtils.SEPARATOR);
-        builder.append(tour.getActivities().firstKey()).append(AbitUtils.SEPARATOR);
         builder.append(dayOfWeek.getValue()).append(AbitUtils.SEPARATOR);
         builder.append(startTime_min).append(AbitUtils.SEPARATOR);
         builder.append(endTime_min).append(AbitUtils.SEPARATOR);
@@ -121,7 +120,6 @@ public class Activity implements Comparable<Activity> {
         StringBuilder builder = new StringBuilder();
         builder.append("person_id").append(AbitUtils.SEPARATOR);
         builder.append("household_id").append(AbitUtils.SEPARATOR);
-        builder.append("tour_start_time_min").append(AbitUtils.SEPARATOR);
         builder.append("day").append(AbitUtils.SEPARATOR);
         builder.append("start_time_min").append(AbitUtils.SEPARATOR);
         builder.append("end_time_min").append(AbitUtils.SEPARATOR);

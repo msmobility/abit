@@ -44,7 +44,7 @@ public class PlanTools {
         }*/
         //add a tour - adds the new activity there
         //if (homeActivity != null) {
-        Tour tour = new Tour(mainTourActivity);
+        Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
         mainTourActivity.setTour(tour);
 
         plan.getTours().put(mainTourActivity.getStartTime_min(), tour);

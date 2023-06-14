@@ -66,7 +66,7 @@ public class SplitByTypeModelTest {
                     Activity workActivity = new Activity(person, Purpose.WORK);
                     workActivity.setStartTime_min(9*60);
                     workActivity.setEndTime_min(18*60);
-                    person.getPlan().getTours().put(8*60, new Tour(workActivity));
+                    person.getPlan().getTours().put(8*60, new Tour(workActivity, person.getPlan().getTours().size() + 1));
                     person.setHabitualMode(Mode.CAR_DRIVER);
                     household.getPersons().add(person);
                 }
