@@ -17,6 +17,7 @@ public class Household {
     private Location location;
     private final int numberOfCars;
     private List<Vehicle> vehicles = new ArrayList<>();
+    private EconomicStatus economicStatus;
 
 
     public Household(int id, Location location, int numberOfCars) {
@@ -42,6 +43,7 @@ public class Household {
     }
 
 
+    //Todo needs to be fixed!!!!!
     public EconomicStatus getEconomicStatus() {
         return EconomicStatus.from1601to2400;
     }
