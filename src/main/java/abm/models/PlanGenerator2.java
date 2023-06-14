@@ -493,7 +493,7 @@ public class PlanGenerator2 implements Callable {
                 subtourTimeAssignment.assignTimeToSubtourActivity(subtourActivity, tour.getMainActivity());
                 subtourDestinationChoice.chooseSubtourDestination(subtourActivity, tour.getMainActivity());
                 planTools.addSubtour(subtourActivity, tour);
-                subtourModeChoice.chooseSubtourMode(subtourActivity, tour.getMainActivity());
+                subtourModeChoice.chooseSubtourMode(tour);
 
 
             }
