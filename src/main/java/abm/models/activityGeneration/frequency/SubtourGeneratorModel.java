@@ -51,8 +51,8 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
 
         HashMap<Boolean, Double> probabilities = new HashMap<>();
-        probabilities.put(false, 0.);
-        probabilities.put(true, utility);
+        probabilities.put(false, Math.exp(0));
+        probabilities.put(true, Math.exp(utility));
         boolean hasSubtour = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
 
 
