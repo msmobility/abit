@@ -67,118 +67,55 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
         if (purpose.equals(Purpose.WORK)) {
 
-            utility += workSubtourCoef.get("(Intercept)");
+            utility += workSubtourCoef.get("ASC");
 
-            if (mandatoryActivity.getDuration() > 6 * 60 || mandatoryActivity.getDuration() < 24 * 60) {
-                utility += workSubtourCoef.get("act.duration_hr_6_24");
+            if (mandatoryActivity.getDuration() > 6 * 60 && mandatoryActivity.getDuration() < 24 * 60) {
+                utility += workSubtourCoef.get("actDuration_6_24");
             }
 
-            if (mandatoryActivity.getStartTime_min() > 8 * 60 || mandatoryActivity.getStartTime_min() < 12 * 60) {
-                utility += workSubtourCoef.get("act.start_hr_8_12");
+            if (mandatoryActivity.getStartTime_min() > 8 * 60 && mandatoryActivity.getStartTime_min() < 12 * 60) {
+                utility += workSubtourCoef.get("actStart_8_12");
             }
 
-            if (mandatoryActivity.getEndTime_min() > 12 * 60 || mandatoryActivity.getEndTime_min() < 24 * 60) {
-                utility += workSubtourCoef.get("act.end_hr_12_24");
+            if (mandatoryActivity.getEndTime_min() > 12 * 60 && mandatoryActivity.getEndTime_min() < 24 * 60) {
+                utility += workSubtourCoef.get("actEnd_12_24");
             }
 
             if (mandatoryActivity.getDayOfWeek().equals(DayOfWeek.FRIDAY)) {
-                utility += workSubtourCoef.get("tour.friday");
+                utility += workSubtourCoef.get("isTourOnFriday");
             } else if (mandatoryActivity.getDayOfWeek().equals(DayOfWeek.SATURDAY)) {
-                utility += workSubtourCoef.get("tour.weekend");
+                utility += workSubtourCoef.get("isTourOnWeekend");
             } else if (mandatoryActivity.getDayOfWeek().equals(DayOfWeek.SUNDAY)) {
-                utility += workSubtourCoef.get("tour.weekend");
+                utility += workSubtourCoef.get("isTourOnWeekend");
             }
-
-            //todo check why tour mode is zero
-            //if (mandatoryTour.getTourMode().equals(Mode.CAR_DRIVER)) {
-            //    utility += workSubtourCoef.get("tour.mode_carD");
-            //}
 
             //todo change to half time
             if (person.getOccupation().equals(Occupation.EMPLOYED)) {
-                utility += workSubtourCoef.get("p.occupationStatus_Halftime");
+                utility += workSubtourCoef.get("isOccupation_halftime");
             } else if (person.getOccupation().equals(Occupation.STUDENT)) {
-                utility += workSubtourCoef.get("p.occupationStatus_Student");
+                utility += workSubtourCoef.get("isOccupation_student");
             }
 
-            //todo add travel time from work location to pt: "walkTime2PtFromWorkLocation_from20min"
-
-            if (AgeGroupFine.assignAgeGroupFine(person.getAge()).equals(AgeGroupFine.from0to18)) {
-                utility += workSubtourCoef.get("p.age_gr_fine_1");
-            }
-
-            //todo add number of works per week: "numDaysWork"
-
-            if (person.getHousehold().getEconomicStatus().equals(EconomicStatus.from1601to2400)) {
-                utility += workSubtourCoef.get("hh.econStatus_3");
-            } else if (person.getHousehold().getEconomicStatus().equals(EconomicStatus.from2401)) {
-                utility += workSubtourCoef.get("hh.econStatus_4");
-            }
-
-
-            int hhSize = person.getHousehold().getPersons().size();
-            switch (hhSize) {
-                case 1:
-                    break;
-                case 2:
-                    utility += workSubtourCoef.get("hh.size_2");
-                    break;
-                case 3:
-                    utility += workSubtourCoef.get("hh.size_3");
-                    break;
-                case 4:
-                    utility += workSubtourCoef.get("hh.size_4");
-                    break;
-                default:
-                    utility += workSubtourCoef.get("hh.size_5");
-                    break;
-            }
-
+            //todo add travel time from work location to pt: "isWorkplaceToPtStop>20min"
 
         } else if (purpose.equals(Purpose.EDUCATION)) {
 
-            utility += eduSubtourCoef.get("(Intercept)");
+            utility += eduSubtourCoef.get("ASC");
 
-            if (mandatoryActivity.getDuration() > 4 * 60 || mandatoryActivity.getDuration() < 24 * 60) {
-                utility += eduSubtourCoef.get("act.duration_hr_4_24");
+            if (mandatoryActivity.getStartTime_min() > 7 * 60 && mandatoryActivity.getStartTime_min() < 12 * 60) {
+                utility += eduSubtourCoef.get("actStart_7_12");
             }
 
-            if (mandatoryActivity.getEndTime_min() > 14 * 60 || mandatoryActivity.getEndTime_min() < 24 * 60) {
-                utility += eduSubtourCoef.get("act.end_hr_14_24");
+            if (mandatoryActivity.getEndTime_min() > 12 * 60 && mandatoryActivity.getEndTime_min() < 24 * 60) {
+                utility += eduSubtourCoef.get("actEnd_12_24");
             }
 
-            //todo check why tour mode is zero
-            //if (mandatoryTour.getTourMode().equals(Mode.CAR_DRIVER)) {
-            //    utility += eduSubtourCoef.get("tour.mode_carD");
-            //}
+            //todo add travel time from work location to pt: "isSchoolplaceToPtStop>20min♦"
 
-            //todo add travel time from work location to pt: "walkTime2PtFromWorkLocation_from10min"
-
-            if (person.getAge() <= 16) {
-                utility += eduSubtourCoef.get("p.age_0_16");
+            if (person.getAge() < 16) {
+                utility += eduSubtourCoef.get("isAge<16");
             }
 
-            if (person.getHousehold().getEconomicStatus().equals(EconomicStatus.from2401)) {
-                utility += eduSubtourCoef.get("hh.econStatus_4");
-            }
-
-            int hhSize = person.getHousehold().getPersons().size();
-            switch (hhSize) {
-                case 1:
-                    break;
-                case 2:
-                    utility += eduSubtourCoef.get("hh.size_2");
-                    break;
-                case 3:
-                    utility += eduSubtourCoef.get("hh.size_3");
-                    break;
-                case 4:
-                    utility += eduSubtourCoef.get("hh.size_4");
-                    break;
-                default:
-                    utility += eduSubtourCoef.get("hh.size_5");
-                    break;
-            }
         }
         return utility;
     }
