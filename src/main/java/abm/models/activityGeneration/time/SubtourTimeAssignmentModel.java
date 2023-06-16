@@ -66,11 +66,11 @@ public class SubtourTimeAssignmentModel implements SubtourTimeAssignment{
         int probabilityIndex;
 
         try {
-            BufferedReader br = new BufferedReader(new FileReader(AbitResources.instance.getString("start.time.subtour")));
+            BufferedReader br = new BufferedReader(new FileReader(AbitResources.instance.getString("act.duration.subtour")));
             String[] firstLine = br.readLine().split(",");
 
             durationIndex = MitoUtil.findPositionInArray("min", firstLine);
-            probabilityIndex = MitoUtil.findPositionInArray("startTimeProbability", firstLine);
+            probabilityIndex = MitoUtil.findPositionInArray("actDurationProbability", firstLine);
 
             String line;
             while((line = br.readLine())!= null){

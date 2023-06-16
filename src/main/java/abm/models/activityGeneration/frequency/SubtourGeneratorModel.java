@@ -55,6 +55,9 @@ public class SubtourGeneratorModel implements SubtourGenerator {
         probabilities.put(true, Math.exp(utility));
         boolean hasSubtour = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
 
+        if (mandatoryTour.getMainActivity().getEndTime_min() - mandatoryTour.getMainActivity().getStartTime_min() < 3*60){
+            hasSubtour = false;
+        }
 
         return hasSubtour;
 

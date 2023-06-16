@@ -56,9 +56,6 @@ public class ModelSetupMuc implements ModelSetup{
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
 
-
-
-
     }
 
     @Override
