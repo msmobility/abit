@@ -52,7 +52,7 @@ public class ModelSetupMuc implements ModelSetup{
         timeAssignment = new TimeAssignmentModel(dataSet);
 
         subtourGenerator = new SubtourGeneratorModel(dataSet);
-        subtourTimeAssignment = new SimpleSubtourTimeAssignment();
+        subtourTimeAssignment = new SubtourTimeAssignmentModel(dataSet);
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
 
