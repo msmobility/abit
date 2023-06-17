@@ -86,7 +86,7 @@ public class PersonReader implements Reader {
             Occupation occupation = Occupation.valueOf(Integer.parseInt(splitLine[indexes.get("occupation")]));
             boolean hasLicense = Boolean.parseBoolean(splitLine[indexes.get("driversLicense")]);
             Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
-            String employmentStatus = splitLine[indexes.get("jobType")];
+            String employmentStatus = splitLine[indexes.get("employmentStatus")];
 
             int jobId = Integer.parseInt(splitLine[indexes.get("workplace")]);
             Job jj = null;
@@ -109,6 +109,8 @@ public class PersonReader implements Reader {
                 person.setEmploymentStatus(EmploymentStatus.FULLTIME_EMPLOYED);
             }else if(employmentStatus.equals("partTime")){
                 person.setEmploymentStatus(EmploymentStatus.HALFTIME_EMPLOYED);
+            }else{
+                person.setEmploymentStatus(EmploymentStatus.NO_INFO);
             }
 
 
