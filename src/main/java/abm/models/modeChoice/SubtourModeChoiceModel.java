@@ -4,6 +4,7 @@ import abm.data.DataSet;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
+import abm.data.pop.EmploymentStatus;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
@@ -52,10 +53,9 @@ public class SubtourModeChoiceModel implements SubtourModeChoice {
 
         utility += switchToWalkCoef.get("log(distanceKm+1)") * Math.log(distance + 1);
 
-        //todo change half time
-        if (tour.getMainActivity().getPerson().getOccupation().equals(Occupation.EMPLOYED)){
+        if (tour.getMainActivity().getPerson().getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)){
             utility += switchToWalkCoef.get("isOccupation_Employed");
-        } else if(tour.getMainActivity().getPerson().getOccupation().equals(Occupation.EMPLOYED)){
+        } else if(tour.getMainActivity().getPerson().getEmploymentStatus().equals(EmploymentStatus.HALFTIME_EMPLOYED)){
             utility += switchToWalkCoef.get("isOccupation_Halftime");
         }
 

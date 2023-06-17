@@ -6,6 +6,7 @@ import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.AgeGroupFine;
 import abm.data.pop.EconomicStatus;
+import abm.data.pop.EmploymentStatus;
 import abm.data.pop.Person;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
@@ -93,8 +94,7 @@ public class SubtourGeneratorModel implements SubtourGenerator {
                 utility += workSubtourCoef.get("isTourOnWeekend");
             }
 
-            //todo change to half time
-            if (person.getOccupation().equals(Occupation.EMPLOYED)) {
+            if (person.getEmploymentStatus().equals(EmploymentStatus.HALFTIME_EMPLOYED)) {
                 utility += workSubtourCoef.get("isOccupation_halftime");
             } else if (person.getOccupation().equals(Occupation.STUDENT)) {
                 utility += workSubtourCoef.get("isOccupation_student");

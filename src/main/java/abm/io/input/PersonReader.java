@@ -59,6 +59,7 @@ public class PersonReader implements Reader {
         indexes.put("income", MitoUtil.findPositionInArray("income", header));
         indexes.put("schoolplace", MitoUtil.findPositionInArray("schoolId", header));
         indexes.put("disability", MitoUtil.findPositionInArray("disability", header));
+        indexes.put("employmentStatus", MitoUtil.findPositionInArray("jobType", header));
     }
 
 
@@ -84,8 +85,8 @@ public class PersonReader implements Reader {
             Relationship relationship = Relationship.valueOf(splitLine[indexes.get("relationship")].replace("\"",""));
             Occupation occupation = Occupation.valueOf(Integer.parseInt(splitLine[indexes.get("occupation")]));
             boolean hasLicense = Boolean.parseBoolean(splitLine[indexes.get("driversLicense")]);
-            //Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
-
+            Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
+            String employmentStatus = splitLine[indexes.get("jobType")];
 
             int jobId = Integer.parseInt(splitLine[indexes.get("workplace")]);
             Job jj = null;
@@ -102,7 +103,15 @@ public class PersonReader implements Reader {
                 school = dataSet.getSchools().getOrDefault(schoolId, null);
             }
 
-            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school, Disability.WITHOUT);
+            Person person = new Person(id, hh, age, gender, relationship, occupation, hasLicense, jj, income, school, disability);
+
+            if (employmentStatus.equals("fullTime")){
+                person.setEmploymentStatus(EmploymentStatus.FULLTIME_EMPLOYED);
+            }else if(employmentStatus.equals("partTime")){
+                person.setEmploymentStatus(EmploymentStatus.HALFTIME_EMPLOYED);
+            }
+
+
 
             hh.getPersons().add(person);
 
