@@ -114,6 +114,9 @@ public class SubtourTimeAssignmentModel implements SubtourTimeAssignment{
             }
         }
 
+        if (MitoUtil.select(probabilityMap).equals(null)){
+            System.out.println("!");
+        }
         int selectedTimes = MitoUtil.select(probabilityMap) + dayOfWeekOffset;
 
         return selectedTimes;

@@ -1,7 +1,6 @@
 package abm.models.modeChoice;
 
 import abm.data.DataSet;
-import abm.data.plans.Activity;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
@@ -48,9 +47,7 @@ public class SubtourModeChoiceModel implements SubtourModeChoice {
 
     private double calculateUtility(Tour tour) {
         double utility = 0.;
-        //todo use a fake distance until subtour destination choice is completed
-        //double distance = tour.getMainActivity().getSubtour().getOutboundLeg().getDistance();
-        double distance = 1.0;
+        double distance = tour.getMainActivity().getSubtour().getOutboundLeg().getDistance();
 
 
         utility += switchToWalkCoef.get("log(distanceKm+1)") * Math.log(distance + 1);
