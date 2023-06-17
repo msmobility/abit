@@ -42,10 +42,12 @@ public class Household {
         return location;
     }
 
+    public void setEconomicStatus(EconomicStatus economicStatus) {
+        this.economicStatus = economicStatus;
+    }
 
-    //Todo needs to be fixed!!!!!
     public EconomicStatus getEconomicStatus() {
-        return EconomicStatus.from1601to2400;
+        return this.economicStatus;
     }
 
     public int getNumberOfCars() {

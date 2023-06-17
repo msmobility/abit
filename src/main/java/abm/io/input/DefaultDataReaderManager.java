@@ -13,6 +13,7 @@ public class DefaultDataReaderManager implements DataReaderManager {
         new JobReader(dataSet).read();
         new SchoolReader(dataSet).read();
         new PersonReader(dataSet).read();
+        new EconomicStatusReader(dataSet).read();
 
 
         return dataSet;
