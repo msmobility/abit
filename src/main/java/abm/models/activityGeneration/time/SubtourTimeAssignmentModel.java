@@ -16,6 +16,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SubtourTimeAssignmentModel implements SubtourTimeAssignment{
 
@@ -106,7 +107,7 @@ public class SubtourTimeAssignmentModel implements SubtourTimeAssignment{
         int dayOfWeekOffset = (mainActivity.getDayOfWeek().getValue() - 1) * 60 * 24;
         int startTime = mainActivity.getStartTime_min() - dayOfWeekOffset;
         int endTime = mainActivity.getEndTime_min() - dayOfWeekOffset;
-        Map<Integer, Double> probabilityMap = new HashMap<>();
+        Map<Integer, Double> probabilityMap = new ConcurrentHashMap<>();
 
         for (Integer times: startTimeDurationMap.keySet()){
             if (times >= startTime && times <= endTime){
