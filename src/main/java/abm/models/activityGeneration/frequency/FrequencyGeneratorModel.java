@@ -267,7 +267,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 predictor += coefficients.get("hh.econStatus_3");
                 break;
             case from2401:
-                predictor += coefficients.get("hh.econStatus_4");
+                //predictor += coefficients.get("hh.econStatus_4");
                 break;
         }
 
