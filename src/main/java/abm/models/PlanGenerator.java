@@ -163,7 +163,6 @@ public class PlanGenerator implements Callable {
 
 
         stopsOnDiscretionaryTours.forEach(activity -> {
-
             Tour selectedTour = planTools.findDiscretionaryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
             timeAssignment.assignDurationToStop(activity);

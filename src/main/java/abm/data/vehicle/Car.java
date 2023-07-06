@@ -9,6 +9,10 @@ public class Car implements Vehicle {
     private final CarType carType;
     private int age;
     private CarAvailableTimeOfWeek availableTimeOfWeek;
+    @Override
+    public CarAvailableTimeOfWeek getCarAvailableTimeOfWeek(){
+        return availableTimeOfWeek;
+    }
 
     public Car(int id, CarType carType, int age) {
         this.id = id;

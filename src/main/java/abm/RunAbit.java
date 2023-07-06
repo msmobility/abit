@@ -1,6 +1,8 @@
 package abm;
 
 import abm.data.DataSet;
+import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
@@ -64,6 +66,23 @@ public class RunAbit {
         }
 
         executor.execute();
+
+
+        CheckResults checkResults = new CheckResults(dataSet);
+        checkResults.checkTimeConflict();
+        System.out.println(checkResults.getNumOfPeopleWithTimeConflict());
+        for (Mode mode: checkResults.getLegsWithWrongTravelTime().keySet()){
+            System.out.println(mode+":"+checkResults.getLegsWithWrongTravelTime().get(mode));
+        }
+        checkResults.checkVehicleUse();
+        System.out.println(checkResults.getOverlapCarUse());
+        System.out.println(checkResults.getCarUseInconsistency());
+        checkResults.checkAccompanyTrip();
+        System.out.println(checkResults.getAccompanyTripInconsistency());
+        checkResults.checkChildTrip();
+        for (Purpose purpose: checkResults.getChildTripWithoutAccompany().keySet()){
+            System.out.println(purpose+":"+checkResults.getChildTripWithoutAccompany().get(purpose));
+        }
 
         long end = System.currentTimeMillis();
 

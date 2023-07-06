@@ -1,5 +1,7 @@
 package abm.data.vehicle;
 
+import abm.data.timeOfDay.CarAvailableTimeOfWeek;
+
 public interface Vehicle {
 
     int getId();
@@ -7,6 +9,8 @@ public interface Vehicle {
     VehicleType getType();
 
     int getAge();
+
+    CarAvailableTimeOfWeek getCarAvailableTimeOfWeek();
 
 
 }
