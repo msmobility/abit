@@ -1,24 +1,23 @@
 package abm;
 
 import abm.data.DataSet;
-import abm.data.plans.Activity;
-import abm.data.plans.Leg;
-import abm.data.plans.Tour;
+import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
-import abm.models.DefaultModelSetup;
-import abm.models.ModelSetup;
-import abm.models.ModelSetupMuc;
-import abm.models.PlanGenerator;
+import abm.models.*;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RunAbit {
 
@@ -46,71 +45,44 @@ public class RunAbit {
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
         ConcurrentExecutor executor = ConcurrentExecutor.fixedPoolService(threads);
-        Map<Integer, List<Person>> personsByThread = new HashMap();
+        Map<Integer, List<Household>> householdsByThread = new HashMap();
 
         logger.info("Running plan generator using " + threads + " threads");
 
         long start = System.currentTimeMillis();
 
+        //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
         for (Household household : dataSet.getHouseholds().values()) {
             if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-                for (Person person : household.getPersons()) {
-                    final int i = AbitUtils.getRandomObject().nextInt(threads);
-                    personsByThread.putIfAbsent(i, new ArrayList<>());
-                    personsByThread.get(i).add(person);
-                }
+                final int i = AbitUtils.getRandomObject().nextInt(threads);
+                householdsByThread.putIfAbsent(i, new ArrayList<>());
+                householdsByThread.get(i).add(household);
             }
 
         }
 
-//        for (Household household : dataSet.getHouseholds().values()) {
-//            for (Person person : household.getPersons()) {
-//                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-//                    final int i = AbitUtils.getRandomObject().nextInt(threads);
-//                    personsByThread.putIfAbsent(i, new ArrayList<>());
-//                    personsByThread.get(i).add(person);
-//                }
-//            }
-//
-//        }
-
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator3(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
         }
 
         executor.execute();
 
-        //check schedule conflict_0531
 
-//        for (Person persons : dataSet.getPersons().values()){
-//            int[] weekTimeSlots = new int[11500];
-//            int numOfConflict = 0;
-//            if(persons.getPlan()!=null){
-//                for(Tour tour : persons.getPlan().getTours().values()){
-//                    for(Activity activity : tour.getActivities().values()){
-//                        int actStartTime = activity.getStartTime_min();
-//                        int actEndTime = activity.getEndTime_min();
-//                        for (int i=actStartTime;i<=actEndTime;i++){
-//
-//                            if (weekTimeSlots[i]!= 1){
-//                                weekTimeSlots[i] = 1;
-//                            } else {
-//                                numOfConflict+=1;
-//                            }
-//
-//                        }
-////                    Arrays.fill(weekTimeSlots,actStartTime,actEndTime+1,1);
-//                    }
-//
-////                for(Leg leg : tour.getLegs().values()){
-////                    int legStartTime = leg
-////                }
-//                }
-//            }
-//            System.out.println(numOfConflict);
-//        }
-
-
+        CheckResults checkResults = new CheckResults(dataSet);
+        checkResults.checkTimeConflict();
+        System.out.println(checkResults.getNumOfPeopleWithTimeConflict());
+        for (Mode mode: checkResults.getLegsWithWrongTravelTime().keySet()){
+            System.out.println(mode+":"+checkResults.getLegsWithWrongTravelTime().get(mode));
+        }
+        checkResults.checkVehicleUse();
+        System.out.println(checkResults.getOverlapCarUse());
+        System.out.println(checkResults.getCarUseInconsistency());
+        checkResults.checkAccompanyTrip();
+        System.out.println(checkResults.getAccompanyTripInconsistency());
+        checkResults.checkChildTrip();
+        for (Purpose purpose: checkResults.getChildTripWithoutAccompany().keySet()){
+            System.out.println(purpose+":"+checkResults.getChildTripWithoutAccompany().get(purpose));
+        }
 
         long end = System.currentTimeMillis();
 
