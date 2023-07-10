@@ -67,23 +67,24 @@ public class RunAbit {
 
         executor.execute();
 
-
+        // TODO: new code
         CheckResults checkResults = new CheckResults(dataSet);
         checkResults.checkTimeConflict();
-        System.out.println(checkResults.getNumOfPeopleWithTimeConflict());
+        System.out.println("Number of people with schedule conflict: "+checkResults.getNumOfPeopleWithTimeConflict());
         for (Mode mode: checkResults.getLegsWithWrongTravelTime().keySet()){
             System.out.println(mode+":"+checkResults.getLegsWithWrongTravelTime().get(mode));
         }
         checkResults.checkVehicleUse();
-        System.out.println(checkResults.getOverlapCarUse());
-        System.out.println(checkResults.getCarUseInconsistency());
+        System.out.println("Number of cars with overlap use: "+checkResults.getOverlapCarUse());
+        System.out.println("Number of cars with inconsistency between car profile and activity profile: "+checkResults.getCarUseInconsistency());
         checkResults.checkAccompanyTrip();
-        System.out.println(checkResults.getAccompanyTripInconsistency());
+        System.out.println("Number of accompany trip without accompany in the household: "+checkResults.getAccompanyTripInconsistency());
         checkResults.checkChildTrip();
         for (Purpose purpose: checkResults.getChildTripWithoutAccompany().keySet()){
-            System.out.println(purpose+":"+checkResults.getChildTripWithoutAccompany().get(purpose));
+            System.out.println("Number of child trip for "+purpose+" without the accompany in the household:"+checkResults.getChildTripWithoutAccompany().get(purpose));
         }
 
+        // TODO: new code
         long end = System.currentTimeMillis();
 
         long time = (end - start)/1000;
