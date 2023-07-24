@@ -22,9 +22,9 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
     public void read() {
 
         //todo temporary factors for testing
-        double busFactor = 0.35;
-        double tramMetroFactor = 0.6;
-        double trainFactor = 0.75;
+//        double busFactor = 0.35;
+//        double tramMetroFactor = 0.6;
+//        double trainFactor = 0.75;
 
 
         SkimTravelTimes travelTimes = new SkimTravelTimes();
@@ -33,17 +33,17 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
         String carMatrixName  = AbitResources.instance.getString("car.omx.matrix");
         travelTimes.readSkim(Mode.CAR_DRIVER.toString(), carFile, carMatrixName, 1/60.);
 
-        String busFile  = AbitResources.instance.getString("car.omx.file");
-        String busMatrixName  = AbitResources.instance.getString("car.omx.matrix");
-        travelTimes.readSkim(Mode.BUS.toString(), busFile, busMatrixName, 1/60. * busFactor);
+        String busFile  = AbitResources.instance.getString("bus.omx.file");
+        String busMatrixName  = AbitResources.instance.getString("bus.omx.matrix");
+        travelTimes.readSkim(Mode.BUS.toString(), busFile, busMatrixName, 1/60.);
 
-        String tramMetroFile  = AbitResources.instance.getString("car.omx.file");
-        String tramMetroMatrixName  = AbitResources.instance.getString("car.omx.matrix");
-        travelTimes.readSkim(Mode.TRAM_METRO.toString(), tramMetroFile, tramMetroMatrixName, 1/60. * tramMetroFactor);
+        String tramMetroFile  = AbitResources.instance.getString("tramMetro.omx.file");
+        String tramMetroMatrixName  = AbitResources.instance.getString("tramMetro.omx.matrix");
+        travelTimes.readSkim(Mode.TRAM_METRO.toString(), tramMetroFile, tramMetroMatrixName, 1/60.);
 
-        String trainFile  = AbitResources.instance.getString("car.omx.file");
-        String trainMatrixName  = AbitResources.instance.getString("car.omx.matrix");
-        travelTimes.readSkim(Mode.TRAIN.toString(), trainFile, trainMatrixName, 1/60.* trainFactor );
+        String trainFile  = AbitResources.instance.getString("train.omx.file");
+        String trainMatrixName  = AbitResources.instance.getString("train.omx.matrix");
+        travelTimes.readSkim(Mode.TRAIN.toString(), trainFile, trainMatrixName, 1/60.);
 
         dataSet.setTravelTimes(new MitoBasedTravelTimes(travelTimes));
 

@@ -54,7 +54,7 @@ public class HabitualModeChoiceTest {
         Household household = new Household(1, dummyZone, 1);
 
         Person person = new Person(1, household, 50, Gender.MALE,
-                Relationship.married, Occupation.EMPLOYED, true, dummyJob, 2000, null);
+                Relationship.married, Occupation.EMPLOYED, true, dummyJob, 2000, null, null);
         household.getPersons().add(person);
 
         Plan.initializePlan(person);

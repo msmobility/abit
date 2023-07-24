@@ -29,7 +29,7 @@ public class SimpleDataReaderManager implements DataReaderManager {
             MicroscopicLocation homeLocation = new MicroscopicLocation((AbitUtils.randomObject.nextDouble() - 0.5) * 3000,
                     (AbitUtils.randomObject.nextDouble() - 0.5)* 3000);
             Household household = new Household(i, homeLocation, 1);
-            Person person = new Person(i, household, 25, Gender.FEMALE, Relationship.single, Occupation.EMPLOYED, true, null, 1000, null);
+            Person person = new Person(i, household, 25, Gender.FEMALE, Relationship.single, Occupation.EMPLOYED, true, null, 1000, null, null);
             household.getPersons().add(person);
             dataSet.getHouseholds().put(household.getId(), household);
             dataSet.getPersons().put(person.getId(), person);

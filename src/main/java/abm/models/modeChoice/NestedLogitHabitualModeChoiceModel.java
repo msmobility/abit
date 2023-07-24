@@ -123,7 +123,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
         if (sum > 0) {
-            final Mode select = MitoUtil.select(probabilities, AbitUtils.getRandomObject().nextDouble());
+            final Mode select = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
             person.setHabitualMode(select);
         } else {
             logger.error("Negative probabilities for person " + person.getId() + "'s habitual mode");
@@ -181,16 +181,17 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), mode, person.getJob().getStartTime_min());
             } else if (mode == Mode.BIKE){
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
-                travelTime = (travelDistanceAuto/ SPEED_BICYCLE_KMH) *60;
+                travelTime = (travelDistanceAuto/1000./ SPEED_BICYCLE_KMH) *60;
             } else {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
-                travelTime = (travelDistanceAuto / SPEED_WALK_KMH) * 60;
+                travelTime = (travelDistanceAuto/1000. / SPEED_WALK_KMH) * 60;
             }
 
             utility += travelTime * coefficients.get(mode).get("travelTime");
         }
 
         if (person.getOccupation().equals(Occupation.STUDENT)) {
+
             double travelTime;
             double travelDistanceAuto;
             if(mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
@@ -199,10 +200,10 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), mode, person.getSchool().getStartTime_min());
             } else if (mode == Mode.BIKE){
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
-                travelTime = (travelDistanceAuto/ SPEED_BICYCLE_KMH) *60;
+                travelTime = (travelDistanceAuto/1000. / SPEED_BICYCLE_KMH) *60;
             } else {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
-                travelTime = (travelDistanceAuto / SPEED_WALK_KMH) * 60;
+                travelTime = (travelDistanceAuto/1000. / SPEED_WALK_KMH) * 60;
             }
             utility += travelTime * coefficients.get(mode).get("travelTime");
         }
