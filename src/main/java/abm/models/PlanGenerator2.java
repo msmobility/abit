@@ -122,7 +122,7 @@ public class PlanGenerator2 implements Callable {
 
                 switch (discretionaryActivityType) {
                     case ON_MANDATORY_TOUR:
-                        stopsOnMandatory.add(activity);
+                        stopsOnMandatory.add(activity);//TODO loop through based on discretionary purpose hierarchy?
                         break;
                     case ON_DISCRETIONARY_TOUR:
                         if (activity.getPurpose()==Purpose.ACCOMPANY) {
