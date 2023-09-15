@@ -1,5 +1,7 @@
 package abm.data.plans;
 
+import org.matsim.api.core.v01.TransportMode;
+
 import java.util.*;
 
 public enum Mode {
@@ -30,6 +32,27 @@ public enum Mode {
         modes.add(BIKE);
         modes.add(WALK);
         return modes;
+    }
+
+    public static String getMatsimMode(Mode abitMode){
+        switch (abitMode) {
+            case CAR_DRIVER:
+                return TransportMode.car;
+            case CAR_PASSENGER:
+                return "car_passenger";
+            case BUS:
+                return TransportMode.pt;
+            case TRAM_METRO:
+                return TransportMode.pt;
+            case TRAIN:
+                return TransportMode.pt;
+            case WALK:
+                return TransportMode.walk;
+            case BIKE:
+                return TransportMode.bike;
+            default:
+                return null;
+        }
     }
 
 }

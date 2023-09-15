@@ -67,6 +67,8 @@ public class RunAbit {
 
         long end = System.currentTimeMillis();
 
+
+
         long time = (end - start)/1000;
 
         logger.info("Runtime = " + time + " Persons = " + dataSet.getPersons().size());

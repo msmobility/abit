@@ -2,10 +2,7 @@ package abm.io.output;
 
 import abm.data.DataSet;
 import abm.data.geo.MicroLocation;
-import abm.data.plans.Activity;
-import abm.data.plans.Leg;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
+import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.properties.AbitResources;
@@ -67,7 +64,7 @@ public class PlansToMATSimPlans {
 
                            }
 
-                           matsimPlan.addLeg(PopulationUtils.createLeg(leg.getLegMode().toString().toLowerCase()));
+                           matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
 
                            if (!tour.getLegs().get(tour.getLegs().lastKey()).equals(leg)){
                                //only if this is not the last leg, the next activity is added
@@ -85,7 +82,7 @@ public class PlansToMATSimPlans {
                                    nextMatsimActivity.setEndTime(mainActivityPart1.getEndTime_min() * 60 - midnight_min * 60);
                                    matsimPlan.addActivity(nextMatsimActivity);
 
-                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
 
 
                                    final Activity subtourActivity = nextActivity.getSubtour().getSubtourActivity();
@@ -96,7 +93,7 @@ public class PlansToMATSimPlans {
 
                                    final Leg inboundLeg = nextActivity.getSubtour().getInboundLeg();
 
-                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
 
                                    final Activity mainActivityPart2 = inboundLeg.getNextActivity();
 
