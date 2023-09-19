@@ -109,8 +109,11 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         probabilities.put(Mode.CAR_PASSENGER, probabilityAutoP);
         probabilities.put(Mode.BIKE, probabilityBike);
         probabilities.put(Mode.WALK, probabilityWalk);
-        probabilities.put(Mode.BUS, probabilityPT); //Todo temporary assign pt to bus mode
-
+        //PT was temporarity assigned to BUS mode since rest of the model runs with PT separated into train/bus/tram_metro
+        //probabilities.put(Mode.BUS, probabilityPT);
+        probabilities.put(Mode.BUS, probabilityPT/3.0);
+        probabilities.put(Mode.TRAM_METRO, probabilityPT/3.0);
+        probabilities.put(Mode.TRAIN, probabilityPT/3.0);
 
 
         //found Nan when there is no transit!!
