@@ -104,7 +104,7 @@ public class TimeAssignmentModel implements TimeAssignment {
             timeIndex = MitoUtil.findPositionInArray("duration_min", firstLine);
             purposeIndex = MitoUtil.findPositionInArray("purpose", firstLine);
             fromIndex = MitoUtil.findPositionInArray("start_from_h", firstLine);
-            toIndex = MitoUtil.findPositionInArray("strart_to_h", firstLine);
+            toIndex = MitoUtil.findPositionInArray("start_to_h", firstLine);
             probabilityIndex = MitoUtil.findPositionInArray("duration_prob", firstLine);
 
             String line;
