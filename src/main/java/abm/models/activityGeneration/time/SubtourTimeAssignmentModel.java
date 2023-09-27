@@ -115,6 +115,14 @@ public class SubtourTimeAssignmentModel implements SubtourTimeAssignment{
             }
         }
 
+        try{
+            MitoUtil.select(probabilityMap).equals(null);
+        }catch (Exception e){
+            System.out.println("Error here");
+        }
+
+
+
         if (MitoUtil.select(probabilityMap).equals(null)){
             System.out.println("!");
         }

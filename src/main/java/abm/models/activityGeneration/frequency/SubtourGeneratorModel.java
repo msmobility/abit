@@ -59,6 +59,9 @@ public class SubtourGeneratorModel implements SubtourGenerator {
         if (mandatoryTour.getMainActivity().getEndTime_min() - mandatoryTour.getMainActivity().getStartTime_min() < 3*60){
             hasSubtour = false;
         }
+        if (mandatoryTour.getMainActivity().getStartTime_min() < 0){
+            hasSubtour = false;
+        }
 
         return hasSubtour;
 
