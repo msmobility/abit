@@ -171,6 +171,11 @@ public class TimeAssignmentModel implements TimeAssignment {
         //        Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
         int travelTime = 30;
 
+        if (activity.getPerson().getId()==9322 && dayOfWeek.equals(DayOfWeek.WEDNESDAY)){
+            System.out.println("check here");
+        }
+
+
         //define duration
         int startTime;
         int initialDuration = typicalDuration.get(activity.getPurpose());
@@ -194,6 +199,11 @@ public class TimeAssignmentModel implements TimeAssignment {
 //            startTime = startTime - newDuration - minActDuration;
 //            newDuration = minActDuration;
 //        }
+
+        //Todo some activity cannot be fit into schedule and their start time will be -1, this issue needs to be checked
+        if (startTime < 0){
+            System.out.println("Check here");
+        }
 
         activity.setStartTime_min(startTime);
         activity.setEndTime_min(startTime + newDuration);
