@@ -2,6 +2,9 @@ package abm.data.pop;
 
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
+import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
@@ -22,7 +25,9 @@ public class Person {
     private boolean hasLicense;
     private Job job;
     private int monthlyIncome_eur;
-    private School schol;
+    private School school;
+
+    private Disability disability;
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
@@ -30,7 +35,7 @@ public class Person {
 //        this.id = id;
 //        this.household = household;
 //    }
-    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School schol) {
+    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School school, Disability disability) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -40,7 +45,8 @@ public class Person {
         this.hasLicense = hasLicense;
         this.job = job;
         this.monthlyIncome_eur = monthlyIncome_eur;
-        this.schol = schol;
+        this.school = school;
+        this.disability = disability;
     }
 
     public int getAge() {
@@ -71,8 +77,8 @@ public class Person {
         return monthlyIncome_eur;
     }
 
-    public School getSchol() {
-        return schol;
+    public School getSchool() {
+        return school;
     }
 
     public Attributes getAttributes() {
@@ -114,5 +120,19 @@ public class Person {
 
     public boolean hasBicycle() {
         return true;
+    }
+
+    public Disability getDisability() {
+        return disability;
+    }
+
+    public boolean hasWorkActivity(){
+        for(Tour tour : plan.getTours().values()){
+            if(tour.getMainActivity().getPurpose().equals(Purpose.WORK)){
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -9,6 +9,8 @@ import abm.models.DefaultModelSetup;
 import abm.models.ModelSetup;
 import abm.models.ModelSetupMuc;
 import abm.models.PlanGenerator;
+import abm.io.output.OutputWriter;
+import abm.models.*;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -47,26 +49,24 @@ public class RunAbit {
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
         ConcurrentExecutor executor = ConcurrentExecutor.fixedPoolService(threads);
-        Map<Integer, List<Person>> personsByThread = new HashMap();
+        Map<Integer, List<Household>> householdsByThread = new HashMap();
 
         logger.info("Running plan generator using " + threads + " threads");
 
         long start = System.currentTimeMillis();
 
+        //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
         for (Household household : dataSet.getHouseholds().values()) {
-            for (Person person : household.getPersons()) {
-                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-                    final int i = AbitUtils.getRandomObject().nextInt(threads);
-                    personsByThread.putIfAbsent(i, new ArrayList<>());
-                    personsByThread.get(i).add(person);
-                }
-
+            if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+                final int i = AbitUtils.getRandomObject().nextInt(threads);
+                householdsByThread.putIfAbsent(i, new ArrayList<>());
+                householdsByThread.get(i).add(household);
             }
 
         }
 
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator3(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
         }
 
         executor.execute();
@@ -94,6 +94,6 @@ public class RunAbit {
         logger.info("Runtime = " + time + " Persons = " + dataSet.getPersons().size());
 
         logger.info("Printing out results");
-        //new OutputWriter(dataSet).run();
+        new OutputWriter(dataSet).run();
     }
 }

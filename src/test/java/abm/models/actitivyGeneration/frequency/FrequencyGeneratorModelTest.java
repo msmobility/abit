@@ -14,7 +14,6 @@ import abm.data.pop.Relationship;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 
 import abm.properties.AbitResources;
-import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import junitx.framework.Assert;
@@ -41,7 +40,7 @@ public class FrequencyGeneratorModelTest {
         Household household = new Household(1, dummyZone, 1);
 
         Person person = new Person(1, household, 36, Gender.FEMALE,
-                Relationship.married, Occupation.EMPLOYED, true, null, 10000, null);
+                Relationship.married, Occupation.EMPLOYED, true, null, 10000, null,null);
         household.getPersons().add(person);
 
         Plan.initializePlan(person);

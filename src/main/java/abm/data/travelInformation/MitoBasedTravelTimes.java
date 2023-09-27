@@ -9,7 +9,7 @@ public class MitoBasedTravelTimes implements TravelTimes {
 
     private final de.tum.bgu.msm.data.travelTimes.TravelTimes mitoTravelTimes;
 
-    public MitoBasedTravelTimes(de.tum.bgu.msm.data.travelTimes.TravelTimes mitoTravelTimes) {
+    public MitoBasedTravelTimes(de.tum.bgu.msm.data.travelTimes.TravelTimes  mitoTravelTimes) {
         this.mitoTravelTimes = mitoTravelTimes;
     }
 

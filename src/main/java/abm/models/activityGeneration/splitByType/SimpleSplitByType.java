@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 public class SimpleSplitByType implements SplitByType {
 
     @Override
-    public DiscretionaryActivityType assignActivityType(Activity activity, Person person) {
+    public DiscretionaryActivityType assignActType(Activity activity, Person person) {
 
         List<DiscretionaryActivityType> discretionaryActivityTypeSet = new ArrayList<>();
         discretionaryActivityTypeSet.add(DiscretionaryActivityType.PRIMARY);
@@ -45,5 +45,11 @@ public class SimpleSplitByType implements SplitByType {
 
 
         return discretionaryActivityTypeSet.stream().findFirst().get();
+    }
+
+    @Override
+    public DiscretionaryActivityType assignActTypeForDiscretionaryTourActs(Activity activity, Person person, int numActsNotOnMandatoryTours) {
+
+        return null;
     }
 }

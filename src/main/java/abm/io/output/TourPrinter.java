@@ -8,11 +8,11 @@ import abm.data.pop.Person;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
-public class ActivityPrinter {
+public class TourPrinter {
 
     private final DataSet dataSet;
 
-    public ActivityPrinter(DataSet dataSet) {
+    public TourPrinter(DataSet dataSet) {
         this.dataSet = dataSet;
     }
 
@@ -21,16 +21,13 @@ public class ActivityPrinter {
 
         PrintWriter pw = new PrintWriter(fileName);
 
-        pw.println(Activity.getHeader());
+        pw.println(Tour.getHeader());
 
 
         for (Person person : dataSet.getPersons().values()) {
             if (person.getPlan() != null){
                 for (Tour tour : person.getPlan().getTours().values()) {
-                    for (Activity activity : tour.getActivities().values()) {
-                        pw.println(activity.toString());
-                    }
-
+                        pw.println(tour.toString());
                 }
             }
         }

@@ -44,7 +44,7 @@ public class PlanTools {
         }*/
         //add a tour - adds the new activity there
         //if (homeActivity != null) {
-        Tour tour = new Tour(mainTourActivity);
+        Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
         mainTourActivity.setTour(tour);
 
         plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
@@ -244,6 +244,12 @@ public class PlanTools {
 
     public static Tour findDiscretionaryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getDiscretionaryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+        Collections.shuffle(tourList, AbitUtils.getRandomObject());
+        return tourList.stream().findFirst().orElse(null);
+    }
+
+    public static Tour findDiscretionaryTourByPurpose (Plan plan, Purpose purpose) {
+        final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose()==purpose).collect(Collectors.toList());
         Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }

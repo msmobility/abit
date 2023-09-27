@@ -40,10 +40,10 @@ public class ModelSetupMuc implements ModelSetup{
     public ModelSetupMuc(DataSet dataSet) {
 
 
-        dayOfWeekMandatoryAssignment = new SimpleDayOfWeekMandatoryAssignment();
+        dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
         tourModeChoice = new NestedLogitModeChoiceModel(dataSet);
-        habitualModeChoice = new SimpleHabitualModeChoice();
-        dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+        habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
+        dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
 
         frequencyGenerators = new HashedMap();
         for (Purpose purpose : Purpose.getAllPurposes()){

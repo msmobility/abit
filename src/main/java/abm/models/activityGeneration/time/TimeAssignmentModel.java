@@ -10,10 +10,7 @@ import abm.data.timeOfDay.TimeOfDayUtils;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
-import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
-import org.locationtech.jts.awt.PointShapeFactory;
-import org.matsim.contrib.drt.optimizer.Waypoint;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -169,8 +166,10 @@ public class TimeAssignmentModel implements TimeAssignment {
     public void assignStartTimeAndDuration(Activity activity) {
 
         final DayOfWeek dayOfWeek = activity.getDayOfWeek();
-        int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
-                Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
+        //Todo the follwing implementation is paused because we wanna do duration and start time befroe destination choice
+        //int travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(activity.getPerson().getHousehold().getLocation(), activity.getLocation(),
+        //        Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
+        int travelTime = 30;
 
         //define duration
         int startTime;

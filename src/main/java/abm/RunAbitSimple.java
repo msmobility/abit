@@ -33,10 +33,11 @@ public class RunAbitSimple {
      */
     public static void main(String[] args) {
 
+        AbitResources.initializeResources(args[0]);
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
         logger.info("Reading data");
-        DataSet dataSet = new SimpleDataReaderManager(Integer.parseInt(args[0])).readData();
+        DataSet dataSet = new SimpleDataReaderManager(1000).readData();
 
         logger.info("Creating the sub-models");
         ModelSetup modelSetup = new SimpleModelSetup(dataSet);
@@ -53,10 +54,7 @@ public class RunAbitSimple {
                 final int i = 0;
                 personsByThread.putIfAbsent(i, new ArrayList<>());
                 personsByThread.get(i).add(person);
-
-
             }
-
         }
 
         for (int i = 0; i < threads; i++) {
