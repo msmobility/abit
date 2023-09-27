@@ -98,7 +98,7 @@ public class PlanGenerator implements Callable {
                 if (person.getOccupation().equals(Occupation.EMPLOYED)){
                     activity.setLocation(person.getJob().getLocation());
                 } else if (person.getOccupation().equals(Occupation.STUDENT)) {
-                    activity.setLocation(person.getSchol().getLocation());
+                    activity.setLocation(person.getSchool().getLocation());
                 } else {
                     destinationChoice.selectMainActivityDestination(person, activity);
                 }
