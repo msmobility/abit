@@ -113,6 +113,7 @@ public class HouseholdReader implements Reader {
             hhLocation.setZone(dataSet.getZones().get(zoneId));
 
             Household hh = new Household(id, hhLocation, autos);
+            hh.setSimulated(Boolean.FALSE);
 
             dataSet.getHouseholds().put(id, hh);
 
