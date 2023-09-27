@@ -55,12 +55,13 @@ public class RunAbit {
                 final int i = AbitUtils.getRandomObject().nextInt(threads);
                 householdsByThread.putIfAbsent(i, new ArrayList<>());
                 householdsByThread.get(i).add(household);
+                household.setSimulated(Boolean.TRUE);
             }
 
         }
 
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator3(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator4(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
         }
 
         executor.execute();
