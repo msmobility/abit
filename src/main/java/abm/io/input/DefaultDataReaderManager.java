@@ -44,7 +44,7 @@ public class DefaultDataReaderManager implements DataReaderManager {
             zoneAttractors.get(zone).put("hh.total", zoneAttractors.get(zone).get("hh.total") + household.getPersons().size());
             for (Person pp: household.getPersons()){
                 if (pp.getOccupation().equals(Occupation.STUDENT)) {
-                    Zone schoolZone = dataSet.getZones().get(pp.getSchol().getLocation().getZoneId());
+                    Zone schoolZone = dataSet.getZones().get(pp.getSchool().getLocation().getZoneId());
                     zoneAttractors.get(schoolZone).put("students", zoneAttractors.get(schoolZone).get("students") + 1);
                 }
             }
