@@ -8,7 +8,9 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.shape.random.RandomPointsBuilder;
 import org.matsim.core.utils.geometry.geotools.MGC;
+import org.matsim.utils.objectattributes.attributable.Attributes;
 
+import java.util.Optional;
 import java.util.Random;
 
 public class Zone implements Location, Id {
@@ -20,6 +22,7 @@ public class Zone implements Location, Id {
     private RegioStaRGem5 regioStaRGem5Type;
     private Geometry geometry;
     private String name;
+    private final Attributes attributes = new Attributes();
 
     public Zone(int id) {
         this.id = id;
@@ -94,5 +97,17 @@ public class Zone implements Location, Id {
         Coordinate coordinate = randomPointsBuilder.getGeometry().getCoordinates()[0];
         Point p = MGC.coordinate2Point(coordinate);
         return new Coordinate(p.getX(), p.getY());
+    }
+
+    public Attributes getAttributes() {
+        return attributes;
+    }
+
+    public Optional<Object> getAttribute(String key) {
+        return Optional.ofNullable(attributes.getAttribute(key));
+    }
+
+    public void setAttribute(String key, Object value) {
+        attributes.putAttribute(key, value);
     }
 }
