@@ -31,8 +31,8 @@ public class DestinationChoiceModel implements DestinationChoice {
     private final Map<Purpose, Map<Zone, Double>> zoneAttractorsByPurpose;
     private Map<Purpose, IndexedDoubleMatrix2D> utilityMatrixByPurpose = new HashMap<>();
 
-    private static final double BETA = -0.0005;
-    private static final double ALPHA = 2;
+    private static final double BETA = -0.01;
+    private static final double ALPHA = 20;
     //TODO. Beta and alpha by purpose
 
     public DestinationChoiceModel(DataSet dataSet) {
@@ -43,14 +43,26 @@ public class DestinationChoiceModel implements DestinationChoice {
 
     private Map<Purpose, IndexedDoubleMatrix2D> loadUtilities() {
 
+        Map<Purpose, Double> betaAdjustment = new HashMap<>();
+        //beta adjustment copied from MITO
+        betaAdjustment.put(Purpose.WORK,0.545653257377378); //HBW
+        betaAdjustment.put(Purpose.EDUCATION, 1.09211334287783); //HBE
+        betaAdjustment.put(Purpose.SHOPPING, 1.382831732); //HBS
+        betaAdjustment.put(Purpose.OTHER, 1.02679034779653); //HBO
+        betaAdjustment.put(Purpose.ACCOMPANY, 1.09211334287783); //same as education
+        betaAdjustment.put(Purpose.RECREATION, 0.874195571671594); //HBR
+        betaAdjustment.put(Purpose.HOME,0.545653257377378); //HBW, does not matter now
+        betaAdjustment.put(Purpose.SUBTOUR,0.733731103853844); //NHBW, does not matter now
+
         Map<Purpose, IndexedDoubleMatrix2D> matrixByPurpose = new HashMap<>();
         for (Purpose purpose : Purpose.getAllPurposes()) {
             IndexedDoubleMatrix2D utilityMatrix = new IndexedDoubleMatrix2D(dataSet.getZones().values(), dataSet.getZones().values());
             for (Zone origin : dataSet.getZones().values()) {
                 for (Zone destination : dataSet.getZones().values()) {
                     final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
+                    final double travelDistanceInKm = travelDistanceInMeters / 1000;
                     final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
-                    double utility = attractor * Math.exp(ALPHA * Math.exp(BETA * travelDistanceInMeters));
+                    double utility = attractor * Math.exp(ALPHA * Math.exp(BETA * betaAdjustment.get(purpose) * travelDistanceInKm));
                     utilityMatrix.setIndexed(origin.getId(), destination.getId(), utility);
                 }
             }
@@ -63,7 +75,7 @@ public class DestinationChoiceModel implements DestinationChoice {
 
     private Map<Purpose, Map<Zone, Double>> loadBasicAttraction() {
 
-        Path pathToFilePurpose = Path.of(AbitResources.instance.getString("destinationChoice.coef"));
+        Path pathToFilePurpose = Path.of(AbitResources.instance.getString("destination.choice.attractors"));
         Map<Purpose, Map<Zone, Double>> zoneAttractorsByPurpose = new HashMap<>();
         for (Purpose purpose : Purpose.getAllPurposes()) {
             String columnName = purpose.toString().toLowerCase(); //todo review this

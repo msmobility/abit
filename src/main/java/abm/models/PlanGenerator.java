@@ -13,6 +13,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
@@ -92,7 +93,13 @@ public class PlanGenerator implements Callable {
 
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
-                destinationChoice.selectMainActivityDestination(person, activity);
+                if (person.getOccupation().equals(Occupation.EMPLOYED)){
+                    activity.setLocation(person.getJob().getLocation());
+                } else if (person.getOccupation().equals(Occupation.STUDENT)) {
+                    activity.setLocation(person.getSchol().getLocation());
+                } else {
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                }
                 activity.setDayOfWeek(day);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 planTools.addMainTour(plan, activity);

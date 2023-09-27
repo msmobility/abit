@@ -7,6 +7,7 @@ import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.Person;
+import abm.io.input.AbstractCsvReader;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -17,6 +18,7 @@ import de.tum.bgu.msm.data.MitoZone;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.travelTimes.TravelTimes;
 import de.tum.bgu.msm.util.MitoUtil;
+import org.apache.log4j.Logger;
 import org.matsim.core.utils.collections.Tuple;
 
 import java.nio.file.Path;
@@ -28,6 +30,8 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
 
     private final DataSet dataSet;
     private Map<Purpose,Map<Mode,Map<String, Double>>> purposeModeCoefficients;
+
+    private static final Logger logger = Logger.getLogger(AbstractCsvReader.class);
 
     private static final LogitTools<abm.data.plans.Mode> logitTools = new LogitTools<>(abm.data.plans.Mode.class);
     private Map<Purpose, List<Tuple<EnumSet<abm.data.plans.Mode>, Double>>> nests = null;
@@ -44,7 +48,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
             List<Tuple<EnumSet<abm.data.plans.Mode>, Double>> nestsByPurpose = new ArrayList<>();
             Path pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "_" + purpose + ".csv");
             for (Mode mode : Mode.getModes()) {
-                String columnName = mode.toString().toLowerCase() + "_" + purpose.toString().toLowerCase(); //todo review this
+                String columnName = mode.toString().toLowerCase();
                 Map<String, Double> coefficients = new CoefficientsReader(dataSet, columnName, pathToFilePurpose).readCoefficients();
                 modeCoefficients.put(mode, coefficients);
                 if (mode == Mode.CAR_DRIVER){
@@ -96,7 +100,9 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     }
 
     private double calculateUtilityForThisMode(Person person, Tour tour, Purpose purpose, Mode mode) {
+     /*
     // Intercept
+
         double utility = purposeModeCoefficients.get(purpose).get(mode).get("INTERCEPT");
 
         // Sex
@@ -159,8 +165,8 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
             double gc = generalizedCosts.get(mode);
         utility += gc * purposeModeCoefficients.get(purpose).get(mode).get("gc");
 
-
-        return utility;
+*/
+        return 1;
     }
 
     //todo. Remove the pointers to msm and replace by abit specific objects
@@ -184,6 +190,8 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
         double gcWalk = travelDistanceNMT;
         double gcBicycle = travelDistanceNMT;
 
+        /*
+
         //todo. Add VOT table with the coefficients and rename
         if (monthlyIncome_EUR <= 1500) {
             gcAutoD = timeAutoD + (travelDistanceAuto * 0.7) / coef.get(Mode.CAR_DRIVER).get("vot_under_1500_eur_min");
@@ -204,15 +212,15 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
             gcTrain = timeTrain + (travelDistanceAuto * 0.12) / coef.get(Mode.TRAIN).get("vot_above_5600_eur_min");
             gcTramMetro = timeTramMetro + (travelDistanceAuto * 0.12) / coef.get(Mode.TRAM_METRO).get("vot_above_5600_eur_min");
         }
-
+*/
         EnumMap<Mode, Double> generalizedCosts = new EnumMap<Mode, Double>(Mode.class);
-        generalizedCosts.put(Mode.CAR_DRIVER, gcAutoD);
+/*        generalizedCosts.put(Mode.CAR_DRIVER, gcAutoD);
         generalizedCosts.put(Mode.CAR_PASSENGER, gcAutoP);
         generalizedCosts.put(Mode.BIKE, gcBicycle);
         generalizedCosts.put(Mode.BUS, gcBus);
         generalizedCosts.put(Mode.TRAIN, gcTrain);
         generalizedCosts.put(Mode.TRAM_METRO, gcTramMetro);
-        generalizedCosts.put(Mode.WALK, gcWalk);
+        generalizedCosts.put(Mode.WALK, gcWalk);*/
         return generalizedCosts;
 
     }
