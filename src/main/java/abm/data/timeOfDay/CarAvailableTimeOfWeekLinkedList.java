@@ -25,9 +25,9 @@ public class CarAvailableTimeOfWeekLinkedList {
         internalList = new LinkedList<Integer>();
 
         //Todo this for loop might not be needed because we want to just add the blocked time into the arraylist
-        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
-            internalList.add(i);
-        }
+//        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
+//            internalList.add(i);
+//        }
 
     }
 

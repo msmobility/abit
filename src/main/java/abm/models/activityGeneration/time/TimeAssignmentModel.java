@@ -201,9 +201,9 @@ public class TimeAssignmentModel implements TimeAssignment {
 //        }
 
         //Todo some activity cannot be fit into schedule and their start time will be -1, this issue needs to be checked
-        if (startTime < 0){
-            System.out.println("Check here");
-        }
+//        if (startTime < 0){
+//            System.out.println("Check here");
+//        }
 
         activity.setStartTime_min(startTime);
         activity.setEndTime_min(startTime + newDuration);
