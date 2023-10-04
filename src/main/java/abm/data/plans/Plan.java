@@ -2,6 +2,7 @@ package abm.data.plans;
 
 import abm.data.pop.Person;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
+import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
 import abm.utils.PlanTools;
 
 import java.util.*;
@@ -15,7 +16,7 @@ public class Plan {
 
     private Activity dummyHomeActivity;
     private SortedMap<Integer, Tour> tours;
-    private AvailableTimeOfWeek availableTimeOfWeek;
+    private AvailableTimeOfWeekLinkedList availableTimeOfWeek;
     private Plan() {
 
     }
@@ -26,7 +27,7 @@ public class Plan {
 
     public static Plan initializePlan(Person person) {
         Plan plan = new Plan();
-        plan.availableTimeOfWeek = new AvailableTimeOfWeek();
+        plan.availableTimeOfWeek = new AvailableTimeOfWeekLinkedList();
         plan.id = person.getId();
         plan.person = person;
         //plan.homeActivities = new TreeMap<>();
@@ -113,7 +114,7 @@ public class Plan {
         return string.toString();
     }
 
-    public AvailableTimeOfWeek getAvailableTimeOfDay() {
+    public AvailableTimeOfWeekLinkedList getAvailableTimeOfDay() {
         return availableTimeOfWeek;
     }
 
