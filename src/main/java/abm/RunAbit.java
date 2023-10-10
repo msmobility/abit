@@ -1,5 +1,6 @@
 package abm;
 
+import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
@@ -82,6 +83,12 @@ public class RunAbit {
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+        }
+
+        //Todo Model calibration
+        if (Boolean.parseBoolean(AbitResources.instance.getString("model.calibration"))){
+            CalibrationMuc calibrationMuc = new CalibrationMuc(dataSet);
+            calibrationMuc.runCalibration();
         }
 
         //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
