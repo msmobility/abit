@@ -5,7 +5,7 @@ import abm.data.plans.Mode;
 import java.io.FileNotFoundException;
 import java.util.Map;
 
-public class SubtourTimeAssignmentCalibration implements ModelComponent{
+public class SubTourDestinationChoiceCalibration implements ModelComponent{
     //Todo define a few calibration parameters
     @Override
     public void setup() {
