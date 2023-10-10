@@ -32,4 +32,14 @@ public enum Mode {
         return modes;
     }
 
+    public static SortedSet<Mode> getHabitualModes(){
+        SortedSet<Mode> modes = new TreeSet<>();
+        modes.add(BUS);
+        modes.add(CAR_DRIVER);
+        modes.add(CAR_PASSENGER);
+        modes.add(BIKE);
+        modes.add(WALK);
+        return modes;
+    }
+
 }
