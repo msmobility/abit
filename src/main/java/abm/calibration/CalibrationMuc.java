@@ -2,6 +2,7 @@ package abm.calibration;
 
 import abm.data.DataSet;
 
+import abm.data.plans.Tour;
 import abm.properties.AbitResources;
 
 import org.apache.log4j.Logger;
@@ -17,16 +18,107 @@ public class CalibrationMuc {
 
     //Todo add booleans for all the models that need to be calibrated here:
     boolean calibrateHabitualModeChoice;
+    boolean calibrateMandatoryActGeneration;
+    boolean calibrateMandatoryActDayOfWeekAssignment;
+    boolean calibrateMandatoryActStartTime;
+    boolean calibrateMandatoryActDurationTime;
+    boolean calibrateMandatoryActDestinationChoice;
+    boolean calibrateDiscretionaryActGeneration;
+    boolean calibrateDiscretionaryActSplitByType;
+    boolean calibrateDiscretionaryActDayOfWeekAssignment;
+    boolean calibrateDiscretionaryActStartTime;
+    boolean calibrateDiscretionaryActDuration;
+    boolean calibrateDiscretionaryActPrimaryActDestinationChoice;
+    boolean calibrateDiscretionaryActStopDestinationChoice;
+    boolean calibrateDiscretionaryActStopType;
+    boolean calibrateTourModeChoice;
+    boolean calibrateSubTourGeneration;
+    boolean calibrateSubTourStartTime;
+    boolean calibrateSubTourDuration;
+    boolean calibrateSubTourDestinationChoice;
+    boolean calibrateSubTourModeChoice;
+
+
     //Todo add all the calibration class here
     private HabitualModeChoiceCalibration habitualModeChoiceCalibration;
+    private FrequencyGeneratorCalibration frequencyGeneratorCalibration;
+    private DayOfWeekMandatoryAssignmentCalibration dayOfWeekMandatoryAssignmentCalibration;
+    private DayOfWeekDiscretionaryAssignmentCalibration dayOfWeekDiscretionaryAssignmentCalibration;
+    private TimeAssignmentCalibration timeAssignmentCalibration;
+    private DestinationChoiceCalibration destinationChoiceCalibration;
+    private SplitByTypeCalibration splitByTypeCalibration;
+    private SplitStopTypeCalibration splitStopTypeCalibration;
+    private TourModeChoiceCalibration tourModeChoiceCalibration;
+    private SubTourGenerationCalibration subTourGenerationCalibration;
+    private SubTourTimeAssignmentCalibration subTourTimeAssignmentCalibration;
+    private SubTourDestinationChoiceCalibration subTourDestinationChoiceCalibration;
+    private SubTourModeChoiceCalibration subTourModeChoiceCalibration;
 
     private final Map<String, Boolean> calibrationList = new HashMap<>();
 
     public CalibrationMuc(DataSet dataSet) {
         this.dataSet = dataSet;
-        //Todo read all the boolean properties here and add them to the map
+
         calibrateHabitualModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("habitual.mode.calibration"));
         calibrationList.put("HabitualModeChoice", calibrateHabitualModeChoice);
+
+        calibrateMandatoryActGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
+        calibrationList.put("ManActGeneration", calibrateMandatoryActGeneration);
+
+        calibrateMandatoryActDayOfWeekAssignment = Boolean.parseBoolean(AbitResources.instance.getString("day.of.week.mandatory.acts.calibration"));
+        calibrationList.put("ManActDayOfWeek", calibrateMandatoryActDayOfWeekAssignment);
+
+        calibrateMandatoryActStartTime = Boolean.parseBoolean(AbitResources.instance.getString("act.mand.start.time.calibration"));
+        calibrationList.put("ManActStartTime", calibrateMandatoryActStartTime);
+
+        calibrateMandatoryActDurationTime = Boolean.parseBoolean(AbitResources.instance.getString("act.mand.duration.calibration"));
+        calibrationList.put("ManActDuration", calibrateMandatoryActDurationTime);
+
+        calibrateMandatoryActDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.mand.destination.calibration"));
+        calibrationList.put("ManActDestination", calibrateMandatoryActDestinationChoice);
+
+        calibrateDiscretionaryActGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
+        calibrationList.put("DiscActGeneration", calibrateDiscretionaryActGeneration);
+
+        calibrateDiscretionaryActSplitByType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.type.calibration"));
+        calibrationList.put("DiscActSplitByType", calibrateDiscretionaryActSplitByType);
+
+        calibrateDiscretionaryActDayOfWeekAssignment = Boolean.parseBoolean(AbitResources.instance.getString("act.split.type.onto.discretionary.calibration"));
+        calibrationList.put("DiscActDayOfWeek", calibrateDiscretionaryActDayOfWeekAssignment);
+
+        calibrateDiscretionaryActStartTime = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.start.time.calibration"));
+        calibrationList.put("DiscActStartTime", calibrateDiscretionaryActStartTime);
+
+        calibrateDiscretionaryActDuration = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.duration.calibration"));
+        calibrationList.put("DiscActDuration", calibrateDiscretionaryActDuration);
+
+        calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.type.onto.discretionary.calibration"));
+        calibrationList.put("DiscActStopOnto", calibrateDiscretionaryActStopType);
+
+        calibrateDiscretionaryActPrimaryActDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.primary.destination.calibration"));
+        calibrationList.put("DiscActPrimaryActDestination", calibrateDiscretionaryActPrimaryActDestinationChoice);
+
+        calibrateDiscretionaryActStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString(""));
+        calibrationList.put("DiscActStopDestination", calibrateDiscretionaryActStopDestinationChoice);
+
+        calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
+        calibrationList.put("TourModeChoice", calibrateTourModeChoice);
+
+        calibrateSubTourGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.subtour.calibration"));
+        calibrationList.put("SubTourGeneration", calibrateSubTourGeneration);
+
+        calibrateSubTourStartTime = Boolean.parseBoolean(AbitResources.instance.getString("start.time.subtour.calibration"));
+        calibrationList.put("SubTourStartTime", calibrateSubTourStartTime);
+
+        calibrateSubTourDuration = Boolean.parseBoolean(AbitResources.instance.getString("act.duration.subtour.calibration"));
+        calibrationList.put("SubTourDuration", calibrateSubTourDuration);
+
+        calibrateSubTourDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("subtour.destination.calibration"));
+        calibrationList.put("SubTourDestination", calibrateSubTourDestinationChoice);
+
+        calibrateSubTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("mode.choice.subtour.calibration"));
+        calibrationList.put("SubTourModeChoice", calibrateSubTourDestinationChoice);
+
     }
 
 
@@ -34,12 +126,109 @@ public class CalibrationMuc {
 
         checkCalibrationProcess();
 
-        //Todo: extend the logic checking, supposedly one model in the upper stream is calibrated, others in the lower stream need to be calibrated as well.
         if (calibrateHabitualModeChoice) {
             habitualModeChoiceCalibration = new HabitualModeChoiceCalibration(dataSet);
             habitualModeChoiceCalibration.setup();
             habitualModeChoiceCalibration.load();
             habitualModeChoiceCalibration.run();
+        }
+
+        if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
+            frequencyGeneratorCalibration.setup();
+            frequencyGeneratorCalibration.load();
+            frequencyGeneratorCalibration.run();
+        }
+
+        if (calibrateMandatoryActDayOfWeekAssignment) {
+            dayOfWeekMandatoryAssignmentCalibration = new DayOfWeekMandatoryAssignmentCalibration();
+            dayOfWeekMandatoryAssignmentCalibration.setup();
+            dayOfWeekMandatoryAssignmentCalibration.load();
+            dayOfWeekMandatoryAssignmentCalibration.run();
+        }
+
+        if (calibrateMandatoryActStartTime || calibrateMandatoryActDurationTime) {
+            timeAssignmentCalibration = new TimeAssignmentCalibration();
+            timeAssignmentCalibration.setup();
+            timeAssignmentCalibration.load();
+            timeAssignmentCalibration.run();
+        }
+
+        if (calibrateMandatoryActDestinationChoice){
+            destinationChoiceCalibration = new DestinationChoiceCalibration();
+            destinationChoiceCalibration.setup();
+            destinationChoiceCalibration.load();
+            destinationChoiceCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActSplitByType) {
+            splitByTypeCalibration = new SplitByTypeCalibration();
+            splitByTypeCalibration.setup();
+            splitByTypeCalibration.load();
+            splitByTypeCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActDayOfWeekAssignment) {
+            dayOfWeekDiscretionaryAssignmentCalibration = new DayOfWeekDiscretionaryAssignmentCalibration();
+            dayOfWeekDiscretionaryAssignmentCalibration.setup();
+            dayOfWeekDiscretionaryAssignmentCalibration.load();
+            dayOfWeekDiscretionaryAssignmentCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActStartTime || calibrateDiscretionaryActDuration){
+            timeAssignmentCalibration = new TimeAssignmentCalibration();
+            timeAssignmentCalibration.setup();
+            timeAssignmentCalibration.load();
+            timeAssignmentCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActStopType){
+            splitStopTypeCalibration = new SplitStopTypeCalibration();
+            splitStopTypeCalibration.setup();
+            splitStopTypeCalibration.load();
+            splitStopTypeCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActPrimaryActDestinationChoice || calibrateDiscretionaryActStopDestinationChoice){
+            destinationChoiceCalibration = new DestinationChoiceCalibration();
+            destinationChoiceCalibration.setup();
+            destinationChoiceCalibration.load();
+            destinationChoiceCalibration.run();
+        }
+
+        if (calibrateTourModeChoice){
+            tourModeChoiceCalibration = new TourModeChoiceCalibration();
+            tourModeChoiceCalibration.setup();
+            tourModeChoiceCalibration.load();
+            tourModeChoiceCalibration.run();
+        }
+
+        if (calibrateSubTourGeneration){
+            subTourGenerationCalibration = new SubTourGenerationCalibration();
+            subTourGenerationCalibration.setup();
+            subTourGenerationCalibration.load();
+            subTourGenerationCalibration.run();
+        }
+
+        if (calibrateSubTourStartTime || calibrateSubTourDuration){
+            subTourTimeAssignmentCalibration = new SubTourTimeAssignmentCalibration();
+            subTourTimeAssignmentCalibration.setup();
+            subTourTimeAssignmentCalibration.load();
+            subTourTimeAssignmentCalibration.run();
+        }
+
+        if (calibrateSubTourDestinationChoice){
+            subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration();
+            subTourDestinationChoiceCalibration.setup();
+            subTourDestinationChoiceCalibration.load();
+            subTourDestinationChoiceCalibration.run();
+        }
+
+        if (calibrateSubTourModeChoice){
+            subTourModeChoiceCalibration = new SubTourModeChoiceCalibration();
+            subTourModeChoiceCalibration.setup();
+            subTourModeChoiceCalibration.load();
+            subTourModeChoiceCalibration.run();
         }
 
     }
