@@ -26,9 +26,8 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     private final DataSet dataSet;
     private Map<Mode, Map<String, Double>> coefficients;
 
-    private Map<Occupation, Map<Mode, Double>> updatedCalibrationFactors;
-
     private boolean runCalibration = false;
+    private Map<Occupation, Map<Mode, Double>> updatedCalibrationFactors;
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -44,17 +43,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     }
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet, Boolean runCalibration) {
-        this.dataSet = dataSet;
-        this.coefficients = new HashMap<>();
-        Path pathToCoefficientsFile = Path.of(AbitResources.instance.getString("habitual.mode.coef"));
-
-        //the following loop will read the coefficient file Mode.getModes().size() times, which is acceptable?
-        //Todo the modes in the habitual mode choice model is not consistent with the ABIT mode definition. Check with Carlos and Joanna
-        for (Mode mode : Mode.getModes()) {
-            final Map<String, Double> modeCoefficients = new CoefficientsReader(dataSet, mode.toString().toLowerCase(), pathToCoefficientsFile).readCoefficients();
-            coefficients.put(mode, modeCoefficients);
-        }
-
+        this(dataSet);
         this.updatedCalibrationFactors = new HashMap<>();
         for (Occupation occupation : Occupation.values()) {
             this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
@@ -285,17 +274,17 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
     }
 
-    public Map<Mode, Map<String, Double>> obtainCoefficientsTable(){
+    public Map<Mode, Map<String, Double>> obtainCoefficientsTable() {
 
         double originalCalibrationFactor = 0.0;
         double updatedCalibrationFactor = 0.0;
         double latestValibrationFactor = 0.0;
 
-        for (Mode mode : Mode.getModes()){
-            for (Occupation occupation:Occupation.values()){
+        for (Mode mode : Mode.getModes()) {
+            for (Occupation occupation : Occupation.values()) {
 
-                if (mode.equals(Mode.TRAIN) || mode.equals(Mode.TRAM_METRO)){
-                    switch (occupation){
+                if (mode.equals(Mode.TRAIN) || mode.equals(Mode.TRAM_METRO)) {
+                    switch (occupation) {
                         case EMPLOYED:
                             originalCalibrationFactor = this.coefficients.get(mode).get("calibration_employed");
                             updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(Mode.BUS);
@@ -323,8 +312,8 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                             latestValibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
                             this.coefficients.get(mode).replace("calibration_employed", latestValibrationFactor);
                     }
-                }else{
-                    switch (occupation){
+                } else {
+                    switch (occupation) {
                         case EMPLOYED:
                             originalCalibrationFactor = this.coefficients.get(mode).get("calibration_employed");
                             updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(mode);

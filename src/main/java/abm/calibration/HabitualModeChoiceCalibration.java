@@ -16,17 +16,19 @@ import java.util.Map;
 
 public class HabitualModeChoiceCalibration implements ModelComponent {
 
-    private static final int MAX_ITER = 2_000_000;
-    double stepSize = 10;
-    String inputFolder;
+    //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
+    private static final int MAX_ITERATION = 2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.005;
+    double stepSize = 10;
+    String inputFolder = AbitResources.instance.getString("habitual.mode.calibration.output");
     DataSet dataSet;
-    private NestedLogitHabitualModeChoiceModel habitualModeChoiceCalibration;
     Map<Occupation, Map<Mode, Double>> objectiveHabitualModeShare = new HashMap<>();
     Map<Occupation, Map<Mode, Integer>> simulatedHabitualModeCount = new HashMap<>();
     Map<Occupation, Integer> simulatedPopCount = new HashMap<>();
     Map<Occupation, Map<Mode, Double>> simulatedHabitualModeShare = new HashMap<>();
     Map<Occupation, Map<Mode, Double>> calibrationFactors = new HashMap<>();
+    private NestedLogitHabitualModeChoiceModel habitualModeChoiceCalibration;
 
     public HabitualModeChoiceCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -35,8 +37,9 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     @Override
     public void setup() {
+        //Todo: read boolean input from the property file and create the model which needs to be calibrated
         boolean calibrateHabitualModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("habitual.mode.calibration"));
-        habitualModeChoiceCalibration = new NestedLogitHabitualModeChoiceModel(dataSet, calibrateHabitualModeChoice); // point to the model that need to be calibrated
+        habitualModeChoiceCalibration = new NestedLogitHabitualModeChoiceModel(dataSet, calibrateHabitualModeChoice);
 
         //Todo: initialize all the data containers that might be needed for calibration
         for (Occupation occupation : Occupation.values()) {
@@ -57,35 +60,37 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     @Override
     public void load() {
-        //Todo 1: read objective values
+        //Todo: read objective values
         readObjectiveValues();
-        //Todo consider having the result summarization in the statistics writer
+        //Todo: consider having the result summarization in the statistics writer
         summarizeSimulatedResult();
     }
 
     @Override
     public void run() {
         logger.info("Start calibrating the habitual mode choice model......");
-        final double TERMINATION_THRESHOLD = 0.005;
-        double maxDifference = 0.0;
 
-        for (int iteration = 0; iteration < MAX_ITER; iteration++) {
+        //Todo: loop through the calibration process until criteria are met
+        for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
+
+            double maxDifference = 0.0;
 
             for (Occupation occupation : Occupation.values()) {
-
                 for (Mode mode : Mode.getHabitualModes()) {
-
                     double observedShare = objectiveHabitualModeShare.get(occupation).get(mode);
                     double simulatedShare = simulatedHabitualModeShare.get(occupation).get(mode);
                     double difference = observedShare - simulatedShare;
                     double factor = stepSize * (observedShare - simulatedShare);
                     calibrationFactors.get(occupation).replace(mode, factor);
                     logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
-
                     if (Math.abs(difference) > maxDifference) {
                         maxDifference = difference;
                     }
                 }
+            }
+
+            if (maxDifference <= TERMINATION_THRESHOLD) {
+                break;
             }
 
             habitualModeChoiceCalibration.updateCalibrationFactor(calibrationFactors);
@@ -95,15 +100,14 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
             summarizeSimulatedResult();
 
-            if (maxDifference <= TERMINATION_THRESHOLD) {
-                break;
-            }
         }
 
         logger.info("Finished the calibration of habitual mode choice model.");
 
+        //Todo: obtain the updated coefficients + calibration factors
         Map<Mode, Map<String, Double>> finalCoefficientsTable = habitualModeChoiceCalibration.obtainCoefficientsTable();
 
+        //Todo: print the coefficients table to input folder
         try{
             printFinalCoefficientsTable(finalCoefficientsTable);
         }catch(FileNotFoundException e){
@@ -171,8 +175,8 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
     }
 
     private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
-        logger.info("Writing habitual mode choice coefficient + calibration factors: " + inputFolder + "/habitualMode_nestedLogit_calibrated.csv");
-        PrintWriter pw = new PrintWriter(inputFolder + "/habitualMode_nestedLogit_calibrated.csv");
+        logger.info("Writing habitual mode choice coefficient + calibration factors: " + inputFolder);
+        PrintWriter pw = new PrintWriter(inputFolder);
 
         StringBuilder header = new StringBuilder("variable");
         for (Mode mode : Mode.getModes()){
