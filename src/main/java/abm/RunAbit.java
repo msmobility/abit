@@ -1,14 +1,12 @@
 package abm;
 
+import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
 import abm.data.pop.Household;
-import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.*;
-import abm.models.DefaultModelSetup;
 import abm.models.ModelSetup;
 import abm.models.ModelSetupMuc;
-import abm.models.PlanGenerator;
 import abm.io.output.OutputWriter;
 import abm.models.*;
 import abm.properties.AbitResources;
@@ -72,6 +70,11 @@ public class RunAbit {
 
         executor.execute();
 
+        if (Boolean.parseBoolean(AbitResources.instance.getString("model.calibration"))){
+            CalibrationMuc calibrationMuc = new CalibrationMuc(dataSet);
+            calibrationMuc.runCalibration();
+        }
+
         //todo. summary (trip length frequency distribution, etc.)
         String outputFolder = AbitResources.instance.getString("base.directory") + "/output/";
 
@@ -83,6 +86,7 @@ public class RunAbit {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
 
         //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
 

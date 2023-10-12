@@ -1,0 +1,15 @@
+General flow for model calibration
+0. In the very beginning, please create your own branch and update the model and input folder
+1. Summarize target values from survey data
+2. Go to the corresponding calibration class and implement the code
+3. Go to the corresponding model class and do the following task:
+    3.1 Add a map to store the calibration factors on the fly
+    3.2 Add a boolean variable to let model being able to distinguish between a usual model run or calibration run
+    3.3 Add a new constructor to initialize the above-mentioned variables
+    3.4 Update the coefficients table
+    3.5 Update the utility calculation
+    3.6 Add a new method "updateCalibrationFactor" to ontain the calibration factors in each iteration
+    3.7 Add a new method "obtainCoefficientsTable"
+4. Build the project to check any compile error
+5. Commit your code and input file accordingly with understandable message
+6. Open pull request and merge to the master
