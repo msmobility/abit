@@ -5,6 +5,7 @@ import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
 import abm.data.pop.EconomicStatus;
 import abm.data.timeOfDay.AvailableTimeOfWeek;
+import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
 import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
@@ -28,11 +29,9 @@ public class DayOfWeekDiscretionaryAssignmentModel implements DayOfWeekDiscretio
 
         for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
 
-            AvailableTimeOfWeek availableTime = activity.getPerson().getPlan().getAvailableTimeOfDay();
+            AvailableTimeOfWeekLinkedList availableTime = activity.getPerson().getPlan().getAvailableTimeOfDay();
 
-            double availableTimeSlots = availableTime.getForThisDayOfWeek(dayOfWeek)
-                    .getInternalMap().entrySet().stream()
-                    .filter(x -> x.getValue().equals(true)).count();
+            double availableTimeSlots = (double) 60 / 15 * 24 - availableTime.getForThisDayOfWeek(dayOfWeek).getInternalMap().size();
 
             if (activity.getPurpose().equals(Purpose.SHOPPING) && dayOfWeek.equals(DayOfWeek.SUNDAY)) {
                 availableTimeSlots = 0.0;

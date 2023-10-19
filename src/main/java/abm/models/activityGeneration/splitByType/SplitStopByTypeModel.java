@@ -1,6 +1,7 @@
 package abm.models.activityGeneration.splitByType;
 
 import abm.data.plans.*;
+import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
@@ -58,7 +59,7 @@ public class SplitStopByTypeModel implements SplitStopType {
     @Override
     public StopType getStopType(Person person, Activity activity, Tour tour) {
 
-        AvailableTimeOfWeek availableTimeOfDay = person.getPlan().getAvailableTimeOfDay();
+        AvailableTimeOfWeekLinkedList availableTimeOfDay = person.getPlan().getAvailableTimeOfDay();
 
         final DayOfWeek dayOfWeek = tour.getMainActivity().getDayOfWeek();
         int midnight = dayOfWeek.ordinal() * 24 * 60;

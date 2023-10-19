@@ -1,9 +1,12 @@
 package abm;
 
+import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
 import abm.data.pop.Household;
-import abm.data.pop.Person;
 import abm.io.input.DefaultDataReaderManager;
+import abm.io.output.*;
+import abm.models.ModelSetup;
+import abm.models.ModelSetupMuc;
 import abm.io.output.OutputWriter;
 import abm.models.*;
 import abm.properties.AbitResources;
@@ -12,6 +15,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
 import org.apache.log4j.Logger;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +59,7 @@ public class RunAbit {
                 final int i = AbitUtils.getRandomObject().nextInt(threads);
                 householdsByThread.putIfAbsent(i, new ArrayList<>());
                 householdsByThread.get(i).add(household);
+                household.setSimulated(Boolean.TRUE);
             }
 
         }
@@ -64,6 +69,28 @@ public class RunAbit {
         }
 
         executor.execute();
+
+        if (Boolean.parseBoolean(AbitResources.instance.getString("model.calibration"))){
+            CalibrationMuc calibrationMuc = new CalibrationMuc(dataSet);
+            calibrationMuc.runCalibration();
+        }
+
+        //todo. summary (trip length frequency distribution, etc.)
+        String outputFolder = AbitResources.instance.getString("base.directory") + "/output/";
+
+        logger.info("Printing out results");
+        try {
+
+            new StatisticsPrinter(dataSet).print(outputFolder + "/distanceDistribution.csv");
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+        //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
+
+        //todo. auto calibration outputs
 
         long end = System.currentTimeMillis();
 

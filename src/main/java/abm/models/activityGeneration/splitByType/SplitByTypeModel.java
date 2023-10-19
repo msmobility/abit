@@ -208,7 +208,7 @@ public class SplitByTypeModel implements SplitByType{
                 utility += splitOntoMandatoryCoefficients.get("hh.econStatus_3");
                 break;
             case from2401:
-                utility += splitOntoMandatoryCoefficients.get("hh.econStatus_4");
+                //utility += splitOntoMandatoryCoefficients.get("hh.econStatus_4");
                 break;
         }
 

@@ -66,9 +66,7 @@ public class DayOfWeekMandatoryAssignmentModel implements DayOfWeekMandatoryAssi
     @Override
     public DayOfWeek[] assignDaysOfWeek(int numberOfDaysOfWeek, Purpose purpose, Person person) {
 
-        //TODO: our population is still missing the economic status, update the code after sp reader is finalized
-        //person.getHousehold().getEconomicStatus();
-        Map<DayOfWeek, Double> dayProbabilities = new HashMap<>(dayProbabilitiesByMainActs.get(purpose).get(EconomicStatus.from1601to2400));
+        Map<DayOfWeek, Double> dayProbabilities = new HashMap<>(dayProbabilitiesByMainActs.get(purpose).get(person.getHousehold().getEconomicStatus()));
 
         DayOfWeek[] daysOfWeek = new DayOfWeek[numberOfDaysOfWeek];
 
