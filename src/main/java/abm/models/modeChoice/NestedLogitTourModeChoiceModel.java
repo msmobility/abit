@@ -3,38 +3,29 @@ package abm.models.modeChoice;
 import abm.data.DataSet;
 import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
-import abm.data.geo.Zone;
 import abm.data.plans.Leg;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
-import abm.data.pop.EconomicStatus;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.travelInformation.TravelTimes;
 import abm.data.vehicle.Car;
 import abm.data.vehicle.Vehicle;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
-import abm.properties.InternalProperties;
 import abm.utils.AbitUtils;
 import abm.utils.LogitTools;
-import de.tum.bgu.msm.data.Location;
-import de.tum.bgu.msm.data.MitoHousehold;
-import de.tum.bgu.msm.data.MitoPerson;
-import de.tum.bgu.msm.data.MitoZone;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.matsim.core.utils.collections.Tuple;
-import org.matsim.households.Income;
 
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 
-public class NestedLogitModeChoiceModel implements TourModeChoice{
+public class NestedLogitTourModeChoiceModel implements TourModeChoice{
 
 
     private final DataSet dataSet;
@@ -50,7 +41,7 @@ public class NestedLogitModeChoiceModel implements TourModeChoice{
     private static final double SPEED_BICYCLE_KMH = 10.;
 
 
-    public NestedLogitModeChoiceModel(DataSet dataSet) {
+    public NestedLogitTourModeChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
         this.purposeModeCoefficients = new HashMap<>();
 

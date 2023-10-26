@@ -1,6 +1,7 @@
 package abm.data.vehicle;
 
 import abm.data.timeOfDay.CarAvailableTimeOfWeek;
+import abm.data.timeOfDay.CarAvailableTimeOfWeekLinkedList;
 
 public class Car implements Vehicle {
 
@@ -8,17 +9,14 @@ public class Car implements Vehicle {
     private final int id; //household id + car id
     private final CarType carType;
     private int age;
-    private CarAvailableTimeOfWeek availableTimeOfWeek;
-    @Override
-    public CarAvailableTimeOfWeek getCarAvailableTimeOfWeek(){
-        return availableTimeOfWeek;
-    }
+    private CarAvailableTimeOfWeekLinkedList availableTimeOfWeek;
 
     public Car(int id, CarType carType, int age) {
         this.id = id;
         this.carType = carType;
         this.age = age;
-        this.availableTimeOfWeek = new CarAvailableTimeOfWeek();
+        //Todo a testing switch here
+        this.availableTimeOfWeek = new CarAvailableTimeOfWeekLinkedList();
     }
 
 
@@ -45,7 +43,7 @@ public class Car implements Vehicle {
         return carType;
     }
 
-    public CarAvailableTimeOfWeek getAvailableTimeOfWeek() {
+    public CarAvailableTimeOfWeekLinkedList getAvailableTimeOfWeek() {
         return availableTimeOfWeek;
     }
 }

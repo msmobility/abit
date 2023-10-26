@@ -17,6 +17,17 @@ public class Household {
     private Location location;
     private final int numberOfCars;
     private List<Vehicle> vehicles = new ArrayList<>();
+    private EconomicStatus economicStatus;
+
+    public Boolean getSimulated() {
+        return simulated;
+    }
+
+    public void setSimulated(Boolean simulated) {
+        this.simulated = simulated;
+    }
+
+    private Boolean simulated;
 
 
     public Household(int id, Location location, int numberOfCars) {
@@ -41,9 +52,12 @@ public class Household {
         return location;
     }
 
+    public void setEconomicStatus(EconomicStatus economicStatus) {
+        this.economicStatus = economicStatus;
+    }
 
     public EconomicStatus getEconomicStatus() {
-        return EconomicStatus.from1601to2400;
+        return this.economicStatus;
     }
 
     public int getNumberOfCars() {

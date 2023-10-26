@@ -22,7 +22,7 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
     private final Map<Zone, Double> zoneAttractors;
     private final IndexedDoubleMatrix2D utilityMatrix;
 
-    private static final double BETA = -0.0005;
+    private static final double BETA = -0.8573;
 
     public SubtourDestinationChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -54,7 +54,7 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
             for (Zone destination : dataSet.getZones().values()) {
                 final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
                 final double attractor = zoneAttractors.get(destination);
-                double utility = attractor * Math.exp(BETA * travelDistanceInMeters);
+                double utility = attractor * Math.exp(BETA * (double)(travelDistanceInMeters/1000));
                 utilityMatrix.setIndexed(origin.getId(), destination.getId(), utility);
             }
         }

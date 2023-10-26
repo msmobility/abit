@@ -25,6 +25,16 @@ public class TimeOfDayUtils {
         return newTOD;
     }
 
+    public static TimeOfWeekDistribution updateTODWithAvailability(TimeOfWeekDistribution originalTOD,
+                                                                   AvailableTimeOfWeekLinkedList availableTOD) {
+
+        TimeOfWeekDistribution newTOD = new TimeOfWeekDistribution();
+        for (int minute : originalTOD.getMinutes()) {
+            newTOD.setProbability(minute, originalTOD.probability(minute) * (double) availableTOD.isAvailable(minute));
+        }
+        return newTOD;
+    }
+
 
     /**
      * Converts the available time object to a new one that can accomodate a trip of certain duration. It avoids starting a trip that will overlap
@@ -37,6 +47,21 @@ public class TimeOfDayUtils {
                                                                      int tripDuration) {
 
         AvailableTimeOfWeek newAvailableTOD = new AvailableTimeOfWeek();
+
+        for (int minute = InternalProperties.SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + InternalProperties.SEARCH_INTERVAL_MIN) {
+            if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - InternalProperties.SEARCH_INTERVAL_MIN) == 1){
+                newAvailableTOD.blockTime(Math.max(0, minute - tripDuration), minute);
+            } else if (baseAvailableTOD.isAvailable(minute) == 0) {
+                newAvailableTOD.blockTime(minute - InternalProperties.SEARCH_INTERVAL_MIN, minute);
+            }
+        }
+        return newAvailableTOD;
+    }
+
+    public static AvailableTimeOfWeekLinkedList updateAvailableTimeForNextTrip(AvailableTimeOfWeekLinkedList baseAvailableTOD,
+                                                                     int tripDuration) {
+
+        AvailableTimeOfWeekLinkedList newAvailableTOD = new AvailableTimeOfWeekLinkedList();
 
         for (int minute = InternalProperties.SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + InternalProperties.SEARCH_INTERVAL_MIN) {
             if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - InternalProperties.SEARCH_INTERVAL_MIN) == 1){

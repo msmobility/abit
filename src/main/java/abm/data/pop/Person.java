@@ -31,6 +31,9 @@ public class Person {
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
+
+    private EmploymentStatus employmentStatus;
+
 //    public Person(int id, Household household) {
 //        this.id = id;
 //        this.household = household;
@@ -134,5 +137,12 @@ public class Person {
         }
 
         return false;
+    }
+    public EmploymentStatus getEmploymentStatus() {
+        return employmentStatus;
+    }
+
+    public void setEmploymentStatus(EmploymentStatus employmentStatus) {
+        this.employmentStatus = employmentStatus;
     }
 }

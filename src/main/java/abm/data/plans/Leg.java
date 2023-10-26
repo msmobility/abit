@@ -11,11 +11,8 @@ public class Leg {
     private Mode legMode;
     private int travelTime_min;
 
-    private double distance;
 
-    public double getDistance() {
-        return distance;
-    }
+    private double distance;
 
     public Leg(Activity previousActivity, Activity nextActivity) {
         this.previousActivity = previousActivity;
@@ -55,6 +52,13 @@ public class Leg {
         this.travelTime_min = travelTime_min;
     }
 
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
 
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -105,7 +109,7 @@ public class Leg {
         builder.append(travelTime_min).append(AbitUtils.SEPARATOR);
 
         if (microscopicNextLocation != null && microscopicPreviousLocation != null) {
-            distance = Math.abs(microscopicNextLocation.getX() - microscopicPreviousLocation.getX()) +
+            double distance = Math.abs(microscopicNextLocation.getX() - microscopicPreviousLocation.getX()) +
                     Math.abs(microscopicNextLocation.getY() - microscopicPreviousLocation.getY());
             builder.append(distance);
         } else {

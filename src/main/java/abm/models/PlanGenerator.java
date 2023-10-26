@@ -13,6 +13,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
@@ -94,9 +95,15 @@ public class PlanGenerator implements Callable {
 
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
+                if (person.getOccupation().equals(Occupation.EMPLOYED)){
+                    activity.setLocation(person.getJob().getLocation());
+                } else if (person.getOccupation().equals(Occupation.STUDENT)) {
+                    activity.setLocation(person.getSchool().getLocation());
+                } else {
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                }
                 activity.setDayOfWeek(day);
                 timeAssignment.assignStartTimeAndDuration(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
                 planTools.addMainTour(plan, activity);
             }
         }
@@ -193,7 +200,7 @@ public class PlanGenerator implements Callable {
         List<Tour> mandatoryTours = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
         for (Tour tour : mandatoryTours) {
-            boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour.getMainActivity());
+            boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour);
             if (hasSubtour) {
                 Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
                 subtourActivity.setTour(tour);
@@ -201,7 +208,7 @@ public class PlanGenerator implements Callable {
                 subtourTimeAssignment.assignTimeToSubtourActivity(subtourActivity, tour.getMainActivity());
                 subtourDestinationChoice.chooseSubtourDestination(subtourActivity, tour.getMainActivity());
                 planTools.addSubtour(subtourActivity, tour);
-                subtourModeChoice.chooseSubtourMode(subtourActivity, tour.getMainActivity());
+                subtourModeChoice.chooseSubtourMode(tour);
 
 
             }

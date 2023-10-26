@@ -4,10 +4,7 @@ import abm.data.DataSet;
 import abm.data.plans.Activity;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
-import abm.data.timeOfDay.AvailableTimeOfWeek;
-import abm.data.timeOfDay.DurationDistribution;
-import abm.data.timeOfDay.TimeOfDayUtils;
-import abm.data.timeOfDay.TimeOfWeekDistribution;
+import abm.data.timeOfDay.*;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -104,7 +101,7 @@ public class TimeAssignmentModel implements TimeAssignment {
             timeIndex = MitoUtil.findPositionInArray("duration_min", firstLine);
             purposeIndex = MitoUtil.findPositionInArray("purpose", firstLine);
             fromIndex = MitoUtil.findPositionInArray("start_from_h", firstLine);
-            toIndex = MitoUtil.findPositionInArray("strart_to_h", firstLine);
+            toIndex = MitoUtil.findPositionInArray("start_to_h", firstLine);
             probabilityIndex = MitoUtil.findPositionInArray("duration_prob", firstLine);
 
             String line;
@@ -171,11 +168,16 @@ public class TimeAssignmentModel implements TimeAssignment {
         //        Mode.UNKNOWN, InternalProperties.PEAK_HOUR_MIN) * 2; //the time is not yet known!
         int travelTime = 30;
 
+        if (activity.getPerson().getId()==9322 && dayOfWeek.equals(DayOfWeek.WEDNESDAY)){
+            System.out.println("check here");
+        }
+
+
         //define duration
         int startTime;
         int initialDuration = typicalDuration.get(activity.getPurpose());
         TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
-        AvailableTimeOfWeek availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
+        AvailableTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
         availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration + travelTime);
         timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
         timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
@@ -193,6 +195,11 @@ public class TimeAssignmentModel implements TimeAssignment {
 //            int minActDuration = 5;
 //            startTime = startTime - newDuration - minActDuration;
 //            newDuration = minActDuration;
+//        }
+
+        //Todo some activity cannot be fit into schedule and their start time will be -1, this issue needs to be checked
+//        if (startTime < 0){
+//            System.out.println("Check here");
 //        }
 
         activity.setStartTime_min(startTime);
