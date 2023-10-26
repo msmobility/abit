@@ -21,7 +21,7 @@ public class SplitByTypeModel implements SplitByType{
     private final DataSet dataSet;
     private Map<String, Double> splitOntoMandatoryCoefficients;
     private Map<DiscretionaryActivityType, Map<String, Double>> splitOntoDiscretionaryCoefficients;
-
+    
     public SplitByTypeModel(DataSet dataSet) {
         this.dataSet = dataSet;
         this.splitOntoMandatoryCoefficients = new CoefficientsReader(dataSet, "discAllActSplit", Path.of(AbitResources.instance.getString("act.split.type"))).readCoefficients();
@@ -44,10 +44,18 @@ public class SplitByTypeModel implements SplitByType{
     @Override
     public DiscretionaryActivityType assignActType(Activity activity, Person person) {
 
-        double utilityOfBeingOnMandatoryTour = calculateUtilityOfBeingOnMandatoryTour(activity, person);
-        double probabilityOfBeingOnMandatoryTour = Math.exp(utilityOfBeingOnMandatoryTour) / (1 + Math.exp(utilityOfBeingOnMandatoryTour));
-
         long mandatoryTours = person.getPlan().getTours().values().stream().filter(t -> Purpose.getMandatoryPurposes().contains(t.getMainActivity().getPurpose())).count();
+
+        double utilityOfBeingOnMandatoryTour;
+        double probabilityOfBeingOnMandatoryTour;
+
+        if (mandatoryTours == 0){
+            probabilityOfBeingOnMandatoryTour = 0;
+        } else {
+            utilityOfBeingOnMandatoryTour = calculateUtilityOfBeingOnMandatoryTour(activity, person);
+            probabilityOfBeingOnMandatoryTour = Math.exp(utilityOfBeingOnMandatoryTour) / (1 + Math.exp(utilityOfBeingOnMandatoryTour));
+        }
+
         if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnMandatoryTour && mandatoryTours > 0){
             return DiscretionaryActivityType.ON_MANDATORY_TOUR;
         } else {
@@ -56,7 +64,7 @@ public class SplitByTypeModel implements SplitByType{
 
     }
 
-    //TODO:
+
     public DiscretionaryActivityType assignActTypeForDiscretionaryTourActs(Activity activity, Person person, int numActsNotOnMandatoryTours) {
         double utilityOfBeingOnDiscretionaryTour;
         double probabilityOfBeingOnDiscretionaryTour;
@@ -187,6 +195,7 @@ public class SplitByTypeModel implements SplitByType{
 
         return null; //forced to have return statement or intellij throws an error
     }
+
 
     public double calculateUtilityOfBeingOnMandatoryTour(Activity activity, Person person){
 
@@ -348,7 +357,8 @@ public class SplitByTypeModel implements SplitByType{
                 utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_walk");
                 break;
             case UNKNOWN:
-                throw new RuntimeException("The habitual mode cannot be unknown");
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car");
+
         }
 
         switch (activity.getPurpose()){

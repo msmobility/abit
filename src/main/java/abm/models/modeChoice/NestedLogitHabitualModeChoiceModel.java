@@ -58,6 +58,8 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         this.runCalibration = runCalibration;
     }
 
+
+
     @Override
     public void chooseHabitualMode(Person person) {
 
@@ -65,6 +67,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         if (person.getOccupation()!= Occupation.STUDENT && person.getOccupation()!=Occupation.EMPLOYED){
             person.setHabitualMode(Mode.UNKNOWN);
+
             return;
         }
         for (Mode mode : Mode.getModes()) {

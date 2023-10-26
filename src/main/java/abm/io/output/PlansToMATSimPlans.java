@@ -64,7 +64,8 @@ public class PlansToMATSimPlans {
 
                            }
 
-                           matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
+                           //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
+                           matsimPlan.addLeg(PopulationUtils.createLeg(leg.getLegMode().toString().toLowerCase()));
 
                            if (!tour.getLegs().get(tour.getLegs().lastKey()).equals(leg)){
                                //only if this is not the last leg, the next activity is added
@@ -82,7 +83,8 @@ public class PlansToMATSimPlans {
                                    nextMatsimActivity.setEndTime(mainActivityPart1.getEndTime_min() * 60 - midnight_min * 60);
                                    matsimPlan.addActivity(nextMatsimActivity);
 
-                                   matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                  // matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
 
 
                                    final Activity subtourActivity = nextActivity.getSubtour().getSubtourActivity();
@@ -93,7 +95,8 @@ public class PlansToMATSimPlans {
 
                                    final Leg inboundLeg = nextActivity.getSubtour().getInboundLeg();
 
-                                   matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                   //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                   matsimPlan.addLeg(PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase()));
 
                                    final Activity mainActivityPart2 = inboundLeg.getNextActivity();
 

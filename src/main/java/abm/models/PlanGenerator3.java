@@ -16,6 +16,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 import java.time.DayOfWeek;
@@ -177,13 +178,27 @@ public class PlanGenerator3 implements Callable {
         }
     }
 
+    int counterNonEmployedOrStudentWithMandAct;
+    int counterDiscActsOfNonEmployedStudentWithMandAct;
 
+    // Count total number of Activity instances in the map
+    private static int countTotalActivities(SortedMap<Purpose, List<Activity>> map) {
+        int totalCount = 0;
+
+        for (List<Activity> activityList : map.values()) {
+            totalCount += activityList.size();
+        }
+
+        return totalCount;
+    }
 
     private void createPlanForOnePerson(Person person) {
 
         Plan plan = Plan.initializePlan(person);
 
         habitualModeChoice.chooseHabitualMode(person);
+
+
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
@@ -237,6 +252,18 @@ public class PlanGenerator3 implements Callable {
                 }
             }
 
+        }
+
+        long mandatoryTours = person.getPlan().getTours().values().stream().filter(t -> Purpose.getMandatoryPurposes().contains(t.getMainActivity().getPurpose())).count();
+
+
+
+
+        if (person.getOccupation()!= Occupation.STUDENT && person.getOccupation()!=Occupation.EMPLOYED && mandatoryTours > 0){
+            counterNonEmployedOrStudentWithMandAct++;
+            // Count the total number of Activity instances
+            int totalActivityCount = countTotalActivities(discretionaryActivitiesMap);
+            counterDiscActsOfNonEmployedStudentWithMandAct = counterDiscActsOfNonEmployedStudentWithMandAct + totalActivityCount;
         }
 
 
@@ -591,6 +618,8 @@ public class PlanGenerator3 implements Callable {
             }
 
         }
+/*        System.out.println("Persons not employed or a student but has mand act " + counterNonEmployedOrStudentWithMandAct);
+        System.out.println("Number of discretionary acts of the above people " + counterDiscActsOfNonEmployedStudentWithMandAct);*/
         return null;
     }
 }
