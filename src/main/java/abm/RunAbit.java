@@ -76,7 +76,6 @@ public class RunAbit {
         }
         checkResults.checkVehicleUse();
         System.out.println("Number of cars with overlap use: "+checkResults.getOverlapCarUse());
-        System.out.println("Number of cars with inconsistency between car profile and activity profile: "+checkResults.getCarUseInconsistency());
         checkResults.checkAccompanyTrip();
         System.out.println("Number of accompany trip without accompany in the household: "+checkResults.getAccompanyTripInconsistency());
         checkResults.checkChildTrip();

@@ -7,6 +7,8 @@ import abm.data.plans.Activity;
 import abm.data.plans.Mode;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.data.travelInformation.MitoBasedTravelTimes;
+import abm.data.travelInformation.TravelTimes;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.matrices.IndexedDoubleMatrix1D;
@@ -23,6 +25,7 @@ public class  DestinationChoiceModel implements DestinationChoice {
     private final static Logger logger = Logger.getLogger(DestinationChoiceModel.class);
     private final Map<Zone, Double> zoneAttractors;
     private final IndexedDoubleMatrix2D utilityMatrix;
+    private de.tum.bgu.msm.data.travelTimes.TravelTimes mitoTravelTimes;
 
     private static final double BETA = -0.0005;
 
@@ -46,6 +49,7 @@ public class  DestinationChoiceModel implements DestinationChoice {
 
         return utilityMatrix;
     }
+
 
     private Map<Zone, Double> loadBasicAttraction() {
 
@@ -84,12 +88,32 @@ public class  DestinationChoiceModel implements DestinationChoice {
         Zone previousActivityZone = dataSet.getZones().get(previousActivity.getLocation().getZoneId());
         Zone followingActivityZone = dataSet.getZones().get(followingActivity.getLocation().getZoneId());
 
-        final IndexedDoubleMatrix1D utilityfromPrevious = utilityMatrix.viewRow(previousActivityZone.getId());
-        final IndexedDoubleMatrix1D utiliyToFollowing = utilityMatrix.viewRow(followingActivityZone.getId());
+// TODO: NEW CODE
+//        final IndexedDoubleMatrix1D jointUtility = new IndexedDoubleMatrix1D(dataSet.getZones().values());
+//
+//        for (Zone z : dataSet.getZones().values()) {
+//            // calculate the Utility for stop destination
+//            final int BETA_1 = 1; // TBD
+//            final int BETA_2 = 1; // TBD
+//            final int BETA_3 = 1; // TBD
+//            final int firstLegTravelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(previousActivityZone, z, Mode.UNKNOWN, 0.);
+//            final int secondLegTravelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(z, followingActivityZone, Mode.UNKNOWN, 0.);
+//
+//
+//            final double attractor = zoneAttractors.get(followingActivityZone);
+//            double stopUtility = BETA_1 * firstLegTravelDistanceInMeters * BETA_2 * secondLegTravelDistanceInMeters + BETA_3 * Math.log(attractor);
+//
+//            jointUtility.setIndexed(z.getId(), stopUtility);
+//
+//        }
+// TODO: NEW CODE
+// old code
+            final IndexedDoubleMatrix1D utilityfromPrevious = utilityMatrix.viewRow(previousActivityZone.getId());
+            final IndexedDoubleMatrix1D utiliyToFollowing = utilityMatrix.viewRow(followingActivityZone.getId());
 
-        final IndexedDoubleMatrix1D jointUtility = new IndexedDoubleMatrix1D(dataSet.getZones().values());
+            final IndexedDoubleMatrix1D jointUtility = new IndexedDoubleMatrix1D(dataSet.getZones().values());
 
-        for (Zone z : dataSet.getZones().values()) {
+            for (Zone z : dataSet.getZones().values()) {
             jointUtility.setIndexed(z.getId(), utilityfromPrevious.getIndexed(z.getId()) * utiliyToFollowing.getIndexed(z.getId()));
         }
 
