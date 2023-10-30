@@ -21,7 +21,7 @@ public class SplitByTypeModel implements SplitByType{
     private final DataSet dataSet;
     private Map<String, Double> splitOntoMandatoryCoefficients;
     private Map<DiscretionaryActivityType, Map<String, Double>> splitOntoDiscretionaryCoefficients;
-    
+
     public SplitByTypeModel(DataSet dataSet) {
         this.dataSet = dataSet;
         this.splitOntoMandatoryCoefficients = new CoefficientsReader(dataSet, "discAllActSplit", Path.of(AbitResources.instance.getString("act.split.type"))).readCoefficients();
