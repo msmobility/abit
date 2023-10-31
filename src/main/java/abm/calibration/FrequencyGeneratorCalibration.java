@@ -18,7 +18,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent{
     //Todo define a few calibration parameters
     DataSet dataSet;
     Map<Purpose, Map<Integer, Double>> objectiveMandatoryFrequencyCount = new HashMap<>();
-    Map<Purpose, Map<Integer, Double>> objectiveAccompanyFrequencyCount = new HashMap<>();
+
     Map<Purpose, Map<Integer, Double>> objectiveDiscretionaryFrequencyCount = new HashMap<>();
 
     Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCount = new HashMap<>();
@@ -160,7 +160,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent{
                 for (Plan plan : person.getPlan()){
                     for (Tour tour : plan.getTours().values()){
                         for (Activity act: tour.getActivities().values()){
-
+                            int frequencyCount =
                         }
                     }
                 }

@@ -134,7 +134,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
-            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration(dataSet);
             frequencyGeneratorCalibration.setup();
             frequencyGeneratorCalibration.load();
             frequencyGeneratorCalibration.run();
