@@ -65,7 +65,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         int numOfActivity = 0;
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-            if (person.getAge() < 2 || person.getAge() > 70){
+            if (person.getAge() <= 2 || person.getAge() >= 70){
                 numOfActivity = polrEstimateTrips(person);
                 if (numOfActivity>7){
                     numOfActivity=7;
