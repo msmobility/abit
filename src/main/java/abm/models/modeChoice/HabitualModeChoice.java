@@ -7,4 +7,5 @@ public interface HabitualModeChoice {
 
     void chooseHabitualMode(Person person);
 
+
 }

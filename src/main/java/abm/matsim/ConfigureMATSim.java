@@ -1,6 +1,9 @@
 package abm.matsim;
 
 import abm.properties.AbitResources;
+import de.tum.bgu.msm.data.Mode;
+import de.tum.bgu.msm.resources.Properties;
+import de.tum.bgu.msm.resources.Resources;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigGroup;
@@ -12,6 +15,7 @@ import org.matsim.core.config.groups.StrategyConfigGroup;
 import org.matsim.core.controler.OutputDirectoryHierarchy;
 import org.matsim.core.replanning.strategies.DefaultPlanStrategiesModule;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -110,26 +114,13 @@ public class ConfigureMATSim {
         carPassengerParams.setTeleportedModeFreespeedFactor(1.0);
         config.plansCalcRoute().addTeleportedModeParams(carPassengerParams);
 
-        {
-            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("train");
-            ptParams.setBeelineDistanceFactor(1.5);
-            ptParams.setTeleportedModeSpeed(50 / 3.6);
-            config.plansCalcRoute().addTeleportedModeParams(ptParams);
-        }
 
-        {
-            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("tram_metro");
-            ptParams.setBeelineDistanceFactor(1.5);
-            ptParams.setTeleportedModeSpeed(30 / 3.6);
-            config.plansCalcRoute().addTeleportedModeParams(ptParams);
-        }
+        PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("pt");
+        ptParams.setBeelineDistanceFactor(1.5);
+        ptParams.setTeleportedModeSpeed(50 / 3.6);
+        config.plansCalcRoute().addTeleportedModeParams(ptParams);
 
-        {
-            PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bus");
-            ptParams.setBeelineDistanceFactor(1.5);
-            ptParams.setTeleportedModeSpeed(15 / 3.6);
-            config.plansCalcRoute().addTeleportedModeParams(ptParams);
-        }
+
 
         PlansCalcRouteConfigGroup.TeleportedModeParams bicycleParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bike");
         bicycleParams.setBeelineDistanceFactor(1.3);
@@ -142,7 +133,7 @@ public class ConfigureMATSim {
         config.plansCalcRoute().addTeleportedModeParams(walkParams);
 
 
-        {
+/*        {
             PlanCalcScoreConfigGroup.ModeParams modeParams
                     = config.planCalcScore().getOrCreateModeParams("bus");
             config.planCalcScore().addModeParams(modeParams);
@@ -159,7 +150,7 @@ public class ConfigureMATSim {
             PlanCalcScoreConfigGroup.ModeParams modeParams
                     = config.planCalcScore().getOrCreateModeParams("train");
             config.planCalcScore().addModeParams(modeParams);
-        }
+        }*/
 
 
         String runId = "abit";
@@ -186,6 +177,8 @@ public class ConfigureMATSim {
 //        config.transit().setUsingTransitInMobsim(false);
 
         new ConfigWriter(config).write("./configBase.xml");
+        ConfigUtils.writeMinimalConfig(config, "./configMinimal.xml");
+        ConfigUtils.writeConfig(config, "./config_configUtil.xml");
 
 
         //ConfigUtils.writeConfig(config, "./configBase.xml");

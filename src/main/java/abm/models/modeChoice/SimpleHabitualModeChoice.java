@@ -8,4 +8,6 @@ public class SimpleHabitualModeChoice implements HabitualModeChoice{
     public void chooseHabitualMode(Person person) {
         person.setHabitualMode(Mode.WALK);
     }
+
+
 }
