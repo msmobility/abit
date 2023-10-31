@@ -27,7 +27,7 @@ public class FrequencyGeneratorModelTest {
     @Test
     public void test(){
 
-        AbitResources.initializeResources("C:/models/abit/abit.properties");
+        AbitResources.initializeResources("C:/models/abit_standalone/abit.properties");
 
         DataSet dataSet = new DataSet();
         final Zone dummyZone = new Zone(1);

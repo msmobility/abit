@@ -6,8 +6,9 @@ import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
 import abm.utils.PlanTools;
 
 import java.util.*;
+import java.util.function.Consumer;
 
-public class Plan {
+public class Plan implements Iterable<Plan> {
 
     private Person person;
     private int id;
@@ -121,5 +122,20 @@ public class Plan {
 
     public Activity getDummyHomeActivity() {
         return dummyHomeActivity;
+    }
+
+    @Override
+    public Iterator<Plan> iterator() {
+        return null;
+    }
+
+    @Override
+    public void forEach(Consumer<? super Plan> action) {
+        Iterable.super.forEach(action);
+    }
+
+    @Override
+    public Spliterator<Plan> spliterator() {
+        return Iterable.super.spliterator();
     }
 }
