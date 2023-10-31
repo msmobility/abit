@@ -25,11 +25,11 @@ public class RunMATSim {
 
         //for some reason this was not stored in the config created by CreateConfig.java
 
-        PlansCalcRouteConfigGroup.TeleportedModeParams carPassengerParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("car_passenger");
+/*       PlansCalcRouteConfigGroup.TeleportedModeParams carPassengerParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("car_passenger");
         carPassengerParams.setTeleportedModeFreespeedFactor(1.0);
-        config.plansCalcRoute().addTeleportedModeParams(carPassengerParams);
+        config.plansCalcRoute().addTeleportedModeParams(carPassengerParams);*/
 
-        {
+ /*       {
             PlansCalcRouteConfigGroup.TeleportedModeParams ptParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("train");
             ptParams.setBeelineDistanceFactor(1.5);
             ptParams.setTeleportedModeSpeed(50 / 3.6);
@@ -58,7 +58,7 @@ public class RunMATSim {
         PlansCalcRouteConfigGroup.TeleportedModeParams walkParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("walk");
         walkParams.setBeelineDistanceFactor(1.3);
         walkParams.setTeleportedModeSpeed(5 / 3.6);
-        config.plansCalcRoute().addTeleportedModeParams(walkParams);
+        config.plansCalcRoute().addTeleportedModeParams(walkParams);*/
 
 
         Scenario scenario = ScenarioUtils.createScenario(config);

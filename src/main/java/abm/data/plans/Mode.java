@@ -39,6 +39,7 @@ public enum Mode {
         modes.add(CAR_PASSENGER);
         modes.add(BIKE);
         modes.add(WALK);
+        modes.add(UNKNOWN);
         return modes;
     }
 

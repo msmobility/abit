@@ -60,6 +60,7 @@ public class PlanTools {
         tour.getLegs().put(timeLeavingHome_min, firstLeg);
 
 
+
         int timeArrivingHome_min = mainTourActivity.getEndTime_min() + timeToMainActivity;
 
         //Activity secondHomeActivity = new Activity(homeActivity.getPerson(), Purpose.HOME);

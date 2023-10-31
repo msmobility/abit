@@ -2,7 +2,10 @@ package abm.models.modeChoice;
 
 import abm.data.DataSet;
 import abm.data.geo.RegioStaR2;
+import abm.data.plans.Leg;
 import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
@@ -55,10 +58,18 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         this.runCalibration = runCalibration;
     }
 
+
+
     @Override
     public void chooseHabitualMode(Person person) {
 
         Map<Mode, Double> utilities = new HashMap<>();
+
+        if (person.getOccupation()!= Occupation.STUDENT && person.getOccupation()!=Occupation.EMPLOYED){
+            person.setHabitualMode(Mode.UNKNOWN);
+
+            return;
+        }
         for (Mode mode : Mode.getModes()) {
             utilities.put(mode, calculateUtilityForThisMode(mode, person));
         }
@@ -70,20 +81,17 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         final double utilityWalk = utilities.get(Mode.WALK);
 
         final Double nestingCoefficientAutoModes = coefficients.get(Mode.CAR_DRIVER).get("nestingCoefficient");
-        final Double nestingCoefficientActiveModes = coefficients.get(Mode.BUS).get("nestingCoefficient");
 
         double expsumNestAuto =
                 Math.exp(utilityAutoD / nestingCoefficientAutoModes) +
                         Math.exp(utilityAutoP / nestingCoefficientAutoModes);
 
-        double expsumNestActive =
-                Math.exp(utilityBicycle / nestingCoefficientActiveModes) +
-                        Math.exp(utilityWalk / nestingCoefficientActiveModes) +
-                        Math.exp(utilityPT / nestingCoefficientActiveModes);
 
         double expsumTopLevel =
                 Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) +
-                        Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive));
+                        Math.exp(utilityBicycle) +
+                        Math.exp(utilityPT) +
+                        Math.exp(utilityWalk);
 
         double probabilityAutoD;
         double probabilityAutoP;
@@ -99,30 +107,21 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         //double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
 
-        double probabilityBike;
-        double probabilityWalk;
-        double probabilityPT;
-        if (expsumNestActive > 0) {
-            probabilityBike =
-                    (Math.exp(utilityBicycle / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
-            probabilityWalk =
-                    (Math.exp(utilityWalk / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
-            probabilityPT =
-                    (Math.exp(utilityPT / nestingCoefficientActiveModes) / expsumNestActive) * (Math.exp(nestingCoefficientActiveModes * Math.log(expsumNestActive)) / expsumTopLevel);
-
-        } else {
-            probabilityBike = 0.0;
-            probabilityWalk = 0.0;
-            probabilityPT = 0.0;
-        }
+        double probabilityBike = Math.exp(utilityBicycle)/expsumTopLevel;
+        double probabilityWalk = Math.exp(utilityWalk)/expsumTopLevel;
+        double probabilityPT = Math.exp(utilityPT)/expsumTopLevel;
 
         EnumMap<Mode, Double> probabilities = new EnumMap<>(Mode.class);
         probabilities.put(Mode.CAR_DRIVER, probabilityAutoD);
         probabilities.put(Mode.CAR_PASSENGER, probabilityAutoP);
         probabilities.put(Mode.BIKE, probabilityBike);
         probabilities.put(Mode.WALK, probabilityWalk);
-        probabilities.put(Mode.BUS, probabilityPT); //Todo temporary assign pt to bus mode
+        //PT was temporarity assigned to BUS mode since rest of the model runs with PT separated into train/bus/tram_metro
+        //probabilities.put(Mode.BUS, probabilityPT);
 
+        probabilities.put(Mode.BUS, probabilityPT/3.0);
+        probabilities.put(Mode.TRAM_METRO, probabilityPT/3.0);
+        probabilities.put(Mode.TRAIN, probabilityPT/3.0);
 
         //found Nan when there is no transit!!
         probabilities.replaceAll((mode, probability) ->
@@ -143,23 +142,22 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     }
 
     private double calculateUtilityForThisMode(Mode mode, Person person) {
-        final double SPEED_WALK_KMH = 4;
-        final double SPEED_BICYCLE_KMH = 10;
+
         Household household = person.getHousehold();
         double utility = 0.;
 
         utility += coefficients.get(mode).get("(Intercept)");
 
-        utility += household.getPersons().size() * coefficients.get(mode).get("hh.size");
+/*        utility += household.getPersons().size() * coefficients.get(mode).get("hh.size");
 
         int numAdults = (int) household.getPersons().stream().filter(p -> p.getRelationship() != Relationship.child || p.getAge() >= 18).count();
         double numAutos = household.getNumberOfCars();
         double autosPerAdult = numAutos / numAdults;
         if (autosPerAdult > 1) {
             autosPerAdult = 1.0;
-        }
+        }*/
 
-        utility += autosPerAdult * coefficients.get(mode).get("hh.autosPerAdult");
+/*        utility += autosPerAdult * coefficients.get(mode).get("hh.autosPerAdult");*/
 
         RegioStaR2 regioStaR2 = dataSet.getZones().get(household.getLocation().getZoneId()).getRegioStaR2Type();
         if (regioStaR2.equals(RegioStaR2.URBAN)) {
@@ -183,7 +181,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
 
-        if (person.getOccupation().equals(Occupation.EMPLOYED)) {
+        /*if (person.getOccupation().equals(Occupation.EMPLOYED)) {
             double travelTime;
             double travelDistanceAuto;
             if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
@@ -218,6 +216,11 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             }
             utility += travelTime * coefficients.get(mode).get("travelTime");
         }
+*/
+        //generalized costs
+        double generalizedCost = calculateGeneralizedCosts(person, mode);
+
+        utility += generalizedCost * coefficients.get(mode).get("gc");
 
         //Todo add the latest calibration factors to the utility calculation
         switch (person.getOccupation()) {
@@ -346,6 +349,80 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             }
         }
         return this.coefficients;
+    }
+
+    //calculates generalized costs
+    public Double calculateGeneralizedCosts(Person person, Mode mode) {
+        final double SPEED_WALK_KMH = 4;
+        final double SPEED_BICYCLE_KMH = 10;
+        final double fuelCostEurosPerKm = 0.065;
+        final double transitFareEurosPerKm = 0.12;
+        double travelTime = 0;
+        double travelDistanceAuto = 0;
+        if (person.getOccupation().equals(Occupation.EMPLOYED)) {
+
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
+            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), mode, person.getJob().getStartTime_min());
+            } else if (mode == Mode.BIKE) {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
+            } else {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
+            }
+
+        }
+
+        if (person.getOccupation().equals(Occupation.STUDENT)) {
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
+            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), mode, person.getSchool().getStartTime_min());
+            } else if (mode == Mode.BIKE) {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
+            } else {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
+            }
+        }
+
+
+        travelDistanceAuto = travelDistanceAuto/1000.;
+        
+        double generalizedCost = 0;
+
+        double monthlyIncome_EUR = person.getHousehold().getPersons().stream().mapToInt(Person::getMonthlyIncome_eur).sum();
+
+        //todo. Add VOT table with the coefficients and rename
+
+        if(mode == Mode.BIKE || mode == Mode.WALK){
+            generalizedCost = travelTime;
+        } else {
+            if (monthlyIncome_EUR <= 1500) {
+                if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                    generalizedCost = travelTime + (travelDistanceAuto * fuelCostEurosPerKm) / coefficients.get(mode).get("vot_less_or_equal_income_4");
+                } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                    generalizedCost = travelTime + (travelDistanceAuto * transitFareEurosPerKm) / coefficients.get(mode).get("vot_less_or_equal_income_4");
+                }
+            } else if (monthlyIncome_EUR <= 5600) {
+                if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                    generalizedCost = travelTime + (travelDistanceAuto * fuelCostEurosPerKm) / coefficients.get(mode).get("vot_income_5_to_10");
+                } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                    generalizedCost = travelTime + (travelDistanceAuto * transitFareEurosPerKm) / coefficients.get(mode).get("vot_income_5_to_10");
+                }
+            } else {
+                if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+                    generalizedCost = travelTime + (travelDistanceAuto * fuelCostEurosPerKm) / coefficients.get(mode).get("vot_income_greater_10");
+                } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                    generalizedCost = travelTime + (travelDistanceAuto * transitFareEurosPerKm) / coefficients.get(mode).get("vot_income_greater_10");
+                }
+            }
+        }
+
+        return generalizedCost;
     }
 
 }
