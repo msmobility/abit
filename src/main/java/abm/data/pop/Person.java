@@ -9,6 +9,7 @@ import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
+import javax.xml.datatype.Duration;
 import java.util.Optional;
 
 public class Person {
@@ -28,6 +29,16 @@ public class Person {
     private School school;
 
     private Disability disability;
+
+    private int jobDuration;
+
+    private int jobStartTimeWorkdays;
+
+    private int jobStartTimeWeekends;
+
+
+
+    private  String employmentType;
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
@@ -145,4 +156,36 @@ public class Person {
     public void setEmploymentStatus(EmploymentStatus employmentStatus) {
         this.employmentStatus = employmentStatus;
     }
+    public String getEmploymentType() {
+        return employmentType;
+    }
+
+    public void setEmploymentType(String employmentType) {
+        this.employmentType = employmentType;
+    }
+
+    public int getJobDuration(){
+        return jobDuration;
+    }
+
+    public void setJobDuration(){
+        this.jobDuration = jobDuration;
+    }
+
+    public int getJobStartTimeWorkdays(){
+        return jobStartTimeWorkdays;
+    }
+
+    public void setJobStartTimeWorkdays(){
+        this.jobStartTimeWorkdays = jobStartTimeWorkdays;
+    }
+
+    public int getJobStartTimeWeekends(){
+        return jobStartTimeWeekends;
+    }
+
+    public void setJobStartTimeWeekends(){
+        this.jobStartTimeWeekends = jobStartTimeWeekends;
+    }
+
 }
