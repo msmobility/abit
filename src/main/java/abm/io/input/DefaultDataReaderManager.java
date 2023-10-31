@@ -18,6 +18,7 @@ public class DefaultDataReaderManager implements DataReaderManager {
         new MitoTravelTimeAndDistanceReader(dataSet).read();
 
         new HouseholdReader(dataSet).read();
+        new VehicleReader(dataSet).read();
         new JobReader(dataSet).read();
         new SchoolReader(dataSet).read();
         new PersonReader(dataSet).read();
