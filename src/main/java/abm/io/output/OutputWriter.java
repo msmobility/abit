@@ -30,6 +30,8 @@ public class OutputWriter {
             //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
             new PersonUseOfTimePrinter(dataSet).print(outputFolder + "/use_of_time.csv");
             new PlansToMATSimPlans(dataSet).print(outputFolder);
+            new PlansToMATSimPlansVehOnly(dataSet).print(outputFolder);
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
