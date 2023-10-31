@@ -4,6 +4,8 @@ import abm.data.DataSet;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
+import de.tum.bgu.msm.data.person.Occupation;
 
 
 import java.io.FileNotFoundException;
@@ -18,10 +20,15 @@ public class FrequencyGeneratorCalibration implements ModelComponent{
     //Todo define a few calibration parameters
     DataSet dataSet;
     Map<Purpose, Map<Integer, Double>> objectiveMandatoryFrequencyCount = new HashMap<>();
-
     Map<Purpose, Map<Integer, Double>> objectiveDiscretionaryFrequencyCount = new HashMap<>();
-
-    Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simulatedWorkFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simluatedEducationFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simluatedAccompanyFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simluatedOtherFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simluatedShoppingFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simluatedRecreationFrequencyCount = new HashMap<>();
+    Map<Purpose, Map<Integer, Double>> calibrationFactors = new HashMap<>();
+    private FrequencyCountModel FrequencyGeneratorCalibration;
 
     public FrequencyGeneratorCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -156,18 +163,59 @@ public class FrequencyGeneratorCalibration implements ModelComponent{
 
     private void summarizeSimulatedResult() {
         for (Household household : dataSet.getHouseholds().values()){
+            if (household.getSimulated()) {
             for (Person person : household.getPersons()){
+                int numberworkperweek = 0;
+                int numbereducationperweek = 0;
+                int numberaccompanyperweek = 0;
+                int numberrecreationperweek = 0;
+                int numberotherperweek = 0;
+                int numbershoppingperweek = 0;
                 for (Plan plan : person.getPlan()){
                     for (Tour tour : plan.getTours().values()){
-                        for (Activity act: tour.getActivities().values()){
-                            int frequencyCount =
+                        for (Activity act: tour.getActivities().values()) {
+                            if(act.getPurpose().equals(Purpose.WORK)) {
+                                numberworkperweek+=1;}
+
+                            if(act.getPurpose().equals(Purpose.EDUCATION)) {
+                                numbereducationperweek+=1;}
+
+                            if(act.getPurpose().equals(Purpose.ACCOMPANY)) {
+                                numberaccompanyperweek+=1;}
+
+                            if(act.getPurpose().equals(Purpose.RECREATION)) {
+                                numberrecreationperweek+=1;}
+
+                            if(act.getPurpose().equals(Purpose.OTHER)) {
+                                numberotherperweek+=1;}
+
+                            if(act.getPurpose().equals(Purpose.SHOPPING)) {
+                                numbershoppingperweek+=1;}
+                            }
                         }
                     }
                 }
+                int simluatedfrequencyWorkCount = simulatedWorkFrequencyCount.get(Purpose.WORK).get(numberworkperweek);
+                simulatedWorkFrequencyCount.get(Purpose.WORK).replace(numberworkperweek,simulatedfrequencyWorkCount + 1);
+
+                int simluatedfrequencyEducationCount = simluatedEducationFrequencyCount.get(Purpose.EDUCATION).get(numbereducationperweek);
+                simluatedEducationFrequencyCount.get(Purpose.EDUCATION).replace(numbereducationperweek,frequencyEducationCount + 1);
+
+                int simluatedfrequencyAccompanyCount = simluatedAccompanyFrequencyCount.get(Purpose.ACCOMPANY).get(numberaccompanyperweek);
+                simluatedAccompanyFrequencyCount.get(Purpose.ACCOMPANY).replace(numberaccompanyperweek,frequencyAccompanyCount + 1);
+
+                int simluatedfrequencyRecreationCount = simluatedRecreationFrequencyCount.get(Purpose.RECREATION).get(numberrecreationperweek);
+                simluatedRecreationFrequencyCount.get(Purpose.RECREATION).replace(numberrecreationperweek,frequencyRecreationCount + 1);
+
+                int simluatedfrequencyOtherCount = simluatedOtherFrequencyCount.get(Purpose.OTHER).get(numberotherperweek);
+                simluatedOtherFrequencyCount.get(Purpose.OTHER).replace(numberotherperweek,frequencyOtherCount + 1);
+
+                int simluatedfrequencyShoppingCount = simluatedShoppingFrequencyCount.get(Purpose.SHOPPING).get(numbershoppingperweek);
+                simluatedShoppingFrequencyCount.get(Purpose.SHOPPING).replace(numbershoppingperweek,frequencyShoppingCount + 1);
             }
         }
-
     }
+
 
     private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
 
