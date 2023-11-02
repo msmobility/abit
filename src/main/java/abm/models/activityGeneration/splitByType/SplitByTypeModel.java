@@ -22,6 +22,9 @@ public class SplitByTypeModel implements SplitByType{
     private Map<String, Double> splitOntoMandatoryCoefficients;
     private Map<DiscretionaryActivityType, Map<String, Double>> splitOntoDiscretionaryCoefficients;
 
+    private boolean runCalibration = false;
+    private Map<Occupation, Map<Mode, Double>> updatedCalibrationFactors;
+
     public SplitByTypeModel(DataSet dataSet) {
         this.dataSet = dataSet;
         this.splitOntoMandatoryCoefficients = new CoefficientsReader(dataSet, "discAllActSplit", Path.of(AbitResources.instance.getString("act.split.type"))).readCoefficients();
@@ -40,7 +43,15 @@ public class SplitByTypeModel implements SplitByType{
 
     }
 
+    public SplitByTypeModel(DataSet dataSet, Boolean runCalibration) {
+        this(dataSet);
+        this.updatedCalibrationFactors = new HashMap<>();
+        for (Occupation occupation : Occupation.values()) {
+            this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
+        }
 
+        this.runCalibration = runCalibration;
+    }
     @Override
     public DiscretionaryActivityType assignActType(Activity activity, Person person) {
 
