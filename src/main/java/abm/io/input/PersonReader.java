@@ -94,7 +94,7 @@ public class PersonReader implements Reader {
                 jj = dataSet.getJobs().getOrDefault(jobId, null);
             }
 
-            int income = Integer.parseInt(splitLine[indexes.get("income")]);
+            int income = Integer.parseInt(splitLine[indexes.get("income")])/12;
 
             int schoolId = Integer.parseInt(splitLine[indexes.get("schoolplace")]);
 
