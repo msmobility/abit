@@ -20,6 +20,9 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 
 import java.time.DayOfWeek;
+import java.util.HashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class PlansToMATSimPlansVehOnly {
 
@@ -52,6 +55,9 @@ public class PlansToMATSimPlansVehOnly {
                 boolean hasPlan = false;
 
 
+                SortedMap<Integer, org.matsim.api.core.v01.population.Activity> activitySortedMap = new TreeMap<>();
+                SortedMap<Integer, org.matsim.api.core.v01.population.Leg> legSortedMap = new TreeMap<>();
+
                 for (Person pp : hh.getPersons()) {
 
                     if (pp.getPlan() == null) {
@@ -63,12 +69,13 @@ public class PlansToMATSimPlansVehOnly {
                     }
 
 
+
                     for (Tour tour : pp.getPlan().getTours().values()) {
                         if (tour.getCar() != null && tour.getCar().getId() == vehId) {
 
                             hasPlan = true;
                             //tours with the first act starting this day of week, independently of when they end, are converted to MATSim,
-                            String carType = ((Car)(tour.getCar())).getEngineType().toString();
+                            String carType = ((Car) (tour.getCar())).getEngineType().toString();
 
                             final int tourStartTime_min = tour.getLegs().get(tour.getLegs().firstKey()).getNextActivity().getStartTime_min();
                             if (tourStartTime_min > midnight_min && tourStartTime_min < midnight_min + 24 * 60) {
@@ -78,12 +85,14 @@ public class PlansToMATSimPlansVehOnly {
                                         final Activity previousActivity = leg.getPreviousActivity();
                                         org.matsim.api.core.v01.population.Activity previousMatsimActivity = convertActivityToMATSim(previousActivity);
                                         previousMatsimActivity.setEndTime(leg.getNextActivity().getStartTime_min() * 60 - leg.getTravelTime_min() * 60 - midnight_min * 60);
-                                        matsimPlan.addActivity(previousMatsimActivity);
+                                        activitySortedMap.put(previousActivity.getStartTime_min(), previousMatsimActivity);
+                                        //matsimPlan.addActivity(previousMatsimActivity);
 
                                     }
 
-                                    //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
-                                    matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                    ////matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
+                                    //matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                    legSortedMap.put(leg.getPreviousActivity().getEndTime_min(), PopulationUtils.createLeg("Car" + "_" + carType));
 
                                     if (!tour.getLegs().get(tour.getLegs().lastKey()).equals(leg)) {
                                         //only if this is not the last leg, the next activity is added
@@ -98,34 +107,40 @@ public class PlansToMATSimPlansVehOnly {
 
                                             org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(mainActivityPart1);
                                             nextMatsimActivity.setEndTime(mainActivityPart1.getEndTime_min() * 60 - midnight_min * 60);
-                                            matsimPlan.addActivity(nextMatsimActivity);
+                                            //matsimPlan.addActivity(nextMatsimActivity);
+                                            activitySortedMap.put(mainActivityPart1.getEndTime_min(), nextMatsimActivity);
 
-                                            // matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
-                                            matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                            //// matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                            //matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                            legSortedMap.put(outboundLeg.getPreviousActivity().getEndTime_min(), PopulationUtils.createLeg("Car" + "_" + carType));
 
 
                                             final Activity subtourActivity = nextActivity.getSubtour().getSubtourActivity();
 
                                             nextMatsimActivity = convertActivityToMATSim(subtourActivity);
                                             nextMatsimActivity.setEndTime(subtourActivity.getEndTime_min() * 60 - midnight_min * 60);
-                                            matsimPlan.addActivity(nextMatsimActivity);
+                                            //matsimPlan.addActivity(nextMatsimActivity);
+                                            activitySortedMap.put(subtourActivity.getStartTime_min(), nextMatsimActivity);
 
                                             final Leg inboundLeg = nextActivity.getSubtour().getInboundLeg();
 
-                                            //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
-                                            matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                            ////matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
+                                            //matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + carType));
+                                            legSortedMap.put(inboundLeg.getPreviousActivity().getEndTime_min(), PopulationUtils.createLeg("Car" + "_" + carType));
 
                                             final Activity mainActivityPart2 = inboundLeg.getNextActivity();
 
                                             nextMatsimActivity = convertActivityToMATSim(mainActivityPart2);
                                             nextMatsimActivity.setEndTime(mainActivityPart2.getEndTime_min() * 60 - midnight_min * 60);
-                                            matsimPlan.addActivity(nextMatsimActivity);
+                                            //matsimPlan.addActivity(nextMatsimActivity);
+                                            activitySortedMap.put(mainActivityPart2.getStartTime_min(), nextMatsimActivity);
 
 
                                         } else {
                                             org.matsim.api.core.v01.population.Activity nextMatsimActivity = convertActivityToMATSim(nextActivity);
                                             nextMatsimActivity.setEndTime(nextActivity.getEndTime_min() * 60 - midnight_min * 60);
-                                            matsimPlan.addActivity(nextMatsimActivity);
+                                            //matsimPlan.addActivity(nextMatsimActivity);
+                                            activitySortedMap.put(nextActivity.getStartTime_min(), nextMatsimActivity);
                                         }
                                     }
                                 }
@@ -135,17 +150,28 @@ public class PlansToMATSimPlansVehOnly {
 
                 }
 
-//add a last activity home until without end time
 
-                org.matsim.api.core.v01.population.Activity lastHomeMatimActivity;
-                final Coordinate coordinate = ((MicroLocation) hh.getLocation()).getCoordinate();
-                Coord coord = new Coord(coordinate.getX(), coordinate.getY());
-                lastHomeMatimActivity = PopulationUtils.createActivityFromCoord(Purpose.HOME.toString().toLowerCase(), coord);
-                matsimPlan.addActivity(lastHomeMatimActivity);
+
+                for (int timeStep : activitySortedMap.keySet()){
+
+                    matsimPlan.addActivity(activitySortedMap.get(timeStep));
+                    matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + ((Car)vehicle).getEngineType().toString()));
+                }
+
 
                 if (!hasPlan) {
                     matsimPopulation.removePerson(idVehicle);
+                } else {
+
+                    org.matsim.api.core.v01.population.Activity lastHomeMatimActivity;
+                    final Coordinate coordinate = ((MicroLocation) hh.getLocation()).getCoordinate();
+                    Coord coord = new Coord(coordinate.getX(), coordinate.getY());
+                    lastHomeMatimActivity = PopulationUtils.createActivityFromCoord(Purpose.HOME.toString().toLowerCase(), coord);
+                    matsimPlan.addActivity(lastHomeMatimActivity);
+
                 }
+
+
 
 
             }
