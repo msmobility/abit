@@ -198,8 +198,6 @@ public class PlanGenerator3 implements Callable {
 
         habitualModeChoice.chooseHabitualMode(person);
 
-
-
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             //TODO Ana has new job properties, this model needs be killed after updating the sp reader
@@ -321,15 +319,16 @@ public class PlanGenerator3 implements Callable {
 
             if (stopType != null) {
                 if (stopType.equals(StopType.BEFORE)) {
-                    int tempTime = selectedTour.getActivities().firstKey();
-                    Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                    int firstNonHomeActStartTime = selectedTour.getActivities().firstKey();
+                    int firstLegDepartureTime = selectedTour.getLegs().firstKey();
+                    Activity firstNonHomeActivity = selectedTour.getActivities().get(firstNonHomeActStartTime);
+                    destinationChoice.selectStopDestination(person, selectedTour.getLegs().get(firstLegDepartureTime).getPreviousActivity(), activity, firstNonHomeActivity);
                     planTools.addStopBefore(plan, activity, selectedTour);
                 } else {
-                    int tempTime = selectedTour.getActivities().lastKey();
-                    Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
-                    //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                    int lastNonHomeActStartTime = selectedTour.getActivities().lastKey();
+                    int lastLegDepartureTime = selectedTour.getLegs().lastKey();
+                    Activity lastNonHomeActivity = selectedTour.getActivities().get(lastNonHomeActStartTime);
+                    destinationChoice.selectStopDestination(person, lastNonHomeActivity, activity, selectedTour.getLegs().get(lastLegDepartureTime).getNextActivity());
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
             }
