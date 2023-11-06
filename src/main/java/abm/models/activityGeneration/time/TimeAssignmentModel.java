@@ -178,20 +178,8 @@ public class TimeAssignmentModel implements TimeAssignment {
             newDuration = initialDuration;
         }
 
-        if (newDuration < 0){
-            int minActDuration = 5;
-            startTime = startTime - newDuration - minActDuration;
-            newDuration = minActDuration;
-        }
-
-        //Todo some activity cannot be fit into schedule and their start time will be -1, this issue needs to be checked
-        if (startTime < 0){
-            System.out.println("Check here");
-        }
-
         activity.setStartTime_min(startTime);
         activity.setEndTime_min(startTime + newDuration);
-
 
     }
 
