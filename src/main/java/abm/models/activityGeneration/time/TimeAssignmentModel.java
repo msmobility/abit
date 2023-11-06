@@ -180,23 +180,27 @@ public class TimeAssignmentModel implements TimeAssignment {
         int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
         int newDuration;
 
+        TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
+        AvailableTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
+        availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration + travelTime);
+        timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
+        timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
 
         if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation()== Occupation.EMPLOYED
                 && activity.getPerson().getSiloJobDuration() > 0){
             newDuration = activity.getPerson().getSiloJobDuration();
             if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)){
-                startTime = activity.getPerson().getSiloJobStartTimeWeekends();
+                startTime = activity.getPerson().getSiloJobStartTimeWeekends() + midnight;
             } else {
-                startTime = activity.getPerson().getSiloJobStartTimeWorkdays();
+                startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
+            }
+            double startTimeProbability = timeOfWeekDistribution.probability(startTime);
+            if (startTimeProbability == 0) {
+                startTime = timeOfWeekDistribution.selectTime();
+                newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
             }
         } else {
-            TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
-            AvailableTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
-            availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration + travelTime);
-            timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
-            timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
             startTime = timeOfWeekDistribution.selectTime();
-
             newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
         }
 
