@@ -40,25 +40,25 @@ public class TimeAssignmentModel implements TimeAssignment {
         typicalDuration.put(Purpose.SHOPPING, 25);
         typicalDuration.put(Purpose.RECREATION, 2 * 60);
         typicalDuration.put(Purpose.ACCOMPANY, 15);
-        typicalDuration.put(Purpose.OTHER,  60);
+        typicalDuration.put(Purpose.OTHER, 60);
 
     }
 
-    StartTimeInterval getInterval(int time_h, Purpose purpose){
-        for (StartTimeInterval timeInterval : durationDistributionMap.get(purpose).keySet()){
-            if (time_h < timeInterval.to){
+    StartTimeInterval getInterval(int time_h, Purpose purpose) {
+        for (StartTimeInterval timeInterval : durationDistributionMap.get(purpose).keySet()) {
+            if (time_h < timeInterval.to) {
                 return timeInterval;
             }
         }
         throw new RuntimeException("The start time is not in the day");
     }
 
-    private class StartTimeInterval implements Comparable<StartTimeInterval>{
+    private class StartTimeInterval implements Comparable<StartTimeInterval> {
 
         int from;
         int to;
 
-        StartTimeInterval(int from, int to){
+        StartTimeInterval(int from, int to) {
             this.from = from;
             this.to = to;
         }
@@ -100,7 +100,7 @@ public class TimeAssignmentModel implements TimeAssignment {
             probabilityIndex = MitoUtil.findPositionInArray("duration_prob", firstLine);
 
             String line;
-            while((line = br.readLine())!= null){
+            while ((line = br.readLine()) != null) {
                 int time = Integer.parseInt(line.split(",")[timeIndex]);
                 Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex].toUpperCase());
                 int from_h = Integer.parseInt(line.split(",")[fromIndex]);
@@ -138,7 +138,7 @@ public class TimeAssignmentModel implements TimeAssignment {
             probabilityIndex = MitoUtil.findPositionInArray("start_time_prob", firstLine);
 
             String line;
-            while((line = br.readLine())!= null){
+            while ((line = br.readLine()) != null) {
                 int time = Integer.parseInt(line.split(",")[timeIndex]);
                 Purpose purpose = Purpose.valueOf(line.split(",")[purposeIndex].toUpperCase());
                 double probability = Double.parseDouble(line.split(",")[probabilityIndex]);
@@ -169,15 +169,13 @@ public class TimeAssignmentModel implements TimeAssignment {
         timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, blockedTimeOfWeek);
         timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
 
-        startTime = timeOfWeekDistribution.selectTime();
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24 * 60;
         int newDuration;
-        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
-        newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
 
-        if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation()== Occupation.EMPLOYED
-                && activity.getPerson().getSiloJobDuration() > 0){
+        if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation() == Occupation.EMPLOYED
+                && activity.getPerson().getSiloJobDuration() > 0) {
             newDuration = activity.getPerson().getSiloJobDuration();
-            if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)){
+            if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)) {
                 startTime = activity.getPerson().getSiloJobStartTimeWeekends() + midnight;
             } else {
                 startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
@@ -185,15 +183,14 @@ public class TimeAssignmentModel implements TimeAssignment {
             double startTimeProbability = timeOfWeekDistribution.probability(startTime);
             if (startTimeProbability == 0) {
                 startTime = timeOfWeekDistribution.selectTime();
-                newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
+                newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight) / 60, activity.getPurpose())).selectTime();
             }
         } else {
             startTime = timeOfWeekDistribution.selectTime();
-            newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
+            newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight) / 60, activity.getPurpose())).selectTime();
         }
 
-
-        if (newDuration + travelTime > initialDuration){
+        if (newDuration + travelTime > initialDuration) {
             //tour does not fit here! Make it shorter
             newDuration = initialDuration;
         }
@@ -205,7 +202,7 @@ public class TimeAssignmentModel implements TimeAssignment {
 
     public void assignDurationToStop(Activity activity) {
 
-        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24 * 60;
         int startTime = 0;
         //assumes a duration if starting in the morning - this would only be relevant if the stop was a mandatory activity, for discretionary there is probably not a differentiation of durations by start time.
         StartTimeInterval first = durationDistributionMap.get(activity.getPurpose()).keySet().stream().findFirst().get();
