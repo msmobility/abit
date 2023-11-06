@@ -654,8 +654,6 @@ public class PlanGenerator3 implements Callable {
             }
 
         }
-/*        System.out.println("Persons not employed or a student but has mand act " + counterNonEmployedOrStudentWithMandAct);
-        System.out.println("Number of discretionary acts of the above people " + counterDiscActsOfNonEmployedStudentWithMandAct);*/
         return null;
     }
 }
