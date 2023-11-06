@@ -68,17 +68,17 @@ public class SplitByTypeCalibration implements ModelComponent{
     }
 
     private void readObjectiveValues() {
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_SHOP, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_SHOP, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_OTHER, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_SHOP, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_OTHER, 0.00);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_RECREATION, 0.00);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.19);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY, 0.14);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, 0.06);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_SHOP, 0.11);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, 0.05);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_SHOP, 0.17);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_OTHER, 0.06);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, 0.05);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_SHOP, 0.09);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_OTHER, 0.04);
+        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_RECREATION, 0.06);
 
     }
 
