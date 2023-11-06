@@ -14,6 +14,9 @@ public class Plan {
     //private SortedMap<Integer, Activity> homeActivities;
 
     private Activity dummyHomeActivity;
+
+
+    private SortedMap<Integer, Activity> unmetActivities;
     private SortedMap<Integer, Tour> tours;
     private BlockedTimeOfWeekLinkedList blockedTimeOfWeek;
     private Plan() {
@@ -40,6 +43,7 @@ public class Plan {
         plan.dummyHomeActivity.setEndTime_min(PlanTools.endOfTheWeek());
         plan.dummyHomeActivity.setLocation(person.getHousehold().getLocation());
         plan.tours = new TreeMap<>();
+        plan.unmetActivities = new TreeMap<>();
         person.setPlan(plan);
         return plan;
     }
@@ -120,5 +124,12 @@ public class Plan {
 
     public Activity getDummyHomeActivity() {
         return dummyHomeActivity;
+    }
+    public SortedMap<Integer, Activity> getUnmetActivities() {
+        return unmetActivities;
+    }
+
+    public void addUnmetActivities(Integer timeIndex, Activity unmetActivity) {
+        this.unmetActivities.put(timeIndex, unmetActivity);
     }
 }

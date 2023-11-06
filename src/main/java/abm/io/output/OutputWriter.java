@@ -26,6 +26,7 @@ public class OutputWriter {
 
             new TourPrinter(dataSet).print(outputFolder + "/tours.csv");
             new ActivityPrinter(dataSet).print(outputFolder + "/activities.csv");
+            new UnmetActivityPrinter(dataSet).print(outputFolder + "/unmetActivities.csv");
             new LegPrinter(dataSet).print(outputFolder + "/legs.csv");
             //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
             new PersonUseOfTimePrinter(dataSet).print(outputFolder + "/use_of_time.csv");
