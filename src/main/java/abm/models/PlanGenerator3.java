@@ -34,7 +34,7 @@ public class PlanGenerator3 implements Callable {
     private DestinationChoice destinationChoice;
     private TourModeChoice tourModeChoice;
     private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
-    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment = new SimpleDayOfWeekDiscretionaryAssignment();
+    private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment;
     private TimeAssignment timeAssignment;
     private SplitByType splitByType;
     private SplitStopType stopSplitType;
@@ -158,20 +158,15 @@ public class PlanGenerator3 implements Callable {
 
         for (Person person : household.getPersons()) {
             List<Tour> mandatoryTours = person.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-
             for (Tour tour : mandatoryTours) {
                 boolean hasSubtour = subtourGenerator.hasSubtourInMandatoryActivity(tour);
-
                 if (hasSubtour) {
                     Activity subtourActivity = new Activity(person, Purpose.SUBTOUR);
                     subtourActivity.setTour(tour);
-
                     subtourTimeAssignment.assignTimeToSubtourActivity(subtourActivity, tour.getMainActivity());
                     subtourDestinationChoice.chooseSubtourDestination(subtourActivity, tour.getMainActivity());
                     planTools.addSubtour(subtourActivity, tour);
                     subtourModeChoice.chooseSubtourMode(tour);
-
-
                 }
             }
         }
@@ -209,7 +204,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -270,51 +265,6 @@ public class PlanGenerator3 implements Callable {
             counterDiscActsOfNonEmployedStudentWithMandAct = counterDiscActsOfNonEmployedStudentWithMandAct + totalActivityCount;
         }
 
-
-//        for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
-//            for (Activity activity : discretionaryActivitiesMap.get(purpose)) {
-//                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActType(activity, person);
-//                activity.setDiscretionaryActivityType(discretionaryActivityType);
-//                switch (discretionaryActivityType) {
-//                    case ON_MANDATORY_TOUR:
-//                        stopsOnMandatory.add(activity);
-//                        Tour selectedTour = planTools.findMandatoryTour(plan);
-//                        activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-//                        //the order of time assignment and stopSplitByType is not yet decided
-//                        timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-//                        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-//
-//                        if (stopType != null) {
-//                            if (stopType.equals(StopType.BEFORE)) {
-//                                int tempTime = selectedTour.getActivities().firstKey();
-//                                Activity firstActivity = selectedTour.getActivities().get(tempTime);
-//                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
-//                                planTools.addStopBefore(plan, activity, selectedTour);
-//                            } else {
-//                                int tempTime = selectedTour.getActivities().lastKey();
-//                                Activity lastActivity = selectedTour.getActivities().get(tempTime);
-//                                destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
-//                                //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-//                                planTools.addStopAfter(plan, activity, selectedTour);
-//                            }
-//                        }
-//                        break;
-//                    case ON_DISCRETIONARY_TOUR:
-//                        if (activity.getPurpose()==Purpose.ACCOMPANY) {
-//                            accompanyActsOnDiscretionaryTours.add(activity);
-//                        }
-//                        else if (activity.getPurpose()==Purpose.SHOPPING){
-//                            shoppingActsOnDiscretionaryTours.add(activity);
-//                        } else if (activity.getPurpose()==Purpose.OTHER){
-//                            otherActsOnDiscretionaryTours.add(activity);
-//                        }else{
-//                            recreationActsOnDiscretionaryTours.add(activity);
-//                        }
-//                        break;
-//                }
-//            }
-//
-//        }
         stopsOnMandatory.forEach(activity -> {
             Tour selectedTour = planTools.findMandatoryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
@@ -349,7 +299,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -392,7 +342,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -449,7 +399,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -524,7 +474,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -609,37 +559,6 @@ public class PlanGenerator3 implements Callable {
             }
             break;
         }
-
-//        stopsOnMandatory.forEach(activity -> {
-//
-//
-//                }
-//        );
-//
-//
-//        stopsOnDiscretionaryTours.forEach(activity -> {
-//
-//            Tour selectedTour = planTools.findDiscretionaryTour(plan);
-//            activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-//            timeAssignment.assignDurationToStop(activity);
-//            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-//            if (stopType != null) {
-//                if (stopType.equals(StopType.BEFORE)) {
-//                    int tempTime = selectedTour.getActivities().firstKey();
-//                    Activity firstActivity = selectedTour.getActivities().get(tempTime);
-//                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
-//                    planTools.addStopBefore(plan, activity, selectedTour);
-//                } else {
-//                    int tempTime = selectedTour.getActivities().lastKey();
-//                    Activity lastActivity = selectedTour.getActivities().get(tempTime);
-//                    destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
-//                    planTools.addStopAfter(plan, activity, selectedTour);
-//                }
-//            } else {
-//                //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
-//            }
-//
-//        });
     }
 
     @Override

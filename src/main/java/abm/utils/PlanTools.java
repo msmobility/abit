@@ -149,11 +149,8 @@ public class PlanTools {
             }
 
         } else {
-            if (mainTourActivity.getPurpose().equals(Purpose.WORK)) {
-                System.out.println("Check here");
-            }
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
-            System.out.println("Missing an act in discretionary main tour");
+            //System.out.println("Missing an act in discretionary main tour");
         }
     }
 
@@ -191,11 +188,8 @@ public class PlanTools {
             plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
             plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
         } else {
-            if (mainTourActivity.getPurpose().equals(Purpose.WORK)) {
-                System.out.println("Check here");
-            }
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
-            System.out.println("Missing an act in main tour");
+            //System.out.println("Missing an act in main tour");
         }
     }
 
