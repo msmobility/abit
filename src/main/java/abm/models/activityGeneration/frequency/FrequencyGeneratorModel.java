@@ -66,10 +66,14 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
             if (person.getAge() <= 2 || person.getAge() >= 70){
+                numOfActivity = 0;
+            } else if (person.getAge() < 15 && purpose.equals(Purpose.WORK)) {
+                numOfActivity = 0;
+            } else {
                 numOfActivity = polrEstimateTrips(person);
                 if (numOfActivity>7){
                     numOfActivity=7;
-                }  
+                }
             }
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
             numOfActivity = hurdleEstimateTrips(person);
