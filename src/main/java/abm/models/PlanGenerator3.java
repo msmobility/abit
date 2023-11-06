@@ -93,14 +93,14 @@ public class PlanGenerator3 implements Callable {
 
     private void createPlanForOneHousehold(Household household) {
 
-        for (Person person : household.getPersons()){
+        for (Person person : household.getPersons()) {
             createPlanForOnePerson(person);
         }
 
         //Start: Vehicle assignment and mode choice
-        if(household.getNumberOfCars() > 0) {
-            for(Purpose purpose : Purpose.getSortedPurposes()){
-                if (purpose.equals(Purpose.WORK)){
+        if (household.getNumberOfCars() > 0) {
+            for (Purpose purpose : Purpose.getSortedPurposes()) {
+                if (purpose.equals(Purpose.WORK)) {
                     //Step 1: loop over all workers in the household, check car and transit travel time ratio
                     // car/pt ratio the smaller (more poor pt accessibility compared to car), then higher preference to use car
                     List<Person> workers = household.getPersons().stream().filter(pp -> pp.hasWorkActivity()).collect(Collectors.toList());
@@ -108,10 +108,10 @@ public class PlanGenerator3 implements Callable {
                     for (Person person : workers) {
                         Location jobLocation;
                         double startTime;
-                        if(person.getJob()!=null){
+                        if (person.getJob() != null) {
                             jobLocation = person.getJob().getLocation();
                             startTime = person.getJob().getStartTime_min();
-                        }else {
+                        } else {
                             //job location for non-employed person but has a work tour, e.g. student go for interview or internship
                             Activity workActivity = person.getPlan().getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose().equals(Purpose.WORK)).collect(Collectors.toList()).get(0).getMainActivity();
                             jobLocation = workActivity.getLocation();
@@ -128,16 +128,16 @@ public class PlanGenerator3 implements Callable {
                     Collections.sort(sortedPreference, Map.Entry.comparingByValue());
 
                     //Step 2: check availability and choose mode for Work tours by the order of preference
-                    for(Map.Entry<Person, Double> entry : sortedPreference){
+                    for (Map.Entry<Person, Double> entry : sortedPreference) {
                         entry.getKey().getPlan().getTours().values().forEach(tour -> {
                             if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
                                 tourModeChoice.checkCarAvailabilityAndChooseMode(household, entry.getKey(), tour, Purpose.WORK);
                             }
                         });
                     }
-                }else{
+                } else {
                     //check availability and choose mode for other tours by the order of (education > accompany > other > shopping > recreational)
-                    for(Person person : household.getPersons()){
+                    for (Person person : household.getPersons()) {
                         person.getPlan().getTours().values().forEach(tour -> {
                             if (tour.getMainActivity().getPurpose().equals(purpose)) {
                                 tourModeChoice.checkCarAvailabilityAndChooseMode(household, person, tour, purpose);
@@ -146,9 +146,9 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
-        }else{
+        } else {
             //TODO: for the household has no car, car is still available for mode choice? (e.g. car share, taxi)
-            for(Person person : household.getPersons()){
+            for (Person person : household.getPersons()) {
                 person.getPlan().getTours().values().forEach(tour -> {
                     tourModeChoice.chooseMode(person, tour, tour.getMainActivity().getPurpose(), Boolean.FALSE);
                 });
@@ -156,8 +156,7 @@ public class PlanGenerator3 implements Callable {
         }
 
 
-
-        for (Person person : household.getPersons()){
+        for (Person person : household.getPersons()) {
             List<Tour> mandatoryTours = person.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
             for (Tour tour : mandatoryTours) {
@@ -208,7 +207,17 @@ public class PlanGenerator3 implements Callable {
                 activity.setDayOfWeek(day);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
+
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                    timeAssignment.assignStartTimeAndDuration(activity);
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    maxTrial += 1;
+                }
+
                 planTools.addMainTour(plan, activity);
+
+
             }
         }
 
@@ -236,14 +245,13 @@ public class PlanGenerator3 implements Callable {
                         stopsOnMandatory.add(activity);
                         break;
                     case ON_DISCRETIONARY_TOUR:
-                        if (activity.getPurpose()==Purpose.ACCOMPANY) {
+                        if (activity.getPurpose() == Purpose.ACCOMPANY) {
                             accompanyActsOnDiscretionaryTours.add(activity);
-                        }
-                        else if (activity.getPurpose()==Purpose.SHOPPING){
+                        } else if (activity.getPurpose() == Purpose.SHOPPING) {
                             shoppingActsOnDiscretionaryTours.add(activity);
-                        } else if (activity.getPurpose()==Purpose.OTHER){
+                        } else if (activity.getPurpose() == Purpose.OTHER) {
                             otherActsOnDiscretionaryTours.add(activity);
-                        }else{
+                        } else {
                             recreationActsOnDiscretionaryTours.add(activity);
                         }
                         break;
@@ -255,15 +263,12 @@ public class PlanGenerator3 implements Callable {
         long mandatoryTours = person.getPlan().getTours().values().stream().filter(t -> Purpose.getMandatoryPurposes().contains(t.getMainActivity().getPurpose())).count();
 
 
-
-
-        if (person.getOccupation()!= Occupation.STUDENT && person.getOccupation()!=Occupation.EMPLOYED && mandatoryTours > 0){
+        if (person.getOccupation() != Occupation.STUDENT && person.getOccupation() != Occupation.EMPLOYED && mandatoryTours > 0) {
             counterNonEmployedOrStudentWithMandAct++;
             // Count the total number of Activity instances
             int totalActivityCount = countTotalActivities(discretionaryActivitiesMap);
             counterDiscActsOfNonEmployedStudentWithMandAct = counterDiscActsOfNonEmployedStudentWithMandAct + totalActivityCount;
         }
-
 
 
 //        for (Purpose purpose : discretionaryActivitiesMap.keySet()) {
@@ -334,14 +339,22 @@ public class PlanGenerator3 implements Callable {
             }
         });
 
-        for (Activity activity : accompanyActsOnDiscretionaryTours){
+        for (Activity activity : accompanyActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = accompanyActsOnDiscretionaryTours.size();
             DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
             activity.setDiscretionaryActivityType(discretionaryActivityType);
-            if (activity.getDiscretionaryActivityType()==DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
+            if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
+
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                    timeAssignment.assignStartTimeAndDuration(activity);
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    maxTrial += 1;
+                }
+
                 planTools.addMainTour(plan, activity);
             } else {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
@@ -369,16 +382,24 @@ public class PlanGenerator3 implements Callable {
             break;
         }
 
-        for (Activity activity : shoppingActsOnDiscretionaryTours){
+        for (Activity activity : shoppingActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = shoppingActsOnDiscretionaryTours.size();
             DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
             activity.setDiscretionaryActivityType(discretionaryActivityType);
-            if (activity.getDiscretionaryActivityType()==DiscretionaryActivityType.SHOP_PRIMARY) {
+            if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
+
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                    timeAssignment.assignStartTimeAndDuration(activity);
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    maxTrial += 1;
+                }
+
                 planTools.addMainTour(plan, activity);
-            } else if (activity.getDiscretionaryActivityType()==DiscretionaryActivityType.SHOP_ON_ACCOMPANY) {
+            } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_ON_ACCOMPANY) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
                 activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                 timeAssignment.assignDurationToStop(activity);
@@ -426,6 +447,14 @@ public class PlanGenerator3 implements Callable {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
+
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                    timeAssignment.assignStartTimeAndDuration(activity);
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    maxTrial += 1;
+                }
+
                 planTools.addMainTour(plan, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_ACCOMPANY) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
@@ -445,7 +474,7 @@ public class PlanGenerator3 implements Callable {
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
-            } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_SHOP)  {
+            } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_SHOP) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.SHOPPING);
                 activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                 timeAssignment.assignDurationToStop(activity);
@@ -493,10 +522,18 @@ public class PlanGenerator3 implements Callable {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
+
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 20) {
+                    timeAssignment.assignStartTimeAndDuration(activity);
+                    destinationChoice.selectMainActivityDestination(person, activity);
+                    maxTrial += 1;
+                }
+
                 planTools.addMainTour(plan, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_ACCOMPANY) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
-                if(selectedTour == null){
+                if (selectedTour == null) {
 
                 }
                 activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
@@ -515,7 +552,7 @@ public class PlanGenerator3 implements Callable {
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
-            } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_SHOP)  {
+            } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_SHOP) {
                 Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.SHOPPING);
                 activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
                 timeAssignment.assignDurationToStop(activity);
