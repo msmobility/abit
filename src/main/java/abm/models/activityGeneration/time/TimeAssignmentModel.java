@@ -7,6 +7,7 @@ import abm.data.plans.Purpose;
 import abm.data.timeOfDay.*;
 import abm.properties.AbitResources;
 import abm.properties.InternalProperties;
+import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 
 import java.io.BufferedReader;
@@ -176,15 +177,34 @@ public class TimeAssignmentModel implements TimeAssignment {
         //define duration
         int startTime;
         int initialDuration = typicalDuration.get(activity.getPurpose());
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
+        int newDuration;
+
         TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
         AvailableTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
         availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, initialDuration + travelTime);
         timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailability(timeOfWeekDistribution, availableTimeOfWeek);
         timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
-        startTime = timeOfWeekDistribution.selectTime();
 
-        int midnight = (activity.getDayOfWeek().ordinal()) * 24*60 ;
-        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
+        if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation()== Occupation.EMPLOYED
+                && activity.getPerson().getSiloJobDuration() > 0){
+            newDuration = activity.getPerson().getSiloJobDuration();
+            if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)){
+                startTime = activity.getPerson().getSiloJobStartTimeWeekends() + midnight;
+            } else {
+                startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
+            }
+            double startTimeProbability = timeOfWeekDistribution.probability(startTime);
+            if (startTimeProbability == 0) {
+                startTime = timeOfWeekDistribution.selectTime();
+                newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
+            }
+        } else {
+            startTime = timeOfWeekDistribution.selectTime();
+            newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight)/60,activity.getPurpose())).selectTime();
+        }
+
+
 
         if (newDuration + travelTime > initialDuration){
             //tour does not fit here! Make it shorter

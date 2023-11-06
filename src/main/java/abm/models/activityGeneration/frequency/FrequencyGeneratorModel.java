@@ -62,12 +62,18 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
-        int numOfActivity;
+        int numOfActivity = 0;
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-            numOfActivity = polrEstimateTrips(person);
-            if (numOfActivity>7){
-                numOfActivity=7;
+            if (person.getAge() <= 2 || person.getAge() >= 70){
+                numOfActivity = 0;
+            } else if (person.getAge() < 15 && purpose.equals(Purpose.WORK)) {
+                numOfActivity = 0;
+            } else {
+                numOfActivity = polrEstimateTrips(person);
+                if (numOfActivity>7){
+                    numOfActivity=7;
+                }
             }
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
             numOfActivity = hurdleEstimateTrips(person);

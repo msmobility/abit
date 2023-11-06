@@ -8,6 +8,7 @@ import abm.data.pop.Person;
 import abm.data.pop.Relationship;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.properties.AbitResources;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
@@ -29,7 +30,8 @@ public class SplitByTypeModelTest {
 
         Household household = new Household(1, dummyZone, 1);
         Person person = new Person(1, household, 36, Gender.FEMALE,
-                Relationship.married, Occupation.EMPLOYED, true, null, 10000, null, null);
+                Relationship.married, Occupation.EMPLOYED, true, null, 10000,
+                480, 480, 2000, null, Disability.WITHOUT);
         Plan.initializePlan(person);
         person.setHabitualMode(Mode.CAR_DRIVER);
         Activity activity = new Activity(person, Purpose.ACCOMPANY);
@@ -61,7 +63,8 @@ public class SplitByTypeModelTest {
                 Person person = null;
                 for (int p = 1; p<= size; p++){
                     person = new Person(p, household, 36, Gender.FEMALE,
-                            Relationship.married, Occupation.EMPLOYED, true, null, 10000, null, null);
+                            Relationship.married, Occupation.EMPLOYED, true, null, 10000,
+                            480, 480, 2000, null, Disability.WITHOUT);
                     Plan.initializePlan(person);
                     Activity workActivity = new Activity(person, Purpose.WORK);
                     workActivity.setStartTime_min(9*60);

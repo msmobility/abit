@@ -24,6 +24,9 @@ public class Person {
     private Occupation occupation;
     private boolean hasLicense;
     private Job job;
+    private int siloJobDuration;
+    private int siloJobStartTimeWorkdays;
+    private int siloJobStartTimeWeekends;
     private int monthlyIncome_eur;
     private School school;
 
@@ -38,7 +41,9 @@ public class Person {
 //        this.id = id;
 //        this.household = household;
 //    }
-    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation, boolean hasLicense, Job job, int monthlyIncome_eur, School school, Disability disability) {
+    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation,
+                  boolean hasLicense, Job job, int siloJobDuration, int siloJobStartTimeWorkdays, int siloJobStartTimeWeekends,
+                  int monthlyIncome_eur, School school, Disability disability) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -47,6 +52,9 @@ public class Person {
         this.occupation = occupation;
         this.hasLicense = hasLicense;
         this.job = job;
+        this.siloJobDuration = siloJobDuration;
+        this.siloJobStartTimeWorkdays = siloJobStartTimeWorkdays;
+        this.siloJobStartTimeWeekends = siloJobStartTimeWeekends;
         this.monthlyIncome_eur = monthlyIncome_eur;
         this.school = school;
         this.disability = disability;
@@ -74,6 +82,18 @@ public class Person {
 
     public Job getJob() {
         return job;
+    }
+
+    public int getSiloJobDuration() {
+        return siloJobDuration;
+    }
+
+    public int getSiloJobStartTimeWorkdays() {
+        return siloJobStartTimeWorkdays;
+    }
+
+    public int getSiloJobStartTimeWeekends() {
+        return siloJobStartTimeWeekends;
     }
 
     public int getMonthlyIncome_eur() {
