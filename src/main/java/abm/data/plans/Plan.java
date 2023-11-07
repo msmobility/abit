@@ -5,8 +5,9 @@ import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.utils.PlanTools;
 
 import java.util.*;
+import java.util.function.Consumer;
 
-public class Plan {
+public class Plan implements Iterable<Plan> {
 
     private Person person;
     private int id;
@@ -131,5 +132,20 @@ public class Plan {
 
     public void addUnmetActivities(Integer timeIndex, Activity unmetActivity) {
         this.unmetActivities.put(timeIndex, unmetActivity);
+    }
+
+    @Override
+    public Iterator<Plan> iterator() {
+        return null;
+    }
+
+    @Override
+    public void forEach(Consumer<? super Plan> action) {
+        Iterable.super.forEach(action);
+    }
+
+    @Override
+    public Spliterator<Plan> spliterator() {
+        return Iterable.super.spliterator();
     }
 }

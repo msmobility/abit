@@ -9,6 +9,7 @@ import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
+
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.HashMap;
