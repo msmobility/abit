@@ -1,8 +1,7 @@
 package abm.data.plans;
 
 import abm.data.pop.Person;
-import abm.data.timeOfDay.AvailableTimeOfWeek;
-import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
+import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.utils.PlanTools;
 
 import java.util.*;
@@ -16,8 +15,11 @@ public class Plan implements Iterable<Plan> {
     //private SortedMap<Integer, Activity> homeActivities;
 
     private Activity dummyHomeActivity;
+
+
+    private SortedMap<Integer, Activity> unmetActivities;
     private SortedMap<Integer, Tour> tours;
-    private AvailableTimeOfWeekLinkedList availableTimeOfWeek;
+    private BlockedTimeOfWeekLinkedList blockedTimeOfWeek;
     private Plan() {
 
     }
@@ -28,7 +30,7 @@ public class Plan implements Iterable<Plan> {
 
     public static Plan initializePlan(Person person) {
         Plan plan = new Plan();
-        plan.availableTimeOfWeek = new AvailableTimeOfWeekLinkedList();
+        plan.blockedTimeOfWeek = new BlockedTimeOfWeekLinkedList();
         plan.id = person.getId();
         plan.person = person;
         //plan.homeActivities = new TreeMap<>();
@@ -42,6 +44,7 @@ public class Plan implements Iterable<Plan> {
         plan.dummyHomeActivity.setEndTime_min(PlanTools.endOfTheWeek());
         plan.dummyHomeActivity.setLocation(person.getHousehold().getLocation());
         plan.tours = new TreeMap<>();
+        plan.unmetActivities = new TreeMap<>();
         person.setPlan(plan);
         return plan;
     }
@@ -115,13 +118,20 @@ public class Plan implements Iterable<Plan> {
         return string.toString();
     }
 
-    public AvailableTimeOfWeekLinkedList getAvailableTimeOfDay() {
-        return availableTimeOfWeek;
+    public BlockedTimeOfWeekLinkedList getBlockedTimeOfDay() {
+        return blockedTimeOfWeek;
     }
 
 
     public Activity getDummyHomeActivity() {
         return dummyHomeActivity;
+    }
+    public SortedMap<Integer, Activity> getUnmetActivities() {
+        return unmetActivities;
+    }
+
+    public void addUnmetActivities(Integer timeIndex, Activity unmetActivity) {
+        this.unmetActivities.put(timeIndex, unmetActivity);
     }
 
     @Override

@@ -11,14 +11,14 @@ import java.util.*;
  * if the window is available (true) or not (false)
  **/
 
-public class AvailableTimeOfWeekLinkedList {
+public class BlockedTimeOfWeekLinkedList {
 
 
     private LinkedList<Integer> internalMap;
     private static final int MAX_VALUE = (int) (7 * 24 * 60);
 
 
-    public AvailableTimeOfWeekLinkedList() {
+    public BlockedTimeOfWeekLinkedList() {
         internalMap = new LinkedList<>();
 //        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
 //            internalMap.add(i);
@@ -26,43 +26,56 @@ public class AvailableTimeOfWeekLinkedList {
     }
 
     public void blockTime(int from, int until) {
-        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
-            if (i >= from && i <= until) {
-                if (!internalMap.contains(i)) {
-                    internalMap.add(i);
-                }
+
+        int startIndex = (int) (Math.floor((double) from / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN);
+        int toIndex = (int) (Math.ceil((double) until / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN);
+
+        for (int i = startIndex; i <= toIndex; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
+
+            if (!internalMap.contains(i)) {
+                internalMap.add(i);
             }
+
         }
     }
 
+    public void setAvailable(int from, int to) {
+
+        for (int minute = from; minute <= to; minute++) {
+            if (internalMap.contains(minute)) {
+
+                internalMap.remove(minute);
+
+            }
+        }
+
+
+    }
+
     public int isAvailable(int minute) {
+
+
         if (internalMap.contains(minute)) {
-            return 1;
+            return 0;
         } else {
             int newIndex = Math.round(minute / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
             if (internalMap.contains(newIndex)) {
-                return 1;
+                return 0;
             }
         }
-        return 0;
+        return 1;
     }
 
     public boolean isAvailable(int startMinute, int endMinute) {
 
+        int startIndex = (int) (Math.floor((double) startMinute / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN);
+        int toIndex = (int) (Math.ceil((double) endMinute / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN);
 
-        for (int minute = startMinute; minute <= endMinute; minute++) {
+        for (int minute = startIndex; minute <= toIndex; minute++) {
             if (internalMap.contains(minute)) {
-
                 return Boolean.FALSE;
-
-            } else {
-                int newIndex = Math.round(minute / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
-                if (internalMap.contains(newIndex)) {
-                    return Boolean.FALSE;
-                }
             }
         }
-
         return Boolean.TRUE;
     }
 
@@ -71,9 +84,9 @@ public class AvailableTimeOfWeekLinkedList {
     }
 
 
-    public AvailableTimeOfWeekLinkedList getForThisDayOfWeek(DayOfWeek dayOfWeek) {
+    public BlockedTimeOfWeekLinkedList getForThisDayOfWeek(DayOfWeek dayOfWeek) {
         int midnightBefore = (dayOfWeek.ordinal()) * 24 * 60;
-        AvailableTimeOfWeekLinkedList availableTimeOfDay = new AvailableTimeOfWeekLinkedList();
+        BlockedTimeOfWeekLinkedList availableTimeOfDay = new BlockedTimeOfWeekLinkedList();
 
         this.internalMap.forEach(m -> {
             if (m > midnightBefore && m < midnightBefore + 60 * 24) {

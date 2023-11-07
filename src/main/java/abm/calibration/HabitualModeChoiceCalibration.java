@@ -82,6 +82,9 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                     double simulatedShare = simulatedHabitualModeShare.get(occupation).get(mode);
                     double difference = observedShare - simulatedShare;
                     double factor = stepSize * (observedShare - simulatedShare);
+                    if (mode.equals(Mode.CAR_DRIVER)){
+                        factor = 0.00;
+                    }
                     calibrationFactors.get(occupation).replace(mode, factor);
                     logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
                     if (Math.abs(difference) > maxDifference) {

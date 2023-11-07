@@ -162,7 +162,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateDiscretionaryActSplitByType) {
-            splitByTypeCalibration = new SplitByTypeCalibration();
+            splitByTypeCalibration = new SplitByTypeCalibration(dataSet);
             splitByTypeCalibration.setup();
             splitByTypeCalibration.load();
             splitByTypeCalibration.run();
@@ -197,7 +197,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration();
+            tourModeChoiceCalibration = new TourModeChoiceCalibration( dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
