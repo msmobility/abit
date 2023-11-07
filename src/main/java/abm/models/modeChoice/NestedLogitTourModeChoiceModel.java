@@ -263,9 +263,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice{
             case BIKE:
                 utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_cycle", 0.);
                 break;
-            case BUS:
-            case TRAM_METRO:
-            case TRAIN:
+            case PT:
                 utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_PT", 0.);
                 break;
             case WALK:

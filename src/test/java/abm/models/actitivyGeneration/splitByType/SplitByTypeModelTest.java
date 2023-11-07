@@ -33,7 +33,7 @@ public class SplitByTypeModelTest {
                 Relationship.married, Occupation.EMPLOYED, true, null, 10000,
                 480, 480, 2000, null, Disability.WITHOUT);
         Plan.initializePlan(person);
-        person.setHabitualMode(Mode.CAR_DRIVER);
+        person.setHabitualMode( HabitualMode.CAR_DRIVER);
         Activity activity = new Activity(person, Purpose.ACCOMPANY);
 
         DiscretionaryActivityType discretionaryActivityType = new SplitByTypeModel(dataSet).assignActType(activity, person);
@@ -70,7 +70,7 @@ public class SplitByTypeModelTest {
                     workActivity.setStartTime_min(9*60);
                     workActivity.setEndTime_min(18*60);
                     person.getPlan().getTours().put(8*60, new Tour(workActivity, person.getPlan().getTours().size() + 1));
-                    person.setHabitualMode(Mode.CAR_DRIVER);
+                    person.setHabitualMode( HabitualMode.CAR_DRIVER);
                     household.getPersons().add(person);
                 }
 
