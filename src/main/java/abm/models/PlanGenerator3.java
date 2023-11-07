@@ -55,6 +55,8 @@ public class PlanGenerator3 implements Callable {
     private final int thread;
     private final SubtourModeChoice subtourModeChoice;
 
+    private final int TRIALS_RESCHEDULING = 30;
+
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
@@ -204,7 +206,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -299,7 +301,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -342,7 +344,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -399,7 +401,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -474,7 +476,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
