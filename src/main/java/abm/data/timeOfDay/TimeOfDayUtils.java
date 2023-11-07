@@ -26,11 +26,11 @@ public class TimeOfDayUtils {
     }
 
     public static TimeOfWeekDistribution updateTODWithAvailability(TimeOfWeekDistribution originalTOD,
-                                                                   AvailableTimeOfWeekLinkedList availableTOD) {
+                                                                   BlockedTimeOfWeekLinkedList blockedTOD) {
 
         TimeOfWeekDistribution newTOD = new TimeOfWeekDistribution();
         for (int minute : originalTOD.getMinutes()) {
-            newTOD.setProbability(minute, originalTOD.probability(minute) * (double) availableTOD.isAvailable(minute));
+            newTOD.setProbability(minute, originalTOD.probability(minute) * (double) blockedTOD.isAvailable(minute));
         }
         return newTOD;
     }
@@ -58,19 +58,19 @@ public class TimeOfDayUtils {
         return newAvailableTOD;
     }
 
-    public static AvailableTimeOfWeekLinkedList updateAvailableTimeForNextTrip(AvailableTimeOfWeekLinkedList baseAvailableTOD,
-                                                                     int tripDuration) {
+    public static BlockedTimeOfWeekLinkedList updateAvailableTimeForNextTrip(BlockedTimeOfWeekLinkedList baseBlockedTOD,
+                                                                             int tripDuration) {
 
-        AvailableTimeOfWeekLinkedList newAvailableTOD = new AvailableTimeOfWeekLinkedList();
+        BlockedTimeOfWeekLinkedList newBlockedTOD = new BlockedTimeOfWeekLinkedList();
 
         for (int minute = InternalProperties.SEARCH_INTERVAL_MIN; minute < MAX_VALUE; minute = minute + InternalProperties.SEARCH_INTERVAL_MIN) {
-            if (baseAvailableTOD.isAvailable(minute) == 0 && baseAvailableTOD.isAvailable(minute - InternalProperties.SEARCH_INTERVAL_MIN) == 1){
-                newAvailableTOD.blockTime(Math.max(0, minute - tripDuration), minute);
-            } else if (baseAvailableTOD.isAvailable(minute) == 0) {
-                newAvailableTOD.blockTime(minute - InternalProperties.SEARCH_INTERVAL_MIN, minute);
+            if (baseBlockedTOD.isAvailable(minute) == 0 && baseBlockedTOD.isAvailable(minute - InternalProperties.SEARCH_INTERVAL_MIN) == 1){
+                newBlockedTOD.blockTime(Math.max(0, minute - tripDuration), minute);
+            } else if (baseBlockedTOD.isAvailable(minute) == 0) {
+                newBlockedTOD.blockTime(minute - InternalProperties.SEARCH_INTERVAL_MIN, minute);
             }
         }
-        return newAvailableTOD;
+        return newBlockedTOD;
     }
 
 

@@ -2,8 +2,7 @@ package abm.models.activityGeneration.time;
 
 import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
-import abm.data.timeOfDay.AvailableTimeOfWeek;
-import abm.data.timeOfDay.AvailableTimeOfWeekLinkedList;
+import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.data.timeOfDay.TimeOfDayUtils;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -68,7 +67,7 @@ public class SimpleTimeAssignmentWithTimeAvailability implements TimeAssignment 
         duration += 2 * 30;
 
         //get the available time for new tours
-        AvailableTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getAvailableTimeOfDay();
+        BlockedTimeOfWeekLinkedList availableTimeOfWeek = activity.getPerson().getPlan().getBlockedTimeOfDay();
         availableTimeOfWeek = TimeOfDayUtils.updateAvailableTimeForNextTrip(availableTimeOfWeek, duration);
         availableTimeOfWeek = availableTimeOfWeek.getForThisDayOfWeek(dayOfWeek);
 

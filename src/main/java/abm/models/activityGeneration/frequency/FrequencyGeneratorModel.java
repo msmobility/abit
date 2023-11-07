@@ -65,9 +65,19 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         int numOfActivity;
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-            numOfActivity = polrEstimateTrips(person);
-            if (numOfActivity>7){
-                numOfActivity=7;
+            if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && purpose.equals(Purpose.WORK)) {
+                numOfActivity = polrEstimateTrips(person);
+            } else if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && purpose.equals(Purpose.EDUCATION)) {
+                numOfActivity = 0;
+            } else if (person.getAge() <= 2 || person.getAge() >= 70) {
+                numOfActivity = 0;
+            } else if (person.getAge() < 15 && purpose.equals(Purpose.WORK)) {
+                numOfActivity = 0;
+            } else {
+                numOfActivity = polrEstimateTrips(person);
+                if (numOfActivity > 7) {
+                    numOfActivity = 7;
+                }
             }
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
             numOfActivity = hurdleEstimateTrips(person);
@@ -207,7 +217,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 //        }
 
         RegioStaR2 regioStrR2 = zone.getRegioStaR2Type();
-        switch (regioStrR2){
+        switch (regioStrR2) {
             case URBAN:
                 predictor += coefficients.get("hh.urban");
                 break;
@@ -259,7 +269,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         // Refer to the EconomicStatus class for more information
         EconomicStatus economicStatus = pp.getHousehold().getEconomicStatus();
-        switch (economicStatus){
+        switch (economicStatus) {
             case from0to800:
                 predictor += coefficients.get("hh.econStatus_1");
                 break;
@@ -275,8 +285,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         }
 
         int numUnemployedInHh = 0;
-        for (Person person: pp.getHousehold().getPersons()){
-            if (!person.getOccupation().equals(Occupation.EMPLOYED)){
+        for (Person person : pp.getHousehold().getPersons()) {
+            if (!person.getOccupation().equals(Occupation.EMPLOYED)) {
                 numUnemployedInHh += 1;
             }
         }
@@ -290,7 +300,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             predictor += coefficients.get("hh.size_3");
         } else if (householdSize == 4) {
             predictor += coefficients.get("hh.size_4");
-        } else if (householdSize >= 5){
+        } else if (householdSize >= 5) {
             //assert (householdSize >= 5); what is assert?
             predictor += coefficients.get("hh.size_5");
         }
@@ -430,7 +440,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             predictor += coefficients.get("hh.cars_3");
         }
 
-        switch (pp.getHabitualMode()){
+        switch (pp.getHabitualMode()) {
             case CAR_DRIVER:
                 predictor += coefficients.get("p.t_mand_habmode_car");
                 break;

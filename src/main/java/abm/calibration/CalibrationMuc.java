@@ -162,7 +162,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateDiscretionaryActSplitByType) {
-            splitByTypeCalibration = new SplitByTypeCalibration();
+            splitByTypeCalibration = new SplitByTypeCalibration(dataSet);
             splitByTypeCalibration.setup();
             splitByTypeCalibration.load();
             splitByTypeCalibration.run();

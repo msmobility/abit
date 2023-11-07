@@ -30,6 +30,10 @@ public class Car implements Vehicle {
         return VehicleType.CAR;
     }
 
+    public CarType getEngineType() {
+        return this.carType;
+    }
+
     @Override
     public int getAge() {
         return age;
