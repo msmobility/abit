@@ -1,7 +1,12 @@
 package abm.calibration;
 
+import abm.data.DataSet;
 import abm.data.plans.Mode;
+import abm.data.plans.Plan;
 import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
 import de.tum.bgu.msm.data.person.Occupation;
 
 import java.io.FileNotFoundException;
@@ -12,6 +17,12 @@ import java.util.Map;
 public class TourModeChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> objectiveTourModeShare = new HashMap<>();
+    Map<Purpose, Map<DayOfWeek, Map<Mode, Integer>>> simulatedTourModeCount = new HashMap<>();
+    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> simulatedTourModeShare = new HashMap<>();
+    DataSet dataSet;
+    public TourModeChoiceCalibration(DataSet dataSet) {
+        this.dataSet = dataSet;
+    }
 
     @Override
     public void setup() {
@@ -21,15 +32,18 @@ public class TourModeChoiceCalibration implements ModelComponent {
         //tourmodechoice
         for (Purpose purpose : Purpose.getSortedPurposes()) {
             objectiveTourModeShare.putIfAbsent(purpose, new HashMap<>());
-
+            simulatedTourModeCount.putIfAbsent(purpose, new HashMap<>());
+            simulatedTourModeShare.putIfAbsent(purpose, new HashMap<>());
             for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                 objectiveTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-
+                simulatedTourModeCount.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                simulatedTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
                 for (Mode mode : Mode.values()) {
                     objectiveTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                    simulatedTourModeCount.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
+                    simulatedTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
                 }
             }
-
         }
     }
 
@@ -39,6 +53,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
         readObjectiveValues();
 
         //Todo: consider having the result summarization in the statistics writer
+        summarizeSimulatedResult();
     }
 
     @Override
@@ -53,6 +68,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
         //Todo: print the coefficients table to input folder
 
     }
+
     //WORK; EDUCATION; ACCOMPANY; OTHER; SHOP; RECR
     private void readObjectiveValues() {
         //WORK
@@ -407,10 +423,39 @@ public class TourModeChoiceCalibration implements ModelComponent {
     }
 
     private void summarizeSimulatedResult() {
+        for (Household household : dataSet.getHouseholds().values()) {
+            if (household.getSimulated()) {
+                for (Person person : household.getPersons()) {
+                    Plan plan = person.getPlan();
+                    for (Tour tour : plan.getTours().values()) {
+                        Purpose purpose = tour.getMainActivity().getPurpose();
+                        DayOfWeek dayOfWeek = tour.getMainActivity().getDayOfWeek();
+                        Mode mode = tour.getTourMode();
+                        int count = simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode);
+                        count = count + 1;
+                        simulatedTourModeCount.get(purpose).get(dayOfWeek).replace(mode, count);
 
+                    }
+
+                }
+            }
+        }
+        for (Purpose purpose : Purpose.getSortedPurposes()) {
+            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                int cumulativeSum = 0;
+                for (Mode mode : Mode.getModes()) {
+                    cumulativeSum = cumulativeSum + simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode);
+                }
+                for (Mode mode : Mode.getModes()) {
+                    double share = simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
+                    simulatedTourModeShare.get(purpose).get(dayOfWeek).replace(mode, share);
+                }
+            }
+        }
     }
 
-    private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+    private void printFinalCoefficientsTable
+            (Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
 
     }
 }
