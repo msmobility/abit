@@ -8,7 +8,7 @@ General flow for model calibration
     3.3 Add a new constructor to initialize the above-mentioned variables
     3.4 Update the coefficients table
     3.5 Update the utility calculation
-    3.6 Add a new method "updateCalibrationFactor" to ontain the calibration factors in each iteration
+    3.6 Add a new method "updateCalibrationFactor" to contain the calibration factors in each iteration
     3.7 Add a new method "obtainCoefficientsTable"
 4. Build the project to check any compile error
 5. Commit your code and input file accordingly with understandable message

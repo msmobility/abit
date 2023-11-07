@@ -272,7 +272,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             for (Mode mode : Mode.getHabitualModes()) {
                 double updatedCalibrationFactor = newCalibrationFactors.get(occupation).get(mode);
                 this.updatedCalibrationFactors.get(occupation).replace(mode, updatedCalibrationFactor);
-                logger.info("Calibration factor for " + mode + "\t" + "and" + mode + "\t" + ": " + updatedCalibrationFactor);
+                logger.info("Calibration factor for " + occupation + "\t" + "and" + mode + "\t" + ": " + updatedCalibrationFactor);
             }
         }
     }

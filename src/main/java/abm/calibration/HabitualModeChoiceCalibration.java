@@ -87,7 +87,7 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                     calibrationFactors.get(occupation).replace(mode, factor);
                     logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
                     if (Math.abs(difference) > maxDifference) {
-                        maxDifference = difference;
+                        maxDifference = Math.abs(difference);
                     }
                 }
             }
