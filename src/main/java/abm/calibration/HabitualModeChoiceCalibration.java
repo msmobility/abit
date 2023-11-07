@@ -1,6 +1,7 @@
 package abm.calibration;
 
 import abm.data.DataSet;
+import abm.data.plans.HabitualMode;
 import abm.data.plans.Mode;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
@@ -12,22 +13,24 @@ import org.apache.log4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class HabitualModeChoiceCalibration implements ModelComponent {
 
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.005;
-    double stepSize = 10;
+    private static final double TERMINATION_THRESHOLD = 0.01;
+    double stepSize = 0.1;
     String inputFolder = AbitResources.instance.getString("habitual.mode.calibration.output");
     DataSet dataSet;
-    Map<Occupation, Map<Mode, Double>> objectiveHabitualModeShare = new HashMap<>();
-    Map<Occupation, Map<Mode, Integer>> simulatedHabitualModeCount = new HashMap<>();
+    Map<Occupation, Map<HabitualMode, Double>> objectiveHabitualModeShare = new HashMap<>();
+    Map<Occupation, Map<HabitualMode, Integer>> simulatedHabitualModeCount = new HashMap<>();
     Map<Occupation, Integer> simulatedPopCount = new HashMap<>();
-    Map<Occupation, Map<Mode, Double>> simulatedHabitualModeShare = new HashMap<>();
-    Map<Occupation, Map<Mode, Double>> calibrationFactors = new HashMap<>();
+    Map<Occupation, Map<HabitualMode, Double>> simulatedHabitualModeShare = new HashMap<>();
+    Map<Occupation, Map<HabitualMode, Double>> calibrationFactors = new HashMap<>();
     private NestedLogitHabitualModeChoiceModel habitualModeChoiceCalibration;
 
     public HabitualModeChoiceCalibration(DataSet dataSet) {
@@ -49,11 +52,11 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             simulatedHabitualModeShare.putIfAbsent(occupation, new HashMap<>());
             calibrationFactors.putIfAbsent(occupation, new HashMap<>());
 
-            for (Mode mode : Mode.getHabitualModes()) {
-                objectiveHabitualModeShare.get(occupation).putIfAbsent(mode, 0.0);
-                simulatedHabitualModeCount.get(occupation).putIfAbsent(mode, 0);
-                simulatedHabitualModeShare.get(occupation).putIfAbsent(mode, 0.0);
-                calibrationFactors.get(occupation).putIfAbsent(mode, 0.0);
+            for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
+                objectiveHabitualModeShare.get(occupation).putIfAbsent(habitualMode, 0.0);
+                simulatedHabitualModeCount.get(occupation).putIfAbsent(habitualMode, 0);
+                simulatedHabitualModeShare.get(occupation).putIfAbsent(habitualMode, 0.0);
+                calibrationFactors.get(occupation).putIfAbsent(habitualMode, 0.0);
             }
         }
     }
@@ -74,20 +77,21 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
 
             double maxDifference = 0.0;
+            logger.info("Iteration: " + iteration);
 
             for (Occupation occupation : Occupation.values()) {
-                for (Mode mode : Mode.getHabitualModes()) {
-                    double observedShare = objectiveHabitualModeShare.get(occupation).get(mode);
-                    double simulatedShare = simulatedHabitualModeShare.get(occupation).get(mode);
+                for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
+                    double observedShare = objectiveHabitualModeShare.get(occupation).get(habitualMode);
+                    double simulatedShare = simulatedHabitualModeShare.get(occupation).get(habitualMode);
                     double difference = observedShare - simulatedShare;
                     double factor = stepSize * (observedShare - simulatedShare);
-                    if (mode.equals(Mode.CAR_DRIVER)){
+                    if (habitualMode.equals(HabitualMode.CAR_DRIVER)) {
                         factor = 0.00;
                     }
-                    calibrationFactors.get(occupation).replace(mode, factor);
-                    logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
+                    calibrationFactors.get(occupation).replace(habitualMode, factor);
+                    logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + habitualMode.toString() + "\t" + "difference: " + difference);
                     if (Math.abs(difference) > maxDifference) {
-                        maxDifference = difference;
+                        maxDifference = Math.abs(difference);
                     }
                 }
             }
@@ -97,9 +101,16 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             }
 
             habitualModeChoiceCalibration.updateCalibrationFactor(calibrationFactors);
-            dataSet.getPersons().values().parallelStream().forEach(p -> {
-                habitualModeChoiceCalibration.chooseHabitualMode(p); //.chooseHabitualMode() should be replaced respectively by each model
-            });
+
+            List<Household> simulatedHousehold = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
+            simulatedHousehold.forEach(household -> household.getPersons());
+
+            dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated)
+                    .flatMap(household -> household.getPersons().stream())
+                    .forEach(p -> habitualModeChoiceCalibration.chooseHabitualMode(p));
+//            dataSet.getPersons().values().parallelStream().forEach(p -> {
+//                habitualModeChoiceCalibration.chooseHabitualMode(p); //.chooseHabitualMode() should be replaced respectively by each model
+//            });
 
             summarizeSimulatedResult();
 
@@ -108,12 +119,12 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         logger.info("Finished the calibration of habitual mode choice model.");
 
         //Todo: obtain the updated coefficients + calibration factors
-        Map<Mode, Map<String, Double>> finalCoefficientsTable = habitualModeChoiceCalibration.obtainCoefficientsTable();
+        Map<HabitualMode, Map<String, Double>> finalCoefficientsTable = habitualModeChoiceCalibration.obtainCoefficientsTable();
 
         //Todo: print the coefficients table to input folder
-        try{
+        try {
             printFinalCoefficientsTable(finalCoefficientsTable);
-        }catch(FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             System.err.println("Output path of the coefficient table is not correct.");
         }
 
@@ -121,35 +132,35 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     private void readObjectiveValues() {
         //Todo: Objective values of habitual mode share, which is going to be calibrated by mode and by employment status; should read from input and need to be in a loop
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).putIfAbsent(Mode.BUS, 0.00);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).putIfAbsent(Mode.WALK, 0.00);
+        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_DRIVER, 0.6476);
+        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_PASSENGER, 0.0257);
+        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.PT, 0.1725);
+        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.BIKE, 0.1135);
+        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.WALK, 0.0407);
 
-        objectiveHabitualModeShare.get(Occupation.STUDENT).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).putIfAbsent(Mode.BUS, 0.00);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).putIfAbsent(Mode.BIKE, 0.00);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).putIfAbsent(Mode.WALK, 0.00);
+        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_DRIVER, 0.1414);
+        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_PASSENGER, 0.0662);
+        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.PT, 0.5313);
+        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.BIKE, 0.1786);
+        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.WALK, 0.0825);
 
-        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BUS, 0.00);
-        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BIKE, 0.00);
-        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.WALK, 0.00);
-
-        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BUS, 0.00);
-        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BIKE, 0.00);
-        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.WALK, 0.00);
-
-        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BUS, 0.00);
-        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
-        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.WALK, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BUS, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BIKE, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.WALK, 0.00);
+//
+//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BUS, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BIKE, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.WALK, 0.00);
+//
+//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BUS, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
+//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.WALK, 0.00);
     }
 
     private void summarizeSimulatedResult() {
@@ -157,47 +168,48 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
-                    int modeCount = simulatedHabitualModeCount.get(person.getOccupation()).get(person.getHabitualMode());
-                    simulatedHabitualModeCount.get(person.getOccupation()).replace(person.getHabitualMode(), modeCount + 1);
-                    int popCount = simulatedPopCount.get(person.getOccupation());
-                    simulatedPopCount.replace(person.getOccupation(), popCount + 1);
+                    if (person.getAge() >= 10) {
+                        if (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) {
+                            int modeCount = simulatedHabitualModeCount.get(person.getOccupation()).get(person.getHabitualMode());
+                            simulatedHabitualModeCount.get(person.getOccupation()).replace(person.getHabitualMode(), modeCount + 1);
+                            int popCount = simulatedPopCount.get(person.getOccupation());
+                            simulatedPopCount.replace(person.getOccupation(), popCount + 1);
+
+                        }
+                    }
                 }
             }
         }
 
         for (Occupation occupation : Occupation.values()) {
-            int popCount = simulatedPopCount.get(occupation);
-            int modeCount;
-
-            for (Mode mode : Mode.getHabitualModes()) {
-                modeCount = simulatedHabitualModeCount.get(occupation).get(mode);
-                double modeShare = (double) modeCount / popCount;
-                simulatedHabitualModeShare.get(occupation).replace(mode, modeShare);
+            if (occupation.equals(Occupation.EMPLOYED) || occupation.equals(Occupation.STUDENT)) {
+                int popCount = simulatedPopCount.get(occupation);
+                int modeCount;
+                for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
+                    modeCount = simulatedHabitualModeCount.get(occupation).get(habitualMode);
+                    double modeShare = (double) modeCount / popCount;
+                    simulatedHabitualModeShare.get(occupation).replace(habitualMode, modeShare);
+                }
             }
         }
     }
 
-    private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+    private void printFinalCoefficientsTable(Map<HabitualMode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
         logger.info("Writing habitual mode choice coefficient + calibration factors: " + inputFolder);
         PrintWriter pw = new PrintWriter(inputFolder);
 
         StringBuilder header = new StringBuilder("variable");
-        for (Mode mode : Mode.getModes()){
+        for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
             header.append(",");
-            header.append(mode);
+            header.append(habitualMode);
         }
         pw.println(header);
 
-        for (String variableNames : finalCoefficientsTable.get(Mode.BUS).keySet()){
+        for (String variableNames : finalCoefficientsTable.get(HabitualMode.PT).keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
-            for (Mode mode : Mode.getModes()){
-                if (mode.equals(Mode.TRAIN) || mode.equals(Mode.TRAM_METRO)){
-                    line.append(",");
-                    line.append(finalCoefficientsTable.get(Mode.BUS).get(variableNames));
-                }else {
-                    line.append(",");
-                    line.append(finalCoefficientsTable.get(mode).get(variableNames));
-                }
+            for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
+                line.append(",");
+                line.append(finalCoefficientsTable.get(habitualMode).get(variableNames));
             }
             pw.println(line);
         }
