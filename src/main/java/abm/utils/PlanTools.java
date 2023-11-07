@@ -150,7 +150,6 @@ public class PlanTools {
 
         } else {
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
-            //System.out.println("Missing an act in discretionary main tour");
         }
     }
 
@@ -189,7 +188,6 @@ public class PlanTools {
             plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
         } else {
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
-            //System.out.println("Missing an act in main tour");
         }
     }
 
@@ -286,7 +284,6 @@ public class PlanTools {
             stopBefore.setTour(tour);
         } else {
             plan.addUnmetActivities(stopBefore_StartTime_min, stopBefore);
-            System.out.println("Missing an act in stop before");
         }
     }
 
@@ -333,7 +330,6 @@ public class PlanTools {
             stopAfter.setTour(tour);
         } else {
             plan.addUnmetActivities(stopAfter_StartTime_min, stopAfter);
-            System.out.println("Missing an act in stop after");
         }
     }
 
