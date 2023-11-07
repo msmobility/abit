@@ -134,7 +134,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
-            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration(dataSet);
             frequencyGeneratorCalibration.setup();
             frequencyGeneratorCalibration.load();
             frequencyGeneratorCalibration.run();
@@ -197,7 +197,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration();
+            tourModeChoiceCalibration = new TourModeChoiceCalibration( dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
