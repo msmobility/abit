@@ -23,7 +23,8 @@ public class SplitByTypeModel implements SplitByType{
     private Map<DiscretionaryActivityType, Map<String, Double>> splitOntoDiscretionaryCoefficients;
 
     private boolean runCalibration = false;
-    private Map<Occupation, Map<Mode, Double>> updatedCalibrationFactors;
+    private Map<DiscretionaryActivityType, Double> updatedCalibrationFactors;
+
 
     public SplitByTypeModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -46,12 +47,13 @@ public class SplitByTypeModel implements SplitByType{
     public SplitByTypeModel(DataSet dataSet, Boolean runCalibration) {
         this(dataSet);
         this.updatedCalibrationFactors = new HashMap<>();
-        for (Occupation occupation : Occupation.values()) {
-            this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
+        this.updatedCalibrationFactors.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.0);
+        for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()) {
+            this.updatedCalibrationFactors.putIfAbsent(activityType, 0.0);
         }
-
         this.runCalibration = runCalibration;
     }
+
     @Override
     public DiscretionaryActivityType assignActType(Activity activity, Person person) {
 
@@ -391,9 +393,13 @@ public class SplitByTypeModel implements SplitByType{
                 break;
         }
 
-        //here there are other variables in the table, but they are not significant
 
+
+        if (runCalibration) {
+            utility = utility + updatedCalibrationFactors.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+        }
         return utility;
+
     }
 
     public double calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType discretionaryActivityType, Person person, int numActsNotOnMandatoryTours){
@@ -459,7 +465,64 @@ public class SplitByTypeModel implements SplitByType{
                 break;
         }
 
+        if (runCalibration) {
+            utility = utility + updatedCalibrationFactors.get(discretionaryActivityType);
+        }
         return utility;
+
+    }
+
+    public void updateCalibrationFactor(Map<DiscretionaryActivityType, Double> newCalibrationFactors) {
+
+        double updatedCalibrationFactor;
+        double calibrationFactorFromLastIteration;
+
+        calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+        updatedCalibrationFactor = newCalibrationFactors.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+        this.updatedCalibrationFactors.replace(DiscretionaryActivityType.ON_MANDATORY_TOUR, updatedCalibrationFactor + calibrationFactorFromLastIteration);
+        logger.info("Calibration factor for ON_MANDATORY_TOUR" + "\t" + ": " + updatedCalibrationFactor);
+
+        for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()) {
+            calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(activityType);
+            updatedCalibrationFactor = newCalibrationFactors.get(activityType);
+            this.updatedCalibrationFactors.replace(activityType, updatedCalibrationFactor + calibrationFactorFromLastIteration);
+            logger.info("Calibration factor for " + activityType + "\t" + ": " + updatedCalibrationFactor);
+        }
+    }
+
+    // for model that splits discretionary acts to be on mandatory tours or NOT on mandatory tours
+    public Map<String, Double>  obtainSplitOntoMandatoryCoefficientsTable() {
+
+        double originalCalibrationFactor;
+        double updatedCalibrationFactor;
+        double latestCalibrationFactor;
+
+
+        originalCalibrationFactor = this.splitOntoMandatoryCoefficients.get("calibration");
+        updatedCalibrationFactor = updatedCalibrationFactors.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+        splitOntoMandatoryCoefficients.replace("calibration", latestCalibrationFactor);
+
+
+        return this.splitOntoMandatoryCoefficients;
+    }
+
+    //for models splitting discretionary acts onto discretionary tours
+    public Map<DiscretionaryActivityType, Map<String, Double>> obtainSplitOntoDiscretionaryCoefficientsTable() {
+
+        double originalCalibrationFactor;
+        double updatedCalibrationFactor;
+        double latestCalibrationFactor;
+
+
+        for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()) {
+            originalCalibrationFactor = this.splitOntoDiscretionaryCoefficients.get(activityType).get("calibration");
+            updatedCalibrationFactor = updatedCalibrationFactors.get(activityType);
+            latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+            splitOntoDiscretionaryCoefficients.get(activityType).replace("calibration", latestCalibrationFactor);
+        }
+
+        return this.splitOntoDiscretionaryCoefficients;
     }
 
 }

@@ -20,8 +20,8 @@ public class SplitByTypeCalibration implements ModelComponent{
     private static final int MAX_ITERATION = 2_000_000;
     private static final double TERMINATION_THRESHOLD = 0.005;
     double stepSize = 10;
-    String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output");
-    String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output");
+    String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output ");
+    String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output ");
     DataSet dataSet;
     Map<DiscretionaryActivityType, Double> objectiveSplitByType = new HashMap<>();
     Map<DiscretionaryActivityType, Double> simulatedSplitByType = new HashMap<>();
@@ -110,7 +110,7 @@ public class SplitByTypeCalibration implements ModelComponent{
                     .flatMap(tour -> tour.getActivities().values().stream())
                     .filter(act -> act.getDiscretionaryActivityType()!=null)
                     .forEach(a -> {
-                        splitByTypeCalibration.assignActType(a,a.getPerson());
+                splitByTypeCalibration.assignActType(a,a.getPerson());
                     });
 
             assignActTypeForDiscretionaryTourActs(dataSet, Purpose.ACCOMPANY);
@@ -264,7 +264,7 @@ public class SplitByTypeCalibration implements ModelComponent{
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnAccompany/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_SHOP, (double) numRecreationOnShop/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_OTHER, (double) numRecreationOnOther/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
-        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_RECREATION, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
+        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
 
     }
 
