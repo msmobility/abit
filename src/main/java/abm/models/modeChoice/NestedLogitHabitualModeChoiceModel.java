@@ -5,6 +5,7 @@ import abm.data.geo.RegioStaR2;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.data.pop.Relationship;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -25,7 +26,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     private final DataSet dataSet;
     private Map<HabitualMode, Map<String, Double>> coefficients;
 
-    private boolean runCalibration;
+    private boolean runCalibration = false;
     private Map<Occupation, Map<HabitualMode, Double>> updatedCalibrationFactors;
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet) {
@@ -76,11 +77,13 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         final Double nestingCoefficientAutoModes = coefficients.get(HabitualMode.CAR_DRIVER).get("nestingCoefficient");
 
-        double expsumNestAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityAutoD / nestingCoefficientAutoModes) +
-                Math.exp(utilityAutoP / nestingCoefficientAutoModes)));
+        double expsumNestAuto =
+                Math.exp(utilityAutoD / nestingCoefficientAutoModes) +
+                        Math.exp(utilityAutoP / nestingCoefficientAutoModes);
+
 
         double expsumTopLevel =
-                expsumNestAuto +
+                Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) +
                         Math.exp(utilityBicycle) +
                         Math.exp(utilityPT) +
                         Math.exp(utilityWalk);
@@ -89,18 +92,15 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         double probabilityAutoP;
         if (expsumNestAuto > 0) {
             probabilityAutoD =
-                    (expsumNestAuto/expsumTopLevel) * Math.exp(utilityAutoD)/(Math.exp(utilityAutoD) + Math.exp(utilityAutoP));
-//                    (Math.exp(utilityAutoD / nestingCoefficientAutoModes) / expsumNestAuto) *
-//                            (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
+                    (Math.exp(utilityAutoD / nestingCoefficientAutoModes) / expsumNestAuto) * (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
             probabilityAutoP =
-                    (expsumNestAuto/expsumTopLevel) * Math.exp(utilityAutoP)/(Math.exp(utilityAutoD) + Math.exp(utilityAutoP));
-//                    (Math.exp(utilityAutoP / nestingCoefficientAutoModes) / expsumNestAuto) *
-//                            (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
+                    (Math.exp(utilityAutoP / nestingCoefficientAutoModes) / expsumNestAuto) * (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
         } else {
             probabilityAutoD = 0.0;
             probabilityAutoP = 0.0;
         }
 
+        //double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
 
         double probabilityBike = Math.exp(utilityBicycle) / expsumTopLevel;
         double probabilityWalk = Math.exp(utilityWalk) / expsumTopLevel;
@@ -171,20 +171,14 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
 
-/*        final double SPEED_WALK_KMH = 4;
-        final double SPEED_BICYCLE_KMH = 10;
-        if (person.getOccupation().equals(Occupation.EMPLOYED)) {
+        /*if (person.getOccupation().equals(Occupation.EMPLOYED)) {
             double travelTime;
             double travelDistanceAuto;
-            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
-            } else if (habitualMode == HabitualMode.PT) {
-                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
-                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
-                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
-                travelTime = Math.min(travelTime_bus, travelTime_metro);
-                travelTime = Math.min(travelTime, travelTime_train);
-            } else if (habitualMode == HabitualMode.BIKE) {
+            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), mode, person.getJob().getStartTime_min());
+            } else if (mode == Mode.BIKE) {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
@@ -192,56 +186,49 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
 
-            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
+            utility += travelTime * coefficients.get(mode).get("travelTime");
         }
 
         if (person.getOccupation().equals(Occupation.STUDENT)) {
 
             double travelTime;
             double travelDistanceAuto;
-            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
+            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
-            } else if (habitualMode == HabitualMode.PT) {
-                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
-                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
-                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
-                travelTime = Math.min(travelTime_bus, travelTime_metro);
-                travelTime = Math.min(travelTime, travelTime_train);
-            } else if (habitualMode == HabitualMode.BIKE) {
+            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), mode, person.getSchool().getStartTime_min());
+            } else if (mode == Mode.BIKE) {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
-            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
-        }*/
+            utility += travelTime * coefficients.get(mode).get("travelTime");
+        }
+*/
         //generalized costs
         double generalizedCost = calculateGeneralizedCosts(person, habitualMode);
 
         utility += generalizedCost * coefficients.get(habitualMode).get("gc");
-/*        if (person.getId() == 5108||person.getId() == 27253||person.getId() == 2035){
-            System.out.println("!");
-        }*/
-
 
         //Todo add the latest calibration factors to the utility calculation
         switch (person.getOccupation()) {
             case EMPLOYED:
-                utility += coefficients.get(habitualMode).get("calibration_employed");
+                utility += utility + coefficients.get(habitualMode).get("calibration_employed");
             case STUDENT:
-                utility += coefficients.get(habitualMode).get("calibration_student");
+                utility += utility + coefficients.get(habitualMode).get("calibration_student");
             case TODDLER:
-                utility += coefficients.get(habitualMode).get("calibration_toddler");
+                utility += utility + coefficients.get(habitualMode).get("calibration_toddler");
             case RETIREE:
-                utility += coefficients.get(habitualMode).get("calibration_retiree");
+                utility += utility + coefficients.get(habitualMode).get("calibration_retiree");
             case UNEMPLOYED:
-                utility += coefficients.get(habitualMode).get("calibration_unemployed");
+                utility += utility + coefficients.get(habitualMode).get("calibration_unemployed");
         }
 
         //Todo add updated calibration factor to the utility calculation, starting from 0
         if (runCalibration) {
-            utility += updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
+            utility = utility + updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
         }
         return utility;
     }
@@ -307,7 +294,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         double travelTime = 0;
         double travelDistanceAuto = 0;
         if (person.getOccupation().equals(Occupation.EMPLOYED)) {
-            travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
 
             if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
@@ -318,15 +304,16 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = Math.min(travelTime_bus, travelTime_metro);
                 travelTime = Math.min(travelTime, travelTime_train);
             } else if (habitualMode == HabitualMode.BIKE) {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
 
         }
 
         if (person.getOccupation().equals(Occupation.STUDENT)) {
-            travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
             if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
             } else if (habitualMode == HabitualMode.PT) {
@@ -336,8 +323,10 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = Math.min(travelTime_bus, travelTime_metro);
                 travelTime = Math.min(travelTime, travelTime_train);
             } else if (habitualMode == HabitualMode.BIKE) {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
         }
@@ -375,18 +364,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             }
         }
 
-        switch(habitualMode){
-            case CAR_DRIVER:
-                person.setHabitualModeGcCarD(generalizedCost);
-            case CAR_PASSENGER:
-                person.setHabitualModeGcCarP(generalizedCost);
-            case PT:
-                person.setHabitualModeGcPT(generalizedCost);
-            case BIKE:
-                person.setHabitualModeGcBike(generalizedCost);
-            case WALK:
-                person.setHabitualModeGcWalk(generalizedCost);
-        }
         return generalizedCost;
     }
 
