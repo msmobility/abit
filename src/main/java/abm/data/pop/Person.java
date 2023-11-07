@@ -1,9 +1,6 @@
 package abm.data.pop;
 
-import abm.data.plans.Mode;
-import abm.data.plans.Plan;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
+import abm.data.plans.*;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
@@ -15,7 +12,7 @@ public class Person {
 
     private final int id;
     private final Household household;
-    private Mode habitualMode;
+    private HabitualMode habitualMode;
 
     private int age;
 
@@ -116,11 +113,11 @@ public class Person {
         return household;
     }
 
-    public Mode getHabitualMode() {
+    public HabitualMode getHabitualMode() {
         return habitualMode;
     }
 
-    public void setHabitualMode(Mode habitualMode) {
+    public void setHabitualMode(HabitualMode habitualMode) {
         this.habitualMode = habitualMode;
     }
 

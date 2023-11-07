@@ -5,6 +5,7 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
+import abm.data.plans.HabitualMode;
 import abm.data.plans.Mode;
 import abm.data.plans.Plan;
 import abm.data.plans.Purpose;
@@ -26,7 +27,7 @@ public class FrequencyGeneratorModelTest {
 
 
     @Test
-    public void test(){
+    public void test() {
 
         AbitResources.initializeResources("C:/models/abit/abit.properties");
 
@@ -47,7 +48,7 @@ public class FrequencyGeneratorModelTest {
 
         Plan.initializePlan(person);
 
-        person.setHabitualMode(Mode.TRAIN);
+        person.setHabitualMode(HabitualMode.PT);
 
         int trips;
 
@@ -58,13 +59,12 @@ public class FrequencyGeneratorModelTest {
                 Purpose.RECREATION, 1,
                 Purpose.SHOPPING, 2);
 
-        for (Purpose purpose : Purpose.getAllPurposes()){
+        for (Purpose purpose : Purpose.getAllPurposes()) {
             final FrequencyGeneratorModel frequencyGeneratorModel = new FrequencyGeneratorModel(dataSet, purpose);
             trips = frequencyGeneratorModel.calculateNumberOfActivitiesPerWeek(person, purpose);
             System.out.println(trips + " of purpose " + purpose);
             Assert.assertEquals((int) reference.get(purpose), trips);
         }
-
 
 
     }
