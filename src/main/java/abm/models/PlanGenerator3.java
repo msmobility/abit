@@ -3,8 +3,8 @@ package abm.models;
 import abm.data.DataSet;
 import abm.data.geo.Location;
 import abm.data.plans.*;
-import abm.data.pop.*;
-import abm.io.input.BikeOwnershipReader;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -18,7 +18,6 @@ import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
-import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -30,7 +29,6 @@ public class PlanGenerator3 implements Callable {
 
     private static Logger logger = Logger.getLogger(PlanGenerator3.class);
 
-    private BikeOwnershipReader bikeOwnershipModel;
     private HabitualModeChoice habitualModeChoice;
     private Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private DestinationChoice destinationChoice;
@@ -57,7 +55,7 @@ public class PlanGenerator3 implements Callable {
     private final int thread;
     private final SubtourModeChoice subtourModeChoice;
 
-    private final int TRIALS_RESCHEDULING = -1;
+    private final int TRIALS_RESCHEDULING = 30;
 
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
@@ -81,7 +79,6 @@ public class PlanGenerator3 implements Callable {
         this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
-        this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
 
     }
 
@@ -195,7 +192,6 @@ public class PlanGenerator3 implements Callable {
 
         Plan plan = Plan.initializePlan(person);
 
-        bikeOwnershipModel.assignBicycleOwnership(person);
         habitualModeChoice.chooseHabitualMode(person);
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
@@ -206,12 +202,12 @@ public class PlanGenerator3 implements Callable {
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
                 activity.setDayOfWeek(day);
-                timeAssignment.assignDurationAndThenStartTime(activity);
+                timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -238,10 +234,10 @@ public class PlanGenerator3 implements Callable {
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
                 discretionaryActivitiesMap.get(purpose).add(activity);
 
-                splitByType.assignActType(activity, person);
+                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActType(activity, person);
+                activity.setDiscretionaryActivityType(discretionaryActivityType);
 
-
-                switch (activity.getDiscretionaryActivityType()) {
+                switch (discretionaryActivityType) {
                     case ON_MANDATORY_TOUR:
                         stopsOnMandatory.add(activity);
                         break;
@@ -297,17 +293,16 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : accompanyActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = accompanyActsOnDiscretionaryTours.size();
-
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-
+            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            activity.setDiscretionaryActivityType(discretionaryActivityType);
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
+                timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -336,20 +331,21 @@ public class PlanGenerator3 implements Callable {
                     //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
                 }
             }
+            break;
         }
 
         for (Activity activity : shoppingActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = shoppingActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-
+            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            activity.setDiscretionaryActivityType(discretionaryActivityType);
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
+                timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -392,20 +388,21 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
+            break;
         }
 
         for (Activity activity : otherActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-
+            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            activity.setDiscretionaryActivityType(discretionaryActivityType);
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
+                timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -466,20 +463,21 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
+            break;
         }
 
         for (Activity activity : recreationActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-
+            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            activity.setDiscretionaryActivityType(discretionaryActivityType);
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
+                timeAssignment.assignStartTimeAndDuration(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -561,6 +559,7 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
+            break;
         }
     }
 
