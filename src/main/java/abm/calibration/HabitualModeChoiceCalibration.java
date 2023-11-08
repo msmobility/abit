@@ -22,9 +22,9 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
-    private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.01;
-    double stepSize = 0.1;
+    private static final int MAX_ITERATION = 10;//2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.005;
+    double stepSize = 0.01;
     String inputFolder = AbitResources.instance.getString("habitual.mode.calibration.output");
     DataSet dataSet;
     Map<Occupation, Map<HabitualMode, Double>> objectiveHabitualModeShare = new HashMap<>();
@@ -200,7 +200,7 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         PrintWriter pw = new PrintWriter(inputFolder);
 
         StringBuilder header = new StringBuilder("variable");
-        for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
+        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
             header.append(",");
             header.append(habitualMode);
         }
@@ -208,9 +208,14 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
         for (String variableNames : finalCoefficientsTable.get(HabitualMode.PT).keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
-            for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
-                line.append(",");
-                line.append(finalCoefficientsTable.get(habitualMode).get(variableNames));
+            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+                if (variableNames.equals("calibration_retiree")||variableNames.equals("calibration_toddler")||variableNames.equals("calibration_unemployed")){
+                    line.append(",");
+                    line.append(0);
+                }else{
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(habitualMode).get(variableNames));
+                }
             }
             pw.println(line);
         }
