@@ -100,8 +100,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             probabilityAutoP = 0.0;
         }
 
-        //double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
-
         double probabilityBike = Math.exp(utilityBicycle) / expsumTopLevel;
         double probabilityWalk = Math.exp(utilityWalk) / expsumTopLevel;
         double probabilityPT = Math.exp(utilityPT) / expsumTopLevel;
@@ -171,14 +169,20 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
 
-        /*if (person.getOccupation().equals(Occupation.EMPLOYED)) {
+/*        final double SPEED_WALK_KMH = 4;
+        final double SPEED_BICYCLE_KMH = 10;
+        if (person.getOccupation().equals(Occupation.EMPLOYED)) {
             double travelTime;
             double travelDistanceAuto;
-            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
-            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
-                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), mode, person.getJob().getStartTime_min());
-            } else if (mode == Mode.BIKE) {
+            } else if (habitualMode == HabitualMode.PT) {
+                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
+                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
+                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
+                travelTime = Math.min(travelTime_bus, travelTime_metro);
+                travelTime = Math.min(travelTime, travelTime_train);
+            } else if (habitualMode == HabitualMode.BIKE) {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
@@ -186,27 +190,30 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
 
-            utility += travelTime * coefficients.get(mode).get("travelTime");
+            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
         }
 
         if (person.getOccupation().equals(Occupation.STUDENT)) {
 
             double travelTime;
             double travelDistanceAuto;
-            if (mode == Mode.CAR_DRIVER || mode == Mode.CAR_PASSENGER) {
+            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
-            } else if (mode == Mode.BUS || mode == Mode.TRAM_METRO || mode == Mode.TRAIN) {
-                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), mode, person.getSchool().getStartTime_min());
-            } else if (mode == Mode.BIKE) {
+            } else if (habitualMode == HabitualMode.PT) {
+                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
+                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
+                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
+                travelTime = Math.min(travelTime_bus, travelTime_metro);
+                travelTime = Math.min(travelTime, travelTime_train);
+            } else if (habitualMode == HabitualMode.BIKE) {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
             } else {
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
-            utility += travelTime * coefficients.get(mode).get("travelTime");
-        }
-*/
+            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
+        }*/
         //generalized costs
         double generalizedCost = calculateGeneralizedCosts(person, habitualMode);
 
