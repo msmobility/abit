@@ -5,9 +5,10 @@ import java.util.TreeSet;
 
 public enum HabitualMode {
 
-    PT,
+
     CAR_DRIVER,
     CAR_PASSENGER,
+    PT,
     BIKE,
     WALK,
     UNKNOWN;
@@ -22,9 +23,9 @@ public enum HabitualMode {
 
     public static SortedSet<HabitualMode> getHabitualModes() {
         SortedSet<HabitualMode> modes = new TreeSet<>();
-        modes.add(PT);
         modes.add(CAR_DRIVER);
         modes.add(CAR_PASSENGER);
+        modes.add(PT);
         modes.add(BIKE);
         modes.add(WALK);
         modes.add(UNKNOWN);
@@ -33,9 +34,9 @@ public enum HabitualMode {
 
     public static SortedSet<HabitualMode> getHabitualModesWithoutUnknown() {
         SortedSet<HabitualMode> modes = new TreeSet<>();
-        modes.add(PT);
         modes.add(CAR_DRIVER);
         modes.add(CAR_PASSENGER);
+        modes.add(PT);
         modes.add(BIKE);
         modes.add(WALK);
         return modes;
