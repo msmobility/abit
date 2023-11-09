@@ -2,7 +2,6 @@ package abm.calibration;
 
 import abm.data.DataSet;
 
-import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.properties.AbitResources;
 
 import org.apache.log4j.Logger;
@@ -48,7 +47,7 @@ public class CalibrationMuc {
 
     private StopDestinationChoiceCalibration stopDestinationChoiceCalibration;
     private SplitByTypeCalibration splitByTypeCalibration;
-    private SplitStopByTypeCalibration splitStopByTypeCalibration;
+    private SplitStopTypeCalibration splitStopTypeCalibration;
     private TourModeChoiceCalibration tourModeChoiceCalibration;
     private SubTourGenerationCalibration subTourGenerationCalibration;
     private SubTourTimeAssignmentCalibration subTourTimeAssignmentCalibration;
@@ -96,7 +95,7 @@ public class CalibrationMuc {
         calibrateDiscretionaryActDuration = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.duration.calibration"));
         calibrationList.put("DiscActDuration", calibrateDiscretionaryActDuration);
 
-        calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.stop.type.calibration"));
+        calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.type.onto.discretionary.calibration"));
         calibrationList.put("DiscActStopOnto", calibrateDiscretionaryActStopType);
 
         calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
@@ -122,7 +121,7 @@ public class CalibrationMuc {
 
     public void runCalibration() {
 
-        //checkCalibrationProcess();
+        checkCalibrationProcess();
 
         if (calibrateHabitualModeChoice) {
             habitualModeChoiceCalibration = new HabitualModeChoiceCalibration(dataSet);
@@ -132,60 +131,59 @@ public class CalibrationMuc {
         }
 
         if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
-            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration(dataSet);
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
             frequencyGeneratorCalibration.setup();
             frequencyGeneratorCalibration.load();
             frequencyGeneratorCalibration.run();
         }
 
-//        if (calibrateMandatoryActDayOfWeekAssignment) {
-//            dayOfWeekMandatoryAssignmentCalibration = new DayOfWeekMandatoryAssignmentCalibration();
-//            dayOfWeekMandatoryAssignmentCalibration.setup();
-//            dayOfWeekMandatoryAssignmentCalibration.load();
-//            dayOfWeekMandatoryAssignmentCalibration.run();
-//        }
-
-//        if (calibrateMandatoryActStartTime || calibrateMandatoryActDurationTime) {
-//            timeAssignmentCalibration = new TimeAssignmentCalibration();
-//            timeAssignmentCalibration.setup();
-//            timeAssignmentCalibration.load();
-//            timeAssignmentCalibration.run();
-//        }
-
-
-        if (calibrateDiscretionaryActSplitByType) {
-            splitByTypeCalibration = new SplitByTypeCalibration(dataSet);
-            splitByTypeCalibration.setup();
-            splitByTypeCalibration.load();
-            splitByTypeCalibration.run();
+        if (calibrateMandatoryActDayOfWeekAssignment) {
+            dayOfWeekMandatoryAssignmentCalibration = new DayOfWeekMandatoryAssignmentCalibration();
+            dayOfWeekMandatoryAssignmentCalibration.setup();
+            dayOfWeekMandatoryAssignmentCalibration.load();
+            dayOfWeekMandatoryAssignmentCalibration.run();
         }
 
-//        if (calibrateDiscretionaryActDayOfWeekAssignment) {
-//            dayOfWeekDiscretionaryAssignmentCalibration = new DayOfWeekDiscretionaryAssignmentCalibration();
-//            dayOfWeekDiscretionaryAssignmentCalibration.setup();
-//            dayOfWeekDiscretionaryAssignmentCalibration.load();
-//            dayOfWeekDiscretionaryAssignmentCalibration.run();
-//        }
-
-//        if (calibrateDiscretionaryActStartTime || calibrateDiscretionaryActDuration){
-//            timeAssignmentCalibration = new TimeAssignmentCalibration();
-//            timeAssignmentCalibration.setup();
-//            timeAssignmentCalibration.load();
-//            timeAssignmentCalibration.run();
-//        }
-
-//        if (calibrateDiscretionaryActStopType){
-//            splitStopByTypeCalibration = new SplitStopByTypeCalibration(dataSet);
-//            splitStopByTypeCalibration.setup();
-//            splitStopByTypeCalibration.load();
-//            splitStopByTypeCalibration.run();
-//        }
+        if (calibrateMandatoryActStartTime || calibrateMandatoryActDurationTime) {
+            timeAssignmentCalibration = new TimeAssignmentCalibration();
+            timeAssignmentCalibration.setup();
+            timeAssignmentCalibration.load();
+            timeAssignmentCalibration.run();
+        }
 
         if (calibrateMainDestinationChoice){
             mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
             mainDestinationChoiceCalibration.setup();
             mainDestinationChoiceCalibration.load();
             mainDestinationChoiceCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActSplitByType) {
+            splitByTypeCalibration = new SplitByTypeCalibration();
+            splitByTypeCalibration.setup();
+            splitByTypeCalibration.load();
+            splitByTypeCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActDayOfWeekAssignment) {
+            dayOfWeekDiscretionaryAssignmentCalibration = new DayOfWeekDiscretionaryAssignmentCalibration();
+            dayOfWeekDiscretionaryAssignmentCalibration.setup();
+            dayOfWeekDiscretionaryAssignmentCalibration.load();
+            dayOfWeekDiscretionaryAssignmentCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActStartTime || calibrateDiscretionaryActDuration){
+            timeAssignmentCalibration = new TimeAssignmentCalibration();
+            timeAssignmentCalibration.setup();
+            timeAssignmentCalibration.load();
+            timeAssignmentCalibration.run();
+        }
+
+        if (calibrateDiscretionaryActStopType){
+            splitStopTypeCalibration = new SplitStopTypeCalibration();
+            splitStopTypeCalibration.setup();
+            splitStopTypeCalibration.load();
+            splitStopTypeCalibration.run();
         }
 
         if (calibrateStopDestinationChoice){
@@ -196,7 +194,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration(dataSet);
+            tourModeChoiceCalibration = new TourModeChoiceCalibration();
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
