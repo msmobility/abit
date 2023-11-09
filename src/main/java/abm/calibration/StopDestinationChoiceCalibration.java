@@ -14,19 +14,17 @@ import org.apache.log4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class StopDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(StopDestinationChoiceCalibration.class);
-    private static final int MAX_ITERATION = 1000; //2_000_000;
-    private static final double TERMINATION_THRESHOLD_AVERAGE_DISTANCE = 1.00;
-    double stepSize = 0.0001;
+    private static final int MAX_ITERATION = 2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.005;
+    double stepSize = 10;
 
     private final int NUMBER_OF_BINS = 10;
-    String inputFolder = AbitResources.instance.getString("destination.choice.stop.act.output");
+    String inputFolder = AbitResources.instance.getString("stop.destination.calibration.output");
     DataSet dataSet;
     Map<Purpose, Map<Integer, Double>> objectiveStopDestinationDistanceShare = new HashMap<>();
     Map<Purpose, Double> objectiveStopDestinationAverageDistance_km = new HashMap<>();
@@ -49,19 +47,17 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
         boolean calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.destination.calibration"));
         destinationChoiceModel = new DestinationChoiceModel(dataSet, calibrateMainDestinationChoice, calibrateStopDestinationChoice);
         //Todo: initialize all the data containers that might be needed for calibration
-        for (Purpose purpose : Purpose.getAllPurposes()) {
+        for (Purpose purpose : Purpose.values()) {
             objectiveStopDestinationDistanceShare.putIfAbsent(purpose, new HashMap<>());
             simulatedStopDestinationDistanceCount.putIfAbsent(purpose, new HashMap<>());
             simulatedStopDestinationDistanceShare.putIfAbsent(purpose, new HashMap<>());
             calibrationFactors.putIfAbsent(purpose, new HashMap<>());
+
             calibrationFactors.get(purpose).put("ALPHA_calibration", 0.);
             calibrationFactors.get(purpose).put("BETA_calibration", 0.);
-            simulatedStopDestinationAverageDistance_km.put(purpose, 0.);
-            numberOfAct.put(purpose, 0);
 
-            for (int i = 1; i <= NUMBER_OF_BINS; i++) {
+            for (int i = 0; i < NUMBER_OF_BINS; i++) {
                 objectiveStopDestinationDistanceShare.get(purpose).put(i, 0.);
-                simulatedStopDestinationDistanceCount.get(purpose).put(i, 0);
                 simulatedStopDestinationDistanceShare.get(purpose).put(i, 0.);
 
             }
@@ -88,53 +84,45 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
                 double[] observedTotalBinShare = new double[NUMBER_OF_BINS];
                 double[] simulatedTotalBinShare = new double[NUMBER_OF_BINS];
                 double differenceTotalBinShare = 0.0;
-                double differenceAverageDistance = 0.0;
-//                if (purpose.equals(Purpose.WORK)) {
-//                    for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-//                        observedTotalBinShare[i-1] = objectiveStopDestinationDistanceShare.get(purpose).get(i);
-//                        simulatedTotalBinShare[i-1] = simulatedStopDestinationDistanceShare.get(purpose).get(i);
-//                        double differenceForBin = observedTotalBinShare[i-1] - simulatedTotalBinShare[i-1];
-//                        differenceTotalBinShare += Math.abs(differenceForBin);
-//                    }
-//                } else{
-//                    for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-//                        observedTotalBinShare[i-1] = objectiveStopDestinationDistanceShare.get(purpose).get(i); //+ objectiveStopDestinationDistanceShare.get(Purpose.ACCOMPANY).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.SHOPPING).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.OTHER).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.RECREATION).get(i);
-//                        simulatedTotalBinShare[i-1] = simulatedStopDestinationDistanceShare.get(purpose).get(i); //+ simulatedStopDestinationDistanceShare.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.RECREATION).get(i);
-//                        double differenceForBin = observedTotalBinShare[i-1] - simulatedTotalBinShare[i-1];
-//                        differenceTotalBinShare += Math.abs(differenceForBin);
-//                    }
-//                }
+                if (purpose.equals(Purpose.WORK)) {
+                    for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                        observedTotalBinShare[i] = objectiveStopDestinationDistanceShare.get(purpose).get(i);
+                        simulatedTotalBinShare[i] = simulatedStopDestinationDistanceShare.get(purpose).get(i);
+                        double differenceForBin = observedTotalBinShare[i] - simulatedTotalBinShare[i];
+                        differenceTotalBinShare += Math.abs(differenceForBin);
+                    }
+                } else{
+                    for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                        observedTotalBinShare[i] = objectiveStopDestinationDistanceShare.get(Purpose.EDUCATION).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.ACCOMPANY).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.SHOPPING).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.OTHER).get(i) + objectiveStopDestinationDistanceShare.get(Purpose.RECREATION).get(i);
+                        simulatedTotalBinShare[i] = simulatedStopDestinationDistanceShare.get(Purpose.EDUCATION).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceShare.get(Purpose.RECREATION).get(i);
+                        double differenceForBin = observedTotalBinShare[i] - simulatedTotalBinShare[i];
+                        differenceTotalBinShare += Math.abs(differenceForBin);
+                    }
+                }
                 double factor = stepSize * (objectiveStopDestinationAverageDistance_km.get(purpose) - simulatedStopDestinationAverageDistance_km.get(purpose));
-                differenceAverageDistance = Math.abs(objectiveStopDestinationAverageDistance_km.get(purpose) - simulatedStopDestinationAverageDistance_km.get(purpose));
 
                 calibrationFactors.get(purpose).replace("BETA_calibration", factor);
-                logger.info("Stop destination choice for" + purpose + "\t" + "average distance: " + simulatedStopDestinationAverageDistance_km.get(purpose));
-                if (differenceAverageDistance > maxDifference) {
-                    maxDifference = differenceAverageDistance;
+                logger.info("Stop destination choice for" + purpose.toString() + "\t" + "difference: " + differenceTotalBinShare);
+                if (Math.abs(differenceTotalBinShare) > maxDifference) {
+                    maxDifference = differenceTotalBinShare;
                 }
 
             }
-            if (maxDifference <= TERMINATION_THRESHOLD_AVERAGE_DISTANCE) {
+            if (maxDifference <= TERMINATION_THRESHOLD) {
                 break;
             }
 
             destinationChoiceModel.updateCalibrationFactorsStop(calibrationFactors);
-
-            List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
-            simulatedHouseholds.parallelStream().forEach(household -> {
-                household.getPersons().stream().forEach(person -> {
-                    for (Tour tour : person.getPlan().getTours().values()) {
-                        for (Activity activity : tour.getActivities().values()) {
-                            if (!activity.equals(tour.getMainActivity())) {
-                                destinationChoiceModel.selectStopDestination(person, tour, activity);
-                                break;
-                            }
-
+            dataSet.getPersons().values().parallelStream().forEach(p -> {
+                for (Tour tour : p.getPlan().getTours().values()) {
+                    for (Activity activity : tour.getActivities().values()) {
+                        if (!activity.equals(tour.getMainActivity())) {
+                            destinationChoiceModel.selectStopDestination(p, tour, activity);
                         }
+                        break;
                     }
-                });
+                }
             });
-
             summarizeSimulatedResult();
 
         }
@@ -231,17 +219,6 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
     }
 
     private void summarizeSimulatedResult() {
-
-        for (Purpose purpose : Purpose.getAllPurposes()) {
-            simulatedStopDestinationAverageDistance_km.put(purpose, 0.);
-            numberOfAct.put(purpose, 0);
-
-            for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                simulatedStopDestinationDistanceCount.get(purpose).put(i, 0);
-                simulatedStopDestinationDistanceShare.get(purpose).put(i, 0.);
-            }
-        }
-
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
@@ -262,9 +239,7 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
                                 } else {
                                     indexOfBin = ((int) Math.floor(distanceInKm * 10) + 1) / 2;
                                 }
-                                if (indexOfBin <= NUMBER_OF_BINS) {
-                                    simulatedStopDestinationDistanceCount.get(tourPurpose).put(indexOfBin, simulatedStopDestinationDistanceCount.get(tourPurpose).get(indexOfBin) + 1);
-                                }
+                                simulatedStopDestinationDistanceCount.get(tourPurpose).put(indexOfBin, simulatedStopDestinationDistanceCount.get(tourPurpose).get(indexOfBin) + 1);
                                 //here actually is the total distance for each purpose
                                 simulatedStopDestinationAverageDistance_km.put(tourPurpose, simulatedStopDestinationAverageDistance_km.get(tourPurpose) + distanceInKm);
                                 numberOfAct.put(tourPurpose, numberOfAct.get(tourPurpose) + 1);
@@ -278,16 +253,16 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
         }
         for (Purpose purpose : Purpose.getAllPurposes()) {
             if (purpose.equals(Purpose.WORK)) {
-                for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                    simulatedStopDestinationDistanceShare.get(purpose).put(i,  (double)simulatedStopDestinationDistanceCount.get(purpose).get(i) / (double) numberOfAct.get(purpose));
+                for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                    simulatedStopDestinationDistanceShare.get(purpose).put(i, (double) (simulatedStopDestinationDistanceCount.get(purpose).get(i) / simulatedStopDestinationDistanceCount.get(purpose).values().stream().mapToInt(Integer::intValue).sum()));
                 }
                 simulatedStopDestinationAverageDistance_km.put(purpose, simulatedStopDestinationAverageDistance_km.get(purpose) / numberOfAct.get(purpose));
 
             }else {
-                for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                    simulatedStopDestinationDistanceShare.get(purpose).put(i, ((double) (simulatedStopDestinationDistanceCount.get(Purpose.EDUCATION).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.RECREATION).get(i))) / ((double) (numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION))));
+                for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                    simulatedStopDestinationDistanceShare.get(purpose).put(i, (double) ((simulatedStopDestinationDistanceCount.get(Purpose.EDUCATION).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.RECREATION).get(i)) / (simulatedStopDestinationDistanceCount.get(Purpose.EDUCATION).values().stream().mapToInt(Integer::intValue).sum() + simulatedStopDestinationDistanceCount.get(Purpose.ACCOMPANY).values().stream().mapToInt(Integer::intValue).sum() + simulatedStopDestinationDistanceCount.get(Purpose.SHOPPING).values().stream().mapToInt(Integer::intValue).sum() + simulatedStopDestinationDistanceCount.get(Purpose.OTHER).values().stream().mapToInt(Integer::intValue).sum() + simulatedStopDestinationDistanceCount.get(Purpose.RECREATION).values().stream().mapToInt(Integer::intValue).sum())));
                 }
-                simulatedStopDestinationAverageDistance_km.put(purpose, (simulatedStopDestinationAverageDistance_km.get(Purpose.EDUCATION)+simulatedStopDestinationAverageDistance_km.get(Purpose.ACCOMPANY)+simulatedStopDestinationAverageDistance_km.get(Purpose.SHOPPING)+simulatedStopDestinationAverageDistance_km.get(Purpose.OTHER)+simulatedStopDestinationAverageDistance_km.get(Purpose.RECREATION))/(double)(numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION)));
+                simulatedStopDestinationAverageDistance_km.put(purpose, (simulatedStopDestinationAverageDistance_km.get(Purpose.EDUCATION)+simulatedStopDestinationAverageDistance_km.get(Purpose.ACCOMPANY)+simulatedStopDestinationAverageDistance_km.get(Purpose.SHOPPING)+simulatedStopDestinationAverageDistance_km.get(Purpose.OTHER)+simulatedStopDestinationAverageDistance_km.get(Purpose.RECREATION))/(numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION)));
             }
 
 
