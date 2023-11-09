@@ -110,7 +110,7 @@ public class SplitByTypeCalibration implements ModelComponent{
                     .flatMap(tour -> tour.getActivities().values().stream())
                     .filter(act -> act.getDiscretionaryActivityType()!=null)
                     .forEach(a -> {
-                splitByTypeCalibration.assignActType(a,a.getPerson());
+                        splitByTypeCalibration.assignActType(a,a.getPerson());
                     });
 
             assignActTypeForDiscretionaryTourActs(dataSet, Purpose.ACCOMPANY);
@@ -264,7 +264,7 @@ public class SplitByTypeCalibration implements ModelComponent{
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnAccompany/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_SHOP, (double) numRecreationOnShop/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_OTHER, (double) numRecreationOnOther/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
-        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
+        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_RECREATION, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
 
     }
 
