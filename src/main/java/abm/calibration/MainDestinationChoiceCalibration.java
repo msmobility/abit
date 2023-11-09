@@ -13,19 +13,17 @@ import org.apache.log4j.Logger;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MainDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(MainDestinationChoiceCalibration.class);
-    private static final int MAX_ITERATION = 1;//2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.10;
-    double stepSize = 0.1;
+    private static final int MAX_ITERATION = 2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.005;
+    double stepSize = 10;
 
     private final int NUMBER_OF_BINS = 10;
-    String inputFolder = AbitResources.instance.getString("destination.choice.main.act.output");
+    String inputFolder = AbitResources.instance.getString("main.destination.calibration.output");
     DataSet dataSet;
     Map<Purpose, Map<Integer, Double>> objectiveMainDestinationDistanceShare = new HashMap<>();
     Map<Purpose, Double> objectiveMainDestinationAverageDistance_km = new HashMap<>();
@@ -59,7 +57,7 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
             simulatedMainDestinationAverageDistance_km.put(purpose, 0.);
             numberOfAct.put(purpose, 0);
 
-            for (int i = 1; i <= NUMBER_OF_BINS; i++) {
+            for (int i = 0; i < NUMBER_OF_BINS; i++) {
                 objectiveMainDestinationDistanceShare.get(purpose).put(i, 0.);
                 simulatedMainDestinationDistanceCount.get(purpose).put(i, 0);
                 simulatedMainDestinationDistanceShare.get(purpose).put(i, 0.);
@@ -86,10 +84,10 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
                 double[] observedTotalBinShare = new double[NUMBER_OF_BINS];
                 double[] simulatedTotalBinShare = new double[NUMBER_OF_BINS];
                 double differenceTotalBinShare = 0.0;
-                for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                    observedTotalBinShare[i-1] = objectiveMainDestinationDistanceShare.get(purpose).get(i);
-                    simulatedTotalBinShare[i-1] = simulatedMainDestinationDistanceShare.get(purpose).get(i);
-                    double differenceForBin = observedTotalBinShare[i-1] - simulatedTotalBinShare[i-1];
+                for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                    observedTotalBinShare[i] = objectiveMainDestinationDistanceShare.get(purpose).get(i);
+                    simulatedTotalBinShare[i] = simulatedMainDestinationDistanceShare.get(purpose).get(i);
+                    double differenceForBin = observedTotalBinShare[i] - simulatedTotalBinShare[i];
                     differenceTotalBinShare += Math.abs(differenceForBin);
                 }
 
@@ -97,11 +95,6 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
                 //if observation > simulation, beta should be increased (-1.0 ->-0.5)
                 //if observation < simulation, beta should be decreased (-1.0 -> -1.5)
                 double factor = stepSize * (objectiveMainDestinationAverageDistance_km.get(purpose) - simulatedMainDestinationAverageDistance_km.get(purpose));
-                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                    factor = 0;
-                    differenceTotalBinShare = 0;
-                }
-
 
                 calibrationFactors.get(purpose).replace("BETA_calibration", factor);
                 logger.info("Main destination choice for" + purpose.toString() + "\t" + "difference: " + differenceTotalBinShare);
@@ -116,15 +109,11 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
 
             destinationChoiceModel.updateCalibrationFactorsMain(calibrationFactors);
             destinationChoiceModel.updateMainDestinationProbability();
-
-
-            List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
-            simulatedHouseholds.parallelStream().forEach(household -> {
-                household.getPersons().stream().forEach(person -> {
-                    person.getPlan().getTours().forEach((tourIndex, tour) -> destinationChoiceModel.selectMainActivityDestination(person, tour.getMainActivity()));
-                });
+            dataSet.getPersons().values().parallelStream().forEach(p -> {
+                for (Tour tour : p.getPlan().getTours().values()) {
+                    destinationChoiceModel.selectMainActivityDestination(p, tour.getMainActivity());
+                }
             });
-
             summarizeSimulatedResult();
 
         }
@@ -223,7 +212,7 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
-                    for (Tour tour : person.getPlan().getTours().values()){
+                    for (Tour tour : person.getPlan().getTours().values()) {
                         Purpose mainPurpose = tour.getMainActivity().getPurpose();
                         double distanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(household.getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, 0.);
                         double distanceInKm = distanceInMeters / 1000;
@@ -233,11 +222,7 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
                         } else {
                             indexOfBin = ((int) Math.floor(distanceInKm) + 1) / 2;
                         }
-                        if (indexOfBin <= NUMBER_OF_BINS) {
-                            simulatedMainDestinationDistanceCount.get(mainPurpose).put(indexOfBin, simulatedMainDestinationDistanceCount.get(mainPurpose).get(indexOfBin) + 1);
-                        }
-
-
+                        simulatedMainDestinationDistanceCount.get(mainPurpose).put(indexOfBin, simulatedMainDestinationDistanceCount.get(mainPurpose).get(indexOfBin) + 1);
                         //here actually is the total distance for each purpose
                         simulatedMainDestinationAverageDistance_km.put(mainPurpose, simulatedMainDestinationAverageDistance_km.get(mainPurpose) + distanceInKm);
                         numberOfAct.put(mainPurpose, numberOfAct.get(mainPurpose) + 1);
@@ -247,10 +232,10 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
             }
         }
         for (Purpose purpose : Purpose.getAllPurposes()) {
-            for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                simulatedMainDestinationDistanceShare.get(purpose).put(i,  (double) simulatedMainDestinationDistanceCount.get(purpose).get(i) / (double) numberOfAct.get(purpose));
+            for (int i = 0; i < NUMBER_OF_BINS; i++) {
+                simulatedMainDestinationDistanceShare.get(purpose).put(i, (double) (simulatedMainDestinationDistanceCount.get(purpose).get(i) / simulatedMainDestinationDistanceCount.get(purpose).values().stream().mapToInt(Integer::intValue).sum()));
             }
-            simulatedMainDestinationAverageDistance_km.put(purpose, simulatedMainDestinationAverageDistance_km.get(purpose) / (double)numberOfAct.get(purpose));
+            simulatedMainDestinationAverageDistance_km.put(purpose, simulatedMainDestinationAverageDistance_km.get(purpose) / numberOfAct.get(purpose));
         }
 
 
