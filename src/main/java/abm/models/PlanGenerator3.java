@@ -232,10 +232,10 @@ public class PlanGenerator3 implements Callable {
                 discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
                 discretionaryActivitiesMap.get(purpose).add(activity);
 
-                DiscretionaryActivityType discretionaryActivityType = splitByType.assignActType(activity, person);
-                activity.setDiscretionaryActivityType(discretionaryActivityType);
+                splitByType.assignActType(activity, person);
 
-                switch (discretionaryActivityType) {
+
+                switch (activity.getDiscretionaryActivityType()) {
                     case ON_MANDATORY_TOUR:
                         stopsOnMandatory.add(activity);
                         break;
@@ -291,8 +291,8 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : accompanyActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = accompanyActsOnDiscretionaryTours.size();
-            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-            activity.setDiscretionaryActivityType(discretionaryActivityType);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
@@ -334,8 +334,8 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : shoppingActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = shoppingActsOnDiscretionaryTours.size();
-            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-            activity.setDiscretionaryActivityType(discretionaryActivityType);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
@@ -391,8 +391,8 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : otherActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-            activity.setDiscretionaryActivityType(discretionaryActivityType);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
@@ -466,8 +466,8 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : recreationActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            DiscretionaryActivityType discretionaryActivityType = splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
-            activity.setDiscretionaryActivityType(discretionaryActivityType);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
                 timeAssignment.assignStartTimeAndDuration(activity);
