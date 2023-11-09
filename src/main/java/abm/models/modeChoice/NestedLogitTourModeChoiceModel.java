@@ -255,21 +255,23 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice{
         //habitual mode
         switch (person.getHabitualMode()){
             case CAR_DRIVER:
-                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_carD", 0.);
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_carD", 0.);
                 break;
             case CAR_PASSENGER:
-                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_carP", 0.);
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_carP", 0.);
                 break;
             case BIKE:
-                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_cycle", 0.);
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_cycle", 0.);
                 break;
             case BUS:
             case TRAM_METRO:
             case TRAIN:
-                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_PT", 0.);
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_PT", 0.);
                 break;
             case WALK:
-                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_walk", 0.);
+                utility += purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.mainCommuteMode_occupied_walk", 0.);
+                break;
+            case UNKNOWN:
                 break;
         }
 
@@ -349,7 +351,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice{
 
         EnumMap<Mode, Double> generalizedCosts = new EnumMap<Mode, Double>(Mode.class);
 
-        if (purpose.equals(Purpose.ACCOMPANY) || purpose.equals(Purpose.RECREATION)){
+        if (purpose.equals(Purpose.ACCOMPANY)){
             generalizedCosts.put(Mode.CAR_DRIVER, Math.log(gcAutoD));
             generalizedCosts.put(Mode.CAR_PASSENGER, Math.log(gcAutoP));
             generalizedCosts.put(Mode.BIKE, Math.log(tourTravelTimes.get(Mode.BIKE)));
