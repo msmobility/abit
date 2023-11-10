@@ -1,5 +1,6 @@
 package abm.models.destinationChoice;
 
+import abm.data.plans.Tour;
 import abm.utils.AbitUtils;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.plans.Activity;
@@ -18,8 +19,13 @@ public class SimpleDestinationChoice implements DestinationChoice{
     }
 
     @Override
-    public void selectStopDestination(Person person, Activity previousActivity, Activity activity, Activity followingActivity) {
-        MicroscopicLocation tempLocation = new MicroscopicLocation(rmd.nextDouble() * 10_000, rmd.nextDouble() * 10_000);
-        activity.setLocation(tempLocation);
+    public void selectStopDestination(Person person, Tour tour, Activity activity) {
+
     }
+
+//    @Override
+//    public void selectStopDestination(Person person, Activity previousActivity, Activity activity, Activity followingActivity) {
+//        MicroscopicLocation tempLocation = new MicroscopicLocation(rmd.nextDouble() * 10_000, rmd.nextDouble() * 10_000);
+//        activity.setLocation(tempLocation);
+//    }
 }
