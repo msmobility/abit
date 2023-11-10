@@ -1,9 +1,6 @@
 package abm.data.pop;
 
-import abm.data.plans.Mode;
-import abm.data.plans.Plan;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
+import abm.data.plans.*;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;

@@ -121,7 +121,7 @@ public class CalibrationMuc {
 
     public void runCalibration() {
 
-        checkCalibrationProcess();
+        //checkCalibrationProcess();
 
         if (calibrateHabitualModeChoice) {
             habitualModeChoiceCalibration = new HabitualModeChoiceCalibration(dataSet);
