@@ -39,6 +39,11 @@ public class Car implements Vehicle {
         return age;
     }
 
+    @Override
+    public CarAvailableTimeOfWeek getCarAvailableTimeOfWeek() {
+        return null;
+    }
+
     public void increaseAgeByOne(){
         age++;
     }
