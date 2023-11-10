@@ -40,39 +40,34 @@ public class DestinationChoiceModel implements DestinationChoice {
 
     public DestinationChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
-        zoneAttractorsByPurpose = loadBasicAttraction();
-        probabilityMatrixByPurpose = calculateProbability();
         this.coefficientsMain = new HashMap<>();
+        zoneAttractorsByPurpose = loadBasicAttraction();
         Path pathToCoefficientsMainFile = Path.of(AbitResources.instance.getString("destination.choice.main.act"));
         this.coefficientsStop = new HashMap<>();
         Path pathToCoefficientsStopFile = Path.of(AbitResources.instance.getString("destination.choice.stop.act"));
-
-        for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                final Map<String, Double> purposeCoefficientsMain = new CoefficientsReader(dataSet, purpose.toString(), pathToCoefficientsMainFile).readCoefficients();
-                coefficientsMain.put(purpose, purposeCoefficientsMain);
-                final Map<String, Double> purposeCoefficientsStop = new CoefficientsReader(dataSet, purpose.toString(), pathToCoefficientsStopFile).readCoefficients();
-                coefficientsStop.put(purpose, purposeCoefficientsStop);
-            }
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            final Map<String, Double> purposeCoefficientsMain = new CoefficientsReader(dataSet, purpose.toString().toLowerCase(), pathToCoefficientsMainFile).readCoefficients();
+            coefficientsMain.put(purpose, purposeCoefficientsMain);
+            final Map<String, Double> purposeCoefficientsStop = new CoefficientsReader(dataSet, purpose.toString(), pathToCoefficientsStopFile).readCoefficients();
+            coefficientsStop.put(purpose, purposeCoefficientsStop);
         }
+        probabilityMatrixByPurpose = calculateProbability();
     }
 
     public DestinationChoiceModel(DataSet dataSet, Boolean runCalibrationMain, Boolean runCalibrationStop) {
         this(dataSet);
         this.updatedCalibrationFactorsMain = new HashMap<>();
         this.updatedCalibrationFactorsStop = new HashMap<>();
-        for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                if (runCalibrationMain.equals(true) && runCalibrationStop.equals(false)) {
-                    this.updatedCalibrationFactorsMain.putIfAbsent(purpose, new HashMap<>());
-                    updatedCalibrationFactorsMain.get(purpose).put("ALPHA", 0.);
-                    updatedCalibrationFactorsMain.get(purpose).put("BETA", 0.);
-                }
-                if (runCalibrationStop.equals(true) && runCalibrationMain.equals(false)) {
-                    this.updatedCalibrationFactorsStop.putIfAbsent(purpose, new HashMap<>());
-                    updatedCalibrationFactorsStop.get(purpose).put("ALPHA", 0.);
-                    updatedCalibrationFactorsStop.get(purpose).put("BETA", 0.);
-                }
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            if (runCalibrationMain) {
+                this.updatedCalibrationFactorsMain.putIfAbsent(purpose, new HashMap<>());
+                updatedCalibrationFactorsMain.get(purpose).put("ALPHA_calibration", 0.);
+                updatedCalibrationFactorsMain.get(purpose).put("BETA_calibration", 0.);
+            }
+            if (runCalibrationStop) {
+                this.updatedCalibrationFactorsStop.putIfAbsent(purpose, new HashMap<>());
+                updatedCalibrationFactorsStop.get(purpose).put("ALPHA_calibration", 0.);
+                updatedCalibrationFactorsStop.get(purpose).put("BETA_calibration", 0.);
             }
         }
         this.runCalibrationMain = runCalibrationMain;
@@ -123,7 +118,7 @@ public class DestinationChoiceModel implements DestinationChoice {
         return zoneAttractorsByPurpose;
     }
 
-    public void updateMainDestinationProbability(){
+    public void updateMainDestinationProbability() {
         probabilityMatrixByPurpose = calculateProbability();
     }
 
@@ -222,25 +217,23 @@ public class DestinationChoiceModel implements DestinationChoice {
 //    }
 
     public void updateCalibrationFactorsMain(Map<Purpose, Map<String, Double>> newCalibrationFactorsMain) {
-        for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration");
-                double updatedCalibrationFactors = newCalibrationFactorsMain.get(purpose).get("BETA_calibration");
-                this.updatedCalibrationFactorsMain.get(purpose).replace("BETA_calibration", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
-                logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsMain);
-            }
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration");
+            double updatedCalibrationFactors = newCalibrationFactorsMain.get(purpose).get("BETA_calibration");
+            this.updatedCalibrationFactorsMain.get(purpose).replace("BETA_calibration", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
+            logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsMain);
         }
 
     }
 
     public void updateCalibrationFactorsStop(Map<Purpose, Map<String, Double>> newCalibrationFactorsStop) {
-        for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA");
-                double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA");
-                this.updatedCalibrationFactorsStop.get(purpose).replace("BETA", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
-                logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsStop);
-            }
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+
+            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA");
+            double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA");
+            this.updatedCalibrationFactorsStop.get(purpose).replace("BETA", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
+            logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsStop);
+
         }
 
     }
