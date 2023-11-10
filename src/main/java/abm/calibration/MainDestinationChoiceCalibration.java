@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 public class MainDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(MainDestinationChoiceCalibration.class);
-    private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.05;
+    private static final int MAX_ITERATION = 1;//2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.10;
     double stepSize = 0.1;
 
     private final int NUMBER_OF_BINS = 10;
@@ -97,6 +97,11 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
                 //if observation > simulation, beta should be increased (-1.0 ->-0.5)
                 //if observation < simulation, beta should be decreased (-1.0 -> -1.5)
                 double factor = stepSize * (objectiveMainDestinationAverageDistance_km.get(purpose) - simulatedMainDestinationAverageDistance_km.get(purpose));
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+                    factor = 0;
+                    differenceTotalBinShare = 0;
+                }
+
 
                 calibrationFactors.get(purpose).replace("BETA_calibration", factor);
                 logger.info("Main destination choice for" + purpose.toString() + "\t" + "difference: " + differenceTotalBinShare);
