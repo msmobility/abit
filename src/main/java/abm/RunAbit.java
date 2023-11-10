@@ -2,6 +2,8 @@ package abm;
 
 import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
+import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.*;
@@ -91,6 +93,22 @@ public class RunAbit {
         //todo. consistency check before summarizing the trip list (useful for the debugging phase, have it as false for the application later on)
 
         //todo. auto calibration outputs
+
+        // TODO: new code - Yangqian
+        CheckResults checkResults = new CheckResults(dataSet);
+        checkResults.checkTimeConflict();
+        System.out.println("Number of people with schedule conflict: "+checkResults.getNumOfPeopleWithTimeConflict());
+        for (Mode mode: checkResults.getLegsWithWrongTravelTime().keySet()){
+            System.out.println(mode+":"+checkResults.getLegsWithWrongTravelTime().get(mode));
+        }
+        checkResults.checkVehicleUse();
+        System.out.println("Number of cars with overlap use: "+checkResults.getOverlapCarUse());
+        checkResults.checkAccompanyTrip();
+        System.out.println("Number of accompany trip without accompany in the household: "+checkResults.getAccompanyTripInconsistency());
+        checkResults.checkChildTrip();
+        for (Purpose purpose: checkResults.getChildTripWithoutAccompany().keySet()){
+            System.out.println("Number of child trip for "+purpose+" without the accompany in the household:"+checkResults.getChildTripWithoutAccompany().get(purpose));
+        }
 
         long end = System.currentTimeMillis();
 
