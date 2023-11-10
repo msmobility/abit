@@ -157,7 +157,7 @@ public class DestinationChoiceModel implements DestinationChoice {
                 workStopUtilityList.setIndexed(z.getId(), workStopUtility);
             }
             final int selectedIndex = MitoUtil.select(workStopUtilityList.toNonIndexedArray());
-            Zone destination = dataSet.getZones().get(selectedIndex);
+            Zone destination = dataSet.getZones().get(selectedIndex+1);
 
             final Coordinate randomCoordinate = destination.getRandomCoordinate(AbitUtils.getRandomObject());
             MicroscopicLocation microDestination = new MicroscopicLocation(randomCoordinate.x, randomCoordinate.y);
@@ -175,12 +175,19 @@ public class DestinationChoiceModel implements DestinationChoice {
                 othersStopUtilityList.setIndexed(z.getId(), otherStopUtility);
             }
             final int selectedIndex = MitoUtil.select(othersStopUtilityList.toNonIndexedArray());
-            Zone destination = dataSet.getZones().get(selectedIndex);
+            Zone destination = dataSet.getZones().get(selectedIndex+1);
 
-            final Coordinate randomCoordinate = destination.getRandomCoordinate(AbitUtils.getRandomObject());
-            MicroscopicLocation microDestination = new MicroscopicLocation(randomCoordinate.x, randomCoordinate.y);
-            microDestination.setZone(destination);
-            stopActivity.setLocation(microDestination);
+            try {
+                final Coordinate randomCoordinate = destination.getRandomCoordinate(AbitUtils.getRandomObject());
+                MicroscopicLocation microDestination = new MicroscopicLocation(randomCoordinate.x, randomCoordinate.y);
+                microDestination.setZone(destination);
+                stopActivity.setLocation(microDestination);
+
+            } catch (Exception e) {
+                System.out.println("select index: " + selectedIndex);
+                System.out.println("Error destination: " + destination.getId());
+            }
+
         }
 
     }
@@ -229,9 +236,9 @@ public class DestinationChoiceModel implements DestinationChoice {
     public void updateCalibrationFactorsStop(Map<Purpose, Map<String, Double>> newCalibrationFactorsStop) {
         for (Purpose purpose : Purpose.getAllPurposes()) {
 
-            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA");
-            double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA");
-            this.updatedCalibrationFactorsStop.get(purpose).replace("BETA", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
+            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration");
+            double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA_calibration");
+            this.updatedCalibrationFactorsStop.get(purpose).replace("BETA_calibration", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
             logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsStop);
 
         }
