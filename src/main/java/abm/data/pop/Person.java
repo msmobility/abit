@@ -13,7 +13,7 @@ public class Person {
 
     private final int id;
     private final Household household;
-    private Mode habitualMode;
+    private HabitualMode habitualMode;
 
     private int age;
 
@@ -124,11 +124,11 @@ public class Person {
         return household;
     }
 
-    public Mode getHabitualMode() {
+    public HabitualMode getHabitualMode() {
         return habitualMode;
     }
 
-    public void setHabitualMode(Mode habitualMode) {
+    public void setHabitualMode(HabitualMode habitualMode) {
         this.habitualMode = habitualMode;
     }
 

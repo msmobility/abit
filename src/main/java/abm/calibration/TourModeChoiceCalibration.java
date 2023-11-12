@@ -1,25 +1,39 @@
 package abm.calibration;
 
 import abm.data.DataSet;
-import abm.data.plans.Mode;
-import abm.data.plans.Plan;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
+import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
+import abm.models.modeChoice.NestedLogitTourModeChoiceModel;
+import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
+import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.time.DayOfWeek;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TourModeChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
+    static Logger logger = Logger.getLogger(TourModeChoiceCalibration.class);
+
+    private static final int MAX_ITERATION = 2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.005;
+
+    double stepSize = 0.01;
+    String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
+    DataSet dataSet;
     Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> objectiveTourModeShare = new HashMap<>();
     Map<Purpose, Map<DayOfWeek, Map<Mode, Integer>>> simulatedTourModeCount = new HashMap<>();
     Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> simulatedTourModeShare = new HashMap<>();
-    DataSet dataSet;
+    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> calibrationFactors = new HashMap<>();
+    private NestedLogitTourModeChoiceModel tourModeChoiceModelCalibration;
+
     public TourModeChoiceCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
     }
@@ -27,6 +41,8 @@ public class TourModeChoiceCalibration implements ModelComponent {
     @Override
     public void setup() {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
+        boolean calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
+        tourModeChoiceModelCalibration = new NestedLogitTourModeChoiceModel(dataSet, calibrateTourModeChoice);
 
         //Todo: initialize all the data containers that might be needed for calibration
         //tourmodechoice
@@ -34,14 +50,17 @@ public class TourModeChoiceCalibration implements ModelComponent {
             objectiveTourModeShare.putIfAbsent(purpose, new HashMap<>());
             simulatedTourModeCount.putIfAbsent(purpose, new HashMap<>());
             simulatedTourModeShare.putIfAbsent(purpose, new HashMap<>());
+            calibrationFactors.putIfAbsent(purpose, new HashMap<>());
             for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                 objectiveTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
                 simulatedTourModeCount.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
                 simulatedTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                calibrationFactors.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
                 for (Mode mode : Mode.values()) {
                     objectiveTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
                     simulatedTourModeCount.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
                     simulatedTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                    calibrationFactors.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
                 }
             }
         }
@@ -59,13 +78,66 @@ public class TourModeChoiceCalibration implements ModelComponent {
     @Override
     public void run() {
 
-        //Todo: loop through the calibration process until criteria are met
+        logger.info("Start calibrating the habitual mode choice model......");
 
+        //Todo: loop through the calibration process until criteria are met
+        for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
+
+            double maxDifference = 0.0;
+            logger.info("Iteration: " + iteration);
+
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    for (Mode mode : Mode.getModes()) {
+                        double observedShare = objectiveTourModeShare.get(purpose).get(dayOfWeek).get(mode);
+                        double simulatedShare = simulatedTourModeShare.get(purpose).get(dayOfWeek).get(mode);
+                        double difference = observedShare - simulatedShare;
+                        double factor = stepSize * (observedShare - simulatedShare);
+                        if (mode.equals(Mode.CAR_DRIVER)) {
+                            factor = 0.00;
+                            difference = 0.00;
+                        }
+                        if (dayOfWeek.equals(DayOfWeek.SUNDAY) && purpose.equals(Purpose.SHOPPING)){
+                            factor = 0.00;
+                            difference = 0.00;
+                        }
+                        calibrationFactors.get(purpose).get(dayOfWeek).replace(mode, factor);
+                        logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
+                        if (Math.abs(difference) > maxDifference) {
+                            maxDifference = Math.abs(difference);
+                        }
+                    }
+                }
+            }
+
+            if (maxDifference <= TERMINATION_THRESHOLD) {
+                break;
+            }
+
+            tourModeChoiceModelCalibration.updateCalibrationFactor(calibrationFactors);
+
+            List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
+            simulatedHouseholds.parallelStream().forEach(household -> {
+                household.getPersons().stream().forEach(person -> {
+                    person.getPlan().getTours().forEach((tourIndex, tour) -> tourModeChoiceModelCalibration.chooseMode(person, tour));
+                });
+            });
+
+            summarizeSimulatedResult();
+
+        }
+
+        logger.info("Finished the calibration of habitual mode choice model.");
 
         //Todo: obtain the updated coefficients + calibration factors
-
+        Map<Purpose, Map<Mode, Map<String, Double>>> finalCoefficientsTable = tourModeChoiceModelCalibration.obtainCoefficientsTable();
 
         //Todo: print the coefficients table to input folder
+        try {
+            printFinalCoefficientsTable(finalCoefficientsTable);
+        } catch (FileNotFoundException e) {
+            System.err.println("Output path of the coefficient table is not correct.");
+        }
 
     }
 
@@ -447,15 +519,83 @@ public class TourModeChoiceCalibration implements ModelComponent {
                     cumulativeSum = cumulativeSum + simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode);
                 }
                 for (Mode mode : Mode.getModes()) {
-                    double share = simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
+                    double share = (double) simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
                     simulatedTourModeShare.get(purpose).get(dayOfWeek).replace(mode, share);
                 }
             }
         }
     }
 
-    private void printFinalCoefficientsTable
-            (Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+    private void printFinalCoefficientsTable(Map<Purpose, Map<Mode, Map<String, Double>>> finalCoefficientsTable) throws FileNotFoundException {
+
+//        accompanyMode_nestedLogit.csv
+//        shoppingMode_nestedLogit.csv
+//        recreationMode_nestedLogit.csv
+//        otherMode_nestedLogit.csv
+
+        logger.info("Writing tour mode choice coefficient + calibration factors: " + inputFolder + "mandatoryMode_nestedLogit_calibrated.csv");
+        PrintWriter pw = new PrintWriter(inputFolder + "mandatoryMode_nestedLogit_calibrated.csv");
+
+        StringBuilder header = new StringBuilder("variable");
+        for (Mode mode : Mode.getModes()) {
+            header.append(",");
+            header.append(mode);
+        }
+        pw.println(header);
+
+        for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get(Mode.BUS).keySet()) {
+            StringBuilder line = new StringBuilder(variableNames);
+
+            if (variableNames.equals("calibration_education_monday") || variableNames.equals("calibration_education_tuesday") ||
+                    variableNames.equals("calibration_education_wednesday") || variableNames.equals("calibration_education_thursday") ||
+                    variableNames.equals("calibration_education_friday") || variableNames.equals("calibration_education_satday") ||
+                    variableNames.equals("calibration_education_sunday")) {
+
+
+                for (Mode mode : Mode.getModes()) {
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(Purpose.EDUCATION).get(mode).get(variableNames));
+                }
+
+            } else {
+                for (Mode mode : Mode.getModes()) {
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(Purpose.WORK).get(mode).get(variableNames));
+                }
+            }
+            pw.println(line);
+        }
+        pw.close();
+
+        //one for discretionary
+
+
+        for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+
+            logger.info("Writing tour mode choice coefficient + calibration factors: " + inputFolder + purpose + "Mode_nestedLogit_calibrated.csv");
+            PrintWriter pww = new PrintWriter(inputFolder + purpose.toString().toLowerCase() + "Mode_nestedLogit_calibrated.csv");
+
+            StringBuilder headerr = new StringBuilder("variable");
+            for (Mode mode : Mode.getModes()) {
+                headerr.append(",");
+                headerr.append(mode);
+            }
+            pww.println(headerr);
+
+
+            for (String variableNames : finalCoefficientsTable.get(Purpose.SHOPPING).get(Mode.BUS).keySet()) {
+                StringBuilder line = new StringBuilder(variableNames);
+
+                for (Mode mode : Mode.getModes()) {
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(purpose).get(mode).get(variableNames));
+                }
+
+                pww.println(line);
+            }
+            pww.close();
+
+        }
 
     }
 }
