@@ -151,12 +151,6 @@ public class CalibrationMuc {
             timeAssignmentCalibration.run();
         }
 
-        if (calibrateMainDestinationChoice){
-            mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
-            mainDestinationChoiceCalibration.setup();
-            mainDestinationChoiceCalibration.load();
-            mainDestinationChoiceCalibration.run();
-        }
 
         if (calibrateDiscretionaryActSplitByType) {
             splitByTypeCalibration = new SplitByTypeCalibration();
@@ -184,6 +178,13 @@ public class CalibrationMuc {
             splitStopTypeCalibration.setup();
             splitStopTypeCalibration.load();
             splitStopTypeCalibration.run();
+        }
+
+        if (calibrateMainDestinationChoice){
+            mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
+            mainDestinationChoiceCalibration.setup();
+            mainDestinationChoiceCalibration.load();
+            mainDestinationChoiceCalibration.run();
         }
 
         if (calibrateStopDestinationChoice){
