@@ -64,27 +64,39 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
         int numOfActivity;
 
-        if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-            if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && purpose.equals(Purpose.WORK)) {
-                numOfActivity = polrEstimateTrips(person);
-            } else if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && purpose.equals(Purpose.EDUCATION)) {
-                numOfActivity = 0;
-            } else if (person.getAge() <= 2 || person.getAge() >= 70) {
-                numOfActivity = 0;
-            } else if (person.getAge() < 15 && purpose.equals(Purpose.WORK)) {
+        if (purpose.equals(Purpose.WORK)) {
+
+            if (person.getAge() < 15 && person.getAge() > 70) {
                 numOfActivity = 0;
             } else {
                 numOfActivity = polrEstimateTrips(person);
-                if (numOfActivity > 7) {
-                    numOfActivity = 7;
-                }
             }
+
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
+
+
+        } else if (purpose.equals(Purpose.EDUCATION)) {
+
+            if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+                numOfActivity = 0;
+            } else {
+                numOfActivity = polrEstimateTrips(person);
+            }
+
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
+
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
             numOfActivity = hurdleEstimateTrips(person);
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
         } else {
             numOfActivity = nbEstimateTrips(person);
         }
-
         return numOfActivity;
     }
 
