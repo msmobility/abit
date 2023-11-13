@@ -96,6 +96,7 @@ public class SplitByTypeModel implements SplitByType{
             case ACCOMPANY:
                 long accompanyTours = person.getPlan().getTours().values().stream().
                         filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count();
+
                 if (accompanyTours == 0) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.ACCOMPANY_PRIMARY);
                     return DiscretionaryActivityType.ACCOMPANY_PRIMARY;
@@ -132,6 +133,7 @@ public class SplitByTypeModel implements SplitByType{
 
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.SHOP_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
+
                 if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.SHOP_ON_SHOP);
                     return DiscretionaryActivityType.SHOP_ON_SHOP;

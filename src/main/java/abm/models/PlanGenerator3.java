@@ -291,6 +291,7 @@ public class PlanGenerator3 implements Callable {
 
         for (Activity activity : accompanyActsOnDiscretionaryTours) {
             int numAccompanyActsNotOnMandatoryTours = accompanyActsOnDiscretionaryTours.size();
+
             splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
@@ -329,7 +330,6 @@ public class PlanGenerator3 implements Callable {
                     //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
                 }
             }
-            break;
         }
 
         for (Activity activity : shoppingActsOnDiscretionaryTours) {
@@ -386,7 +386,6 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
-            break;
         }
 
         for (Activity activity : otherActsOnDiscretionaryTours) {
@@ -461,7 +460,6 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
-            break;
         }
 
         for (Activity activity : recreationActsOnDiscretionaryTours) {
@@ -557,7 +555,6 @@ public class PlanGenerator3 implements Callable {
                     }
                 }
             }
-            break;
         }
     }
 
