@@ -20,8 +20,8 @@ public class SplitByTypeCalibration implements ModelComponent{
     private static final int MAX_ITERATION = 2_000_000;
     private static final double TERMINATION_THRESHOLD = 0.005;
     double stepSize = 10;
-    String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output ");
-    String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output ");
+    String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output");
+    String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output");
     DataSet dataSet;
     Map<DiscretionaryActivityType, Double> objectiveSplitByType = new HashMap<>();
     Map<DiscretionaryActivityType, Double> simulatedSplitByType = new HashMap<>();
