@@ -94,8 +94,10 @@ public class SplitByTypeModel implements SplitByType{
             case EDUCATION:
                 throw new RuntimeException("This was intended only for discretionary activities");
             case ACCOMPANY:
-                long accompanyTours = person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count();
+
+                double accompanyTours = person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                    .filter(act -> act.getPurpose().equals(Purpose.ACCOMPANY) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_PRIMARY)).count();
 
                 if (accompanyTours == 0) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.ACCOMPANY_PRIMARY);
@@ -115,18 +117,20 @@ public class SplitByTypeModel implements SplitByType{
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
 
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.SHOP_PRIMARY);
-                    return DiscretionaryActivityType.SHOP_PRIMARY;
+                if (person.getPlan().getTours().values().stream()
+                    .flatMap(tour -> tour.getActivities().values().stream())
+                    .filter(act -> act.getPurpose().equals(Purpose.ACCOMPANY) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_PRIMARY)).count()
+                    > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.SHOP_ON_ACCOMPANY);
+                        return DiscretionaryActivityType.SHOP_ON_ACCOMPANY;
+                    }
                 }
 
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.SHOP_ON_ACCOMPANY);
-                    return DiscretionaryActivityType.SHOP_ON_ACCOMPANY;
-                }
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
+                if (person.getPlan().getTours().values().stream()
+                                .flatMap(tour-> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.SHOPPING) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_PRIMARY)).count() == 0) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.SHOP_PRIMARY);
                     return DiscretionaryActivityType.SHOP_PRIMARY;
                 }
@@ -144,33 +148,35 @@ public class SplitByTypeModel implements SplitByType{
             case OTHER:
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
-
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_PRIMARY);
-                    return DiscretionaryActivityType.OTHER_PRIMARY;
-                }
-
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_ON_ACCOMPANY);
-                    return DiscretionaryActivityType.OTHER_ON_ACCOMPANY;
-                }
-
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_PRIMARY);
-                    return DiscretionaryActivityType.OTHER_PRIMARY;
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.ACCOMPANY) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_PRIMARY)).count()
+                        > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_ON_ACCOMPANY);
+                        return DiscretionaryActivityType.OTHER_ON_ACCOMPANY;
+                    }
                 }
 
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.OTHER_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
 
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_ON_SHOP);
-                    return DiscretionaryActivityType.OTHER_ON_SHOP;
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.SHOPPING) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_PRIMARY)).count()
+                        > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_ON_SHOP);
+                        return DiscretionaryActivityType.OTHER_ON_SHOP;
+                    }
                 }
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.OTHER)).count() == 0) {
+
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.OTHER) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_PRIMARY)).count()
+                        == 0) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.OTHER_PRIMARY);
                     return DiscretionaryActivityType.OTHER_PRIMARY;
                 }
@@ -186,44 +192,48 @@ public class SplitByTypeModel implements SplitByType{
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
 
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.ACCOMPANY)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_PRIMARY);
-                    return DiscretionaryActivityType.RECREATION_PRIMARY;
-                }
-
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY);
-                    return DiscretionaryActivityType.RECREATION_ON_ACCOMPANY;
-                }
-
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.SHOPPING)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_PRIMARY);
-                    return DiscretionaryActivityType.RECREATION_PRIMARY;
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.ACCOMPANY) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_PRIMARY)).count()
+                        > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY);
+                        return DiscretionaryActivityType.RECREATION_ON_ACCOMPANY;
+                    }
                 }
 
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_SHOP, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_SHOP);
-                    return DiscretionaryActivityType.RECREATION_ON_SHOP;
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.SHOPPING) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_PRIMARY)).count()
+                        > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_SHOP);
+                        return DiscretionaryActivityType.RECREATION_ON_SHOP;
+                    }
                 }
 
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.OTHER)).count() == 0) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_PRIMARY);
-                    return DiscretionaryActivityType.RECREATION_PRIMARY;
-                }
 
                 utilityOfBeingOnDiscretionaryTour = calculateUtilityOfBeingOnDiscretionaryTour(DiscretionaryActivityType.RECREATION_ON_OTHER, person, numActsNotOnMandatoryTours);
                 probabilityOfBeingOnDiscretionaryTour = Math.exp(utilityOfBeingOnDiscretionaryTour) / (1 + Math.exp(utilityOfBeingOnDiscretionaryTour));
-                if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
-                    activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_OTHER);
-                    return DiscretionaryActivityType.RECREATION_ON_OTHER;
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.OTHER) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_PRIMARY)).count()
+                        > 0) {
+                    if (AbitUtils.getRandomObject().nextDouble() < probabilityOfBeingOnDiscretionaryTour) {
+                        activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_ON_OTHER);
+                        return DiscretionaryActivityType.RECREATION_ON_OTHER;
+                    }
                 }
-                if (person.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.RECREATION)).count() == 0) {
+
+                if (person.getPlan().getTours().values().stream()
+                        .flatMap(tour -> tour.getActivities().values().stream())
+                        .filter(act -> act.getPurpose().equals(Purpose.RECREATION) &&
+                                act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_PRIMARY)).count()
+                        == 0) {
                     activity.setDiscretionaryActivityType(DiscretionaryActivityType.RECREATION_PRIMARY);
                     return DiscretionaryActivityType.RECREATION_PRIMARY;
                 }
