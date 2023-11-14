@@ -14,7 +14,6 @@ import abm.utils.AbitUtils;
 import abm.utils.LogitTools;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
-import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -115,7 +114,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
         for (Vehicle vehicle : household.getVehicles()) {
             if (vehicle instanceof Car) {
-                carAvailable = ((Car) vehicle).getAvailableTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
+                carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
                 if (carAvailable) {
                     selectedVehicle = vehicle;
                     break;
@@ -125,7 +124,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
         Mode selectedMode = chooseMode(person, tour, purpose, carAvailable);
         if (selectedVehicle != null & selectedMode.equals(Mode.CAR_DRIVER)) {
-            ((Car) selectedVehicle).getAvailableTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
+            ((Car) selectedVehicle).getBlockedTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
             tour.setCar(selectedVehicle);
         }
     }

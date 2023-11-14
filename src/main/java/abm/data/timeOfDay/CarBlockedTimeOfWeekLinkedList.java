@@ -102,8 +102,4 @@ public class CarBlockedTimeOfWeekLinkedList {
     public LinkedList<Integer> getInternalList() {
         return internalList;
     }
-
-    public void resetCarBlockedTimeOfWeekLinkedList() {
-    	internalList.clear();
-    }
 }

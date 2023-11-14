@@ -3,8 +3,7 @@ package abm.models;
 import abm.data.DataSet;
 import abm.data.geo.Location;
 import abm.data.plans.*;
-import abm.data.pop.Household;
-import abm.data.pop.Person;
+import abm.data.pop.*;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -54,6 +53,8 @@ public class PlanGenerator3 implements Callable {
     private List<Household> households;
     private final int thread;
     private final SubtourModeChoice subtourModeChoice;
+
+    private final int TRIALS_RESCHEDULING = 30;
 
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
@@ -204,7 +205,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -274,16 +275,10 @@ public class PlanGenerator3 implements Callable {
 
             if (stopType != null) {
                 if (stopType.equals(StopType.BEFORE)) {
-                    int firstNonHomeActStartTime = selectedTour.getActivities().firstKey();
-                    int firstLegDepartureTime = selectedTour.getLegs().firstKey();
-                    Activity firstNonHomeActivity = selectedTour.getActivities().get(firstNonHomeActStartTime);
-                    destinationChoice.selectStopDestination(person, selectedTour.getLegs().get(firstLegDepartureTime).getPreviousActivity(), activity, firstNonHomeActivity);
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
                     planTools.addStopBefore(plan, activity, selectedTour);
                 } else {
-                    int lastNonHomeActStartTime = selectedTour.getActivities().lastKey();
-                    int lastLegDepartureTime = selectedTour.getLegs().lastKey();
-                    Activity lastNonHomeActivity = selectedTour.getActivities().get(lastNonHomeActStartTime);
-                    destinationChoice.selectStopDestination(person, lastNonHomeActivity, activity, selectedTour.getLegs().get(lastLegDepartureTime).getNextActivity());
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
             }
@@ -300,7 +295,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -317,12 +312,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
@@ -342,7 +337,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -358,12 +353,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -376,12 +371,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -398,7 +393,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -414,12 +409,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -432,12 +427,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -450,12 +445,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -472,7 +467,7 @@ public class PlanGenerator3 implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= 30) {
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignStartTimeAndDuration(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
@@ -491,12 +486,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -509,12 +504,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -527,12 +522,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -545,12 +540,12 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, firstActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, plan.getDummyHomeActivity(), activity, lastActivity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
