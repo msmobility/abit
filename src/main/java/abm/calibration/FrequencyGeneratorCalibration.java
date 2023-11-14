@@ -408,6 +408,27 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                             }
                         }
 
+                        for (Activity unfittedActs : plan.getUnmetActivities().values()){
+                            if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) && unfittedActs.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
+                                numberDaysOfWorkPerWeek += 1;
+                            }
+                            if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && unfittedActs.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
+                                numberDaysOfEducationPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.ACCOMPANY) && numberDaysOfAccompanyPerWeek < 7) {
+                                numberDaysOfAccompanyPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.RECREATION) && numberActsOfRecreationPerWeek < 15) {
+                                numberActsOfRecreationPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.OTHER) && numberActsOfOtherPerWeek < 15) {
+                                numberActsOfOtherPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.SHOPPING) && numberActsOfShoppingPerWeek < 15) {
+                                numberActsOfShoppingPerWeek += 1;
+                            }
+                        }
+
                     }
 
                     if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT))) {
