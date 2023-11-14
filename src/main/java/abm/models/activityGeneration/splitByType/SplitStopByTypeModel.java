@@ -1,5 +1,6 @@
 package abm.models.activityGeneration.splitByType;
 
+import abm.data.DataSet;
 import abm.data.plans.*;
 import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.data.timeOfDay.TimeOfWeekDistribution;
@@ -20,11 +21,13 @@ public class SplitStopByTypeModel implements SplitStopType {
 
     private int counterErrors = 0;
     private final Map<Purpose, TimeOfWeekDistribution> timeOfWeekDistributionMap;
+    private boolean runCalibration = false;
 
     public SplitStopByTypeModel() {
         timeOfWeekDistributionMap = new HashMap<>();
         readTimeOfDayDistributions();
     }
+
 
     private void readTimeOfDayDistributions() {
 
