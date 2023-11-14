@@ -47,7 +47,7 @@ public class CalibrationMuc {
 
     private StopDestinationChoiceCalibration stopDestinationChoiceCalibration;
     private SplitByTypeCalibration splitByTypeCalibration;
-    private SplitStopTypeCalibration splitStopTypeCalibration;
+    private SplitStopByTypeCalibration splitStopByTypeCalibration;
     private TourModeChoiceCalibration tourModeChoiceCalibration;
     private SubTourGenerationCalibration subTourGenerationCalibration;
     private SubTourTimeAssignmentCalibration subTourTimeAssignmentCalibration;
@@ -95,7 +95,7 @@ public class CalibrationMuc {
         calibrateDiscretionaryActDuration = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.duration.calibration"));
         calibrationList.put("DiscActDuration", calibrateDiscretionaryActDuration);
 
-        calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.type.onto.discretionary.calibration"));
+        calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.stop.type.calibration"));
         calibrationList.put("DiscActStopOnto", calibrateDiscretionaryActStopType);
 
         calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
@@ -174,10 +174,10 @@ public class CalibrationMuc {
         }
 
         if (calibrateDiscretionaryActStopType){
-            splitStopTypeCalibration = new SplitStopTypeCalibration();
-            splitStopTypeCalibration.setup();
-            splitStopTypeCalibration.load();
-            splitStopTypeCalibration.run();
+            splitStopByTypeCalibration = new SplitStopByTypeCalibration(dataSet);
+            splitStopByTypeCalibration.setup();
+            splitStopByTypeCalibration.load();
+            splitStopByTypeCalibration.run();
         }
 
         if (calibrateMainDestinationChoice){
