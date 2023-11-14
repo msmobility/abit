@@ -27,9 +27,9 @@ public class DayOfWeekDiscretionaryAssignmentModel implements DayOfWeekDiscretio
 
         for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
 
-            BlockedTimeOfWeekLinkedList availableTime = activity.getPerson().getPlan().getBlockedTimeOfDay();
+            BlockedTimeOfWeekLinkedList blockedTime = activity.getPerson().getPlan().getBlockedTimeOfDay();
 
-            double availableTimeSlots = (double) 60 / 15 * 24 - availableTime.getForThisDayOfWeek(dayOfWeek).getInternalMap().size();
+            double availableTimeSlots = (double) 60 / 15 * 24 - blockedTime.getForThisDayOfWeek(dayOfWeek).getInternalList().size();
 
             if (activity.getPurpose().equals(Purpose.SHOPPING) && dayOfWeek.equals(DayOfWeek.SUNDAY)) {
                 availableTimeSlots = 0.0;

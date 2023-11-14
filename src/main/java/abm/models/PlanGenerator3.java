@@ -275,10 +275,10 @@ public class PlanGenerator3 implements Callable {
 
             if (stopType != null) {
                 if (stopType.equals(StopType.BEFORE)) {
-                     destinationChoice.selectStopDestination(person, selectedTour, activity);
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
                     planTools.addStopBefore(plan, activity, selectedTour);
                 } else {
-                   destinationChoice.selectStopDestination(person, selectedTour, activity);
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
                     planTools.addStopAfter(plan, activity, selectedTour);
                 }
             }
@@ -358,7 +358,7 @@ public class PlanGenerator3 implements Callable {
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person,selectedTour, activity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -371,7 +371,7 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person,selectedTour, activity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
@@ -414,7 +414,7 @@ public class PlanGenerator3 implements Callable {
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person,selectedTour, activity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -432,7 +432,7 @@ public class PlanGenerator3 implements Callable {
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
                         Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person,selectedTour, activity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopAfter(plan, activity, selectedTour);
                     }
                 }
@@ -445,7 +445,7 @@ public class PlanGenerator3 implements Callable {
                     if (stopType.equals(StopType.BEFORE)) {
                         int tempTime = selectedTour.getActivities().firstKey();
                         Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person,selectedTour, activity);
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
                         planTools.addStopBefore(plan, activity, selectedTour);
                     } else {
                         int tempTime = selectedTour.getActivities().lastKey();
