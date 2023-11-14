@@ -2,15 +2,19 @@ package abm.calibration;
 
 import abm.data.DataSet;
 import abm.data.plans.*;
+import abm.data.pop.EmploymentStatus;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
+import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
-import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
+import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.log4j.Logger;
 
 
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,40 +27,100 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
     DataSet dataSet;
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.005;
-    double stepSize = 10;
-    Map<Purpose, Map<Integer, Double>> objectiveMandatoryFrequencyCount = new HashMap<>();
-    Map<Purpose, Map<Integer, Double>> objectiveDiscretionaryFrequencyCount = new HashMap<>();
-    Map<Purpose, Map<Integer, Integer>> simulatedMandatoryFrequencyCount = new HashMap<>();
-    Map<Purpose, Map<Integer, Integer>> simulatedDiscretionaryFrequencyCount = new HashMap<>();
+    private static final double TERMINATION_THRESHOLD = 0.05;
+    double stepSize = 1;
+    Map<Purpose, Map<Integer, Double>> objectiveFrequencyShare = new HashMap<>();
+    Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCount = new HashMap<>();
+
+    Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCountOnTheFly = new HashMap<>();
+    Map<Purpose, Map<Integer, Double>> simulatedFrequencyShare = new HashMap<>();
+
+    Map<Purpose, Map<Integer, Double>> simulatedFrequencyShareOnTheFly = new HashMap<>();
     Map<Purpose, Map<Integer, Double>> calibrationFactors = new HashMap<>();
-    private FrequencyGeneratorModel frequencyGeneratorCalibration;
+    private final Map<Purpose, FrequencyGenerator> frequencyGeneratorsForCalibration = new HashMap<>();
+
+    Map<Purpose, Map<String, Map<String, Double>>> finalCoefficientsTable = new HashMap<>();
 
     public FrequencyGeneratorCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
     }
 
+    String zeroMandAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.mand-ac-rr.zero.output");
+    String countMandCoefficientsPath = AbitResources.instance.getString("actgen.mand.count.output");
+    String countAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.ac-rr.count.output");
+
+    String countShoppingRecreationOtherCoefficientsPath = AbitResources.instance.getString("actgen.sh-re-ot.count.output");
+    boolean calibrateMandatoryActGen;
+    boolean calibrateDiscretionaryActGen;
+
     @Override
     public void setup() {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
+        calibrateMandatoryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateMandatoryActGen));
+        }
+
+        calibrateDiscretionaryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
+        for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+            frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateDiscretionaryActGen));
+        }
 
         //Todo: initialize all the data containers that might be needed for calibration
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
-            objectiveMandatoryFrequencyCount.putIfAbsent(purpose, new HashMap<>());
-            for (int freq = 0; freq < 7; freq++) {
-                objectiveMandatoryFrequencyCount.get(purpose).putIfAbsent(freq, 0.0);
+            objectiveFrequencyShare.putIfAbsent(purpose, new HashMap<>());
+            simulatedFrequencyCount.putIfAbsent(purpose, new HashMap<>());
+            simulatedFrequencyCountOnTheFly.putIfAbsent(purpose, new HashMap<>());
+            simulatedFrequencyShare.putIfAbsent(purpose, new HashMap<>());
+            simulatedFrequencyShareOnTheFly.putIfAbsent(purpose, new HashMap<>());
+            calibrationFactors.putIfAbsent(purpose, new HashMap<>());
+            finalCoefficientsTable.putIfAbsent(purpose, new HashMap<>());
+            for (int freq = 0; freq <= 7; freq++) {
+                objectiveFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
+                simulatedFrequencyCount.get(purpose).putIfAbsent(freq, 0);
+                simulatedFrequencyCountOnTheFly.get(purpose).putIfAbsent(freq, 0);
+                simulatedFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
+                simulatedFrequencyShareOnTheFly.get(purpose).putIfAbsent(freq, 0.0);
+                calibrationFactors.get(purpose).putIfAbsent(freq, 0.0);
             }
+            finalCoefficientsTable.get(purpose).putIfAbsent("zero", new HashMap<>());
+            finalCoefficientsTable.get(purpose).putIfAbsent("count", new HashMap<>());
         }
-        objectiveMandatoryFrequencyCount.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
-        for (int freq = 0; freq < 7; freq++) {
-            objectiveMandatoryFrequencyCount.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
+        objectiveFrequencyShare.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        simulatedFrequencyCount.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        simulatedFrequencyCountOnTheFly.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        simulatedFrequencyShare.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        simulatedFrequencyShareOnTheFly.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        calibrationFactors.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        finalCoefficientsTable.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        for (int freq = 0; freq <= 7; freq++) {
+            objectiveFrequencyShare.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
+            simulatedFrequencyCount.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0);
+            simulatedFrequencyCountOnTheFly.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0);
+            simulatedFrequencyShare.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
+            simulatedFrequencyShareOnTheFly.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
+            calibrationFactors.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
         }
+        finalCoefficientsTable.get(Purpose.ACCOMPANY).putIfAbsent("zero", new HashMap<>());
+        finalCoefficientsTable.get(Purpose.ACCOMPANY).putIfAbsent("count", new HashMap<>());
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             if (!purpose.equals(Purpose.ACCOMPANY)) {
-                objectiveDiscretionaryFrequencyCount.putIfAbsent(purpose, new HashMap<>());
-                for (int freq = 0; freq < 15; freq++) {
-                    objectiveDiscretionaryFrequencyCount.get(purpose).putIfAbsent(freq, 0.0);
+                objectiveFrequencyShare.putIfAbsent(purpose, new HashMap<>());
+                simulatedFrequencyCount.putIfAbsent(purpose, new HashMap<>());
+                simulatedFrequencyCountOnTheFly.putIfAbsent(purpose, new HashMap<>());
+                simulatedFrequencyShare.putIfAbsent(purpose, new HashMap<>());
+                simulatedFrequencyShareOnTheFly.putIfAbsent(purpose, new HashMap<>());
+                calibrationFactors.putIfAbsent(purpose, new HashMap<>());
+                finalCoefficientsTable.putIfAbsent(purpose, new HashMap<>());
+                for (int freq = 0; freq <= 15; freq++) {
+                    objectiveFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
+                    simulatedFrequencyCount.get(purpose).putIfAbsent(freq, 0);
+                    simulatedFrequencyCountOnTheFly.get(purpose).putIfAbsent(freq, 0);
+                    simulatedFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
+                    simulatedFrequencyShareOnTheFly.get(purpose).putIfAbsent(freq, 0.0);
+                    calibrationFactors.get(purpose).putIfAbsent(freq, 0.0);
                 }
+                finalCoefficientsTable.get(purpose).putIfAbsent("count", new HashMap<>());
             }
         }
     }
@@ -75,212 +139,429 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         //Todo: loop through the calibration process until criteria are met
         for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
-
+            logger.info("Iteration......" + iteration);
             double maxDifference = 0.0;
 
-            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
-                for (int frequencies = 1; frequencies <= 7; frequencies++) {
-                    double observedShare = objectiveMandatoryFrequencyCount.get(purpose).get(frequencies);
-                    double simulatedShare = simulatedMandatoryFrequencyCount.get(purpose).get(frequencies);
-                    double difference = observedShare - simulatedShare;
-                    double factor = stepSize * (observedShare - simulatedShare);
-                    calibrationFactors.get(purpose).replace(frequencies, factor);
-                    logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + "difference: " + difference);
-                    if (Math.abs(difference) > maxDifference) {
-                        maxDifference = difference;
+            if (calibrateMandatoryActGen){
+                for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+                    for (int frequencies = 0; frequencies <= 7; frequencies++) {
+                        double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                        double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                        double difference = observedCountShare - simulatedCountShare;
+                        double factor = -1 * stepSize * (observedCountShare - simulatedCountShare);
+                        calibrationFactors.get(purpose).replace(frequencies, factor);
+                        logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                        if (Math.abs(difference) > maxDifference) {
+                            maxDifference = Math.abs(difference);
+                        }
+                    }
+                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                }
+            }
+
+            if (calibrateDiscretionaryActGen){
+
+                for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+                    if (purpose.equals(ACCOMPANY)) {
+                        for (int frequencies = 0; frequencies <= 7; frequencies++) {
+                            double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                            double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                            double difference = observedZeroShare - simulatedZeroShare;
+                            double factor = -1 * stepSize * (observedZeroShare - simulatedZeroShare);
+                            calibrationFactors.get(purpose).replace(frequencies, factor);
+                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                            if (Math.abs(difference) > maxDifference) {
+                                maxDifference = Math.abs(difference);
+                            }
+                        }
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                    } else {
+                        for (int frequencies = 0; frequencies <= 15; frequencies++) {
+                            double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                            double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                            double difference = observedCountShare - simulatedCountShare;
+                            double factor = -1 * stepSize * (observedCountShare - simulatedCountShare);
+                            calibrationFactors.get(purpose).replace(frequencies, factor);
+                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                            if (Math.abs(difference) > maxDifference) {
+                                maxDifference = Math.abs(difference);
+                            }
+                        }
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                     }
                 }
             }
 
-                for (int frequencies = 1; frequencies <= 7; frequencies++) {
-                    double observedShare = objectiveMandatoryFrequencyCount.get(Purpose.ACCOMPANY).get(frequencies);
-                    double simulatedShare = simulatedMandatoryFrequencyCount.get(Purpose.ACCOMPANY).get(frequencies);
-                    double difference = observedShare - simulatedShare;
-                    double factor = stepSize * (observedShare - simulatedShare);
-                    calibrationFactors.get(Purpose.ACCOMPANY).replace(frequencies, factor);
-                    logger.info("Frequency of accompany trip model for " + Purpose.ACCOMPANY.toString() + "\t" + " and " + frequencies + "\t" + "difference: " + difference);
-                    if (Math.abs(difference) > maxDifference) {
-                        maxDifference = difference;
-                    }
-                }
 
-            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-                if (!purpose.equals(Purpose.ACCOMPANY)) {
-                    for (int frequencies = 1; frequencies <= 15; frequencies++) {
-                        double observedShare = objectiveMandatoryFrequencyCount.get(purpose).get(frequencies);
-                        double simulatedShare = simulatedMandatoryFrequencyCount.get(purpose).get(frequencies);
-                        double difference = observedShare - simulatedShare;
-                        double factor = stepSize * (observedShare - simulatedShare);
-                        calibrationFactors.get(purpose).replace(frequencies, factor);
-                        logger.info("Frequency of discretionary trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + "difference: " + difference);
-                        if (Math.abs(difference) > maxDifference) {
-                            maxDifference = difference;
+
+            for (Person person : dataSet.getPersons().values()) {
+                if (person.getHousehold().getSimulated()) {
+                    for (Purpose purpose : Purpose.getAllPurposes()) {
+
+                        int numOfAct = frequencyGeneratorsForCalibration.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
+
+                        if (purpose.equals(Purpose.WORK) && person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT))) {
+                            int simluatedWorkCount = simulatedFrequencyCountOnTheFly.get(Purpose.WORK).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.WORK).replace(numOfAct, simluatedWorkCount + 1);
+                        }
+                        if (purpose.equals(Purpose.EDUCATION) && !person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+                            int simluatedEducationCount = simulatedFrequencyCountOnTheFly.get(Purpose.EDUCATION).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.EDUCATION).replace(numOfAct, simluatedEducationCount + 1);
+                        }
+                        if (purpose.equals(Purpose.ACCOMPANY)) {
+                            int simluatedAccompanyCount = simulatedFrequencyCountOnTheFly.get(Purpose.ACCOMPANY).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.ACCOMPANY).replace(numOfAct, simluatedAccompanyCount + 1);
+                        }
+                        if (purpose.equals(Purpose.RECREATION)) {
+                            int simluatedRecreationCount = simulatedFrequencyCountOnTheFly.get(Purpose.RECREATION).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.RECREATION).replace(numOfAct, simluatedRecreationCount + 1);
+                        }
+                        if (purpose.equals(Purpose.OTHER)) {
+                            int simluatedOtherCount = simulatedFrequencyCountOnTheFly.get(Purpose.OTHER).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.OTHER).replace(numOfAct, simluatedOtherCount + 1);
+                        }
+                        if (purpose.equals(Purpose.SHOPPING)) {
+                            int simluatedShoppingCount = simulatedFrequencyCountOnTheFly.get(Purpose.SHOPPING).get(numOfAct);
+                            simulatedFrequencyCountOnTheFly.get(Purpose.SHOPPING).replace(numOfAct, simluatedShoppingCount + 1);
                         }
                     }
                 }
             }
 
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(Purpose.ACCOMPANY)) {
+                    int totalCount = 0;
+                    for (int freq = 0; freq <= 7; freq++) {
+                        totalCount += simulatedFrequencyCountOnTheFly.get(purpose).get(freq);
+                    }
+                    for (int freq = 0; freq <= 7; freq++) {
+                        double share = ((double) simulatedFrequencyCountOnTheFly.get(purpose).get(freq)) / ((double) totalCount);
+                        simulatedFrequencyShare.get(purpose).replace(freq, share);
+                    }
+                } else {
+                    int totalCount = 0;
+                    for (int freq = 0; freq <= 15; freq++) {
+                        totalCount += simulatedFrequencyCountOnTheFly.get(purpose).get(freq);
+                    }
+                    for (int freq = 0; freq <= 15; freq++) {
+                        double share = ((double) simulatedFrequencyCountOnTheFly.get(purpose).get(freq)) / ((double) totalCount);
+                        simulatedFrequencyShare.get(purpose).replace(freq, share);
+                    }
+                }
+            }
 
             if (maxDifference <= TERMINATION_THRESHOLD) {
                 break;
+            } else {
+                logger.info("MAX Diff: " + maxDifference);
             }
 
-//            frequencyGeneratorCalibration.updateCalibrationFactor(calibrationFactors);
-//            dataSet.getPersons().values().parallelStream().forEach(p -> {
-//                frequencyGeneratorCalibration.calculateNumberOfActivitiesPerWeek(p); //.chooseHabitualMode() should be replaced respectively by each model
-//            });
-
-            summarizeSimulatedResult();
 
         }
+        logger.info("Finished the calibration of activity frequency generation model.");
 
-        logger.info("Finished the calibration of habitual mode choice model.");
 
         //Todo: obtain the updated coefficients + calibration factors
-        //Map<Purpose, Map<Integer, Double>> finalCoefficientsTable = frequencyGeneratorCalibration.obtainCoefficientsTable();
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)) {
+                finalCoefficientsTable.get(purpose).replace("zero", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountWorkEducationCoefficients());
+                } else {
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                }
+            } else {
+                finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+            }
+        }
 
         //Todo: print the coefficients table to input folder
-//        try {
-//            printFinalCoefficientsTable(finalCoefficientsTable);
-//        } catch (FileNotFoundException e) {
-//            System.err.println("Output path of the coefficient table is not correct.");
-//        }
+        try {
+            printFinalCoefficientsTable(finalCoefficientsTable);
+        } catch (FileNotFoundException e) {
+            System.err.println("Output path of the coefficient table is not correct.");
+        }
 
     }
 
     private void readObjectiveValues() {
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(0, 0.7);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(1, 3.9);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(2, 5.7);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(3, 9.0);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(4, 19.6);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(5, 53.9);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(6, 6.0);
-        objectiveMandatoryFrequencyCount.get(Purpose.WORK).put(7, 1.2);
+        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.007);
+        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.039);
+        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.057);
+        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.090);
+        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.196);
+        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.539);
+        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.060);
+        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.012);
 
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(0, 8.4);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(1, 3.4);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(2, 5.4);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(3, 6.3);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(4, 14.5);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(5, 60.6);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(6, 1.3);
-        objectiveMandatoryFrequencyCount.get(Purpose.EDUCATION).put(7, 0.1);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.084);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.034);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.054);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.063);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.145);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.606);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.013);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.001);
 
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(0, 64.1);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(1, 16.1);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(2, 7.3);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(3, 3.7);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(4, 2.7);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(5, 4.4);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(6, 1.4);
-        objectiveMandatoryFrequencyCount.get(ACCOMPANY).put(7, 0.3);
+        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.641);
+        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.161);
+        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.073);
+        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.037);
+        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.027);
+        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.044);
+        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.014);
+        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.003);
 
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(0, 15.5);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(1, 19.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(2, 17.1);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(3, 15.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(4, 11.1);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(5, 8.4);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(6, 5.4);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(7, 3.4);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(8, 1.7);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(9, 1.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(10, 1.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(11, 0.3);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(12, 0.4);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(13, 0.3);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(14, 0.1);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.RECREATION).put(15, 0.1);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(0, 0.155);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(1, 0.190);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(2, 0.171);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(3, 0.150);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(4, 0.111);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(5, 0.084);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(6, 0.054);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(7, 0.034);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(8, 0.017);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(9, 0.012);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(10, 0.010);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(11, 0.003);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(12, 0.004);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(13, 0.003);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(14, 0.001);
+        objectiveFrequencyShare.get(Purpose.RECREATION).put(15, 0.001);
 
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(0, 20.6);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(1, 20.9);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(2, 20.1);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(3, 14.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(4, 9.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(5, 5.8);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(6, 3.9);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(7, 1.9);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(8, 1.5);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(9, 0.8);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(10, 0.8);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(11, 0.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(12, 0.1);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(13, 0.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(14, 0.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.SHOPPING).put(15, 0.0);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(0, 0.206);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(1, 0.209);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(2, 0.201);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(3, 0.142);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(4, 0.092);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(5, 0.058);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(6, 0.039);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(7, 0.019);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(8, 0.015);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(9, 0.008);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(10, 0.008);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(11, 0.002);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(12, 0.001);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(13, 0.002);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(14, 0.000);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(15, 0.000);
 
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(0, 37.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(1, 26.8);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(2, 15.7);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(3, 9.3);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(4, 5.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(5, 2.6);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(6, 1.6);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(7, 0.7);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(8, 0.3);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(9, 0.2);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(10, 0.4);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(11, 0.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(12, 0.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(13, 0.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(14, 0.0);
-        objectiveDiscretionaryFrequencyCount.get(Purpose.OTHER).put(15, 0.0);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(0, 0.372);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(1, 0.268);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(2, 0.157);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(3, 0.093);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(4, 0.052);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(5, 0.026);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(6, 0.016);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(7, 0.007);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(8, 0.003);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(9, 0.002);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(10, 0.004);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(11, 0.000);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(12, 0.000);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(13, 0.000);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(14, 0.000);
+        objectiveFrequencyShare.get(Purpose.OTHER).put(15, 0.000);
     }
 
     private void summarizeSimulatedResult() {
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
-                int numberworkperweek = 0;
-                int numbereducationperweek = 0;
-                int numberaccompanyperweek = 0;
-                int numberrecreationperweek = 0;
-                int numberotherperweek = 0;
-                int numbershoppingperweek = 0;
+                int numberDaysOfWorkPerWeek = 0;
+                int numberDaysOfEducationPerWeek = 0;
+                int numberDaysOfAccompanyPerWeek = 0;
+                int numberActsOfRecreationPerWeek = 0;
+                int numberActsOfOtherPerWeek = 0;
+                int numberActsOfShoppingPerWeek = 0;
+
                 for (Person person : household.getPersons()) {
-                    for (Plan plan : person.getPlan()) {
+                    if (person.getPlan() == null) {
+                        numberDaysOfWorkPerWeek = 0;
+                        numberDaysOfEducationPerWeek = 0;
+                        numberDaysOfAccompanyPerWeek = 0;
+                        numberActsOfRecreationPerWeek = 0;
+                        numberActsOfOtherPerWeek = 0;
+                        numberActsOfShoppingPerWeek = 0;
+                    } else {
+                        Plan plan = person.getPlan();
                         for (Tour tour : plan.getTours().values()) {
                             for (Activity act : tour.getActivities().values()) {
-                                if (act.getPurpose().equals(Purpose.WORK)) {
-                                    numberworkperweek += 1;
+
+                                if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) && act.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
+                                    numberDaysOfWorkPerWeek += 1;
                                 }
-                                if (act.getPurpose().equals(Purpose.EDUCATION)) {
-                                    numbereducationperweek += 1;
+                                if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && act.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
+                                    numberDaysOfEducationPerWeek += 1;
                                 }
-                                if (act.getPurpose().equals(Purpose.ACCOMPANY)) {
-                                    numberaccompanyperweek += 1;
+                                if (act.getPurpose().equals(Purpose.ACCOMPANY) && numberDaysOfAccompanyPerWeek < 7) {
+                                    numberDaysOfAccompanyPerWeek += 1;
                                 }
-                                if (act.getPurpose().equals(Purpose.RECREATION)) {
-                                    numberrecreationperweek += 1;
+                                if (act.getPurpose().equals(Purpose.RECREATION) && numberActsOfRecreationPerWeek < 15) {
+                                    numberActsOfRecreationPerWeek += 1;
                                 }
-                                if (act.getPurpose().equals(Purpose.OTHER)) {
-                                    numberotherperweek += 1;
+                                if (act.getPurpose().equals(Purpose.OTHER) && numberActsOfOtherPerWeek < 15) {
+                                    numberActsOfOtherPerWeek += 1;
                                 }
-                                if (act.getPurpose().equals(Purpose.SHOPPING)) {
-                                    numbershoppingperweek += 1;
+                                if (act.getPurpose().equals(Purpose.SHOPPING) && numberActsOfShoppingPerWeek < 15) {
+                                    numberActsOfShoppingPerWeek += 1;
                                 }
                             }
                         }
+
+                        for (Activity unfittedActs : plan.getUnmetActivities().values()){
+                            if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) && unfittedActs.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
+                                numberDaysOfWorkPerWeek += 1;
+                            }
+                            if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && unfittedActs.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
+                                numberDaysOfEducationPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.ACCOMPANY) && numberDaysOfAccompanyPerWeek < 7) {
+                                numberDaysOfAccompanyPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.RECREATION) && numberActsOfRecreationPerWeek < 15) {
+                                numberActsOfRecreationPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.OTHER) && numberActsOfOtherPerWeek < 15) {
+                                numberActsOfOtherPerWeek += 1;
+                            }
+                            if (unfittedActs.getPurpose().equals(Purpose.SHOPPING) && numberActsOfShoppingPerWeek < 15) {
+                                numberActsOfShoppingPerWeek += 1;
+                            }
+                        }
+
                     }
+
+                    if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT))) {
+                        int simluatedWorkCount = simulatedFrequencyCount.get(Purpose.WORK).get(numberDaysOfWorkPerWeek);
+                        simulatedFrequencyCount.get(Purpose.WORK).replace(numberDaysOfWorkPerWeek, simluatedWorkCount + 1);
+                    }
+                    if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+                        int simluatedEducationCount = simulatedFrequencyCount.get(Purpose.EDUCATION).get(numberDaysOfEducationPerWeek);
+                        simulatedFrequencyCount.get(Purpose.EDUCATION).replace(numberDaysOfEducationPerWeek, simluatedEducationCount + 1);
+                    }
+                    int simluatedAccompanyCount = simulatedFrequencyCount.get(Purpose.ACCOMPANY).get(numberDaysOfAccompanyPerWeek);
+                    simulatedFrequencyCount.get(Purpose.ACCOMPANY).replace(numberDaysOfAccompanyPerWeek, simluatedAccompanyCount + 1);
+                    int simluatedRecreationCount = simulatedFrequencyCount.get(Purpose.RECREATION).get(numberActsOfRecreationPerWeek);
+                    simulatedFrequencyCount.get(Purpose.RECREATION).replace(numberActsOfRecreationPerWeek, simluatedRecreationCount + 1);
+                    int simluatedOtherCount = simulatedFrequencyCount.get(Purpose.OTHER).get(numberActsOfOtherPerWeek);
+                    simulatedFrequencyCount.get(Purpose.OTHER).replace(numberActsOfOtherPerWeek, simluatedOtherCount + 1);
+                    int simluatedShoppingCount = simulatedFrequencyCount.get(Purpose.SHOPPING).get(numberActsOfShoppingPerWeek);
+                    simulatedFrequencyCount.get(Purpose.SHOPPING).replace(numberActsOfShoppingPerWeek, simluatedShoppingCount + 1);
                 }
-                int simluatedfrequencyMandatoryCount = simulatedMandatoryFrequencyCount.get(Purpose.WORK).get(numberworkperweek);
-                simulatedMandatoryFrequencyCount.get(Purpose.WORK).replace(numberworkperweek, simulatedMandatoryFrequencyCount.get(Purpose.WORK).get(numberworkperweek) + 1);
-                simluatedfrequencyMandatoryCount = simulatedMandatoryFrequencyCount.get(Purpose.EDUCATION).get(numbereducationperweek);
-                simulatedMandatoryFrequencyCount.get(Purpose.EDUCATION).replace(numbereducationperweek, simulatedMandatoryFrequencyCount.get(Purpose.EDUCATION).get(numbereducationperweek) + 1);
-                simluatedfrequencyMandatoryCount = simulatedMandatoryFrequencyCount.get(Purpose.ACCOMPANY).get(numberaccompanyperweek);
-                simulatedMandatoryFrequencyCount.get(Purpose.ACCOMPANY).replace(numberaccompanyperweek, simulatedMandatoryFrequencyCount.get(Purpose.ACCOMPANY).get(numberaccompanyperweek) + 1);
-                int simluatedfrequencyDiscretionaryCount = simulatedDiscretionaryFrequencyCount.get(Purpose.RECREATION).get(numberrecreationperweek);
-                simulatedDiscretionaryFrequencyCount.get(Purpose.RECREATION).replace(numberrecreationperweek, simulatedDiscretionaryFrequencyCount.get(Purpose.RECREATION).get(numberrecreationperweek) + 1);
-                simluatedfrequencyDiscretionaryCount = simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).get(numberotherperweek);
-                simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).replace(numberotherperweek, simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).get(numberotherperweek) + 1);
-                simluatedfrequencyDiscretionaryCount = simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).get(numbershoppingperweek);
-                simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).replace(numbershoppingperweek, simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).get(numbershoppingperweek) + 1);
+            }
+        }
+
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(Purpose.ACCOMPANY)) {
+                int totalCount = 0;
+                for (int freq = 0; freq <= 7; freq++) {
+                    totalCount += simulatedFrequencyCount.get(purpose).get(freq);
+                }
+                for (int freq = 0; freq <= 7; freq++) {
+                    double share = ((double) simulatedFrequencyCount.get(purpose).get(freq)) / ((double) totalCount);
+                    simulatedFrequencyShare.get(purpose).replace(freq, share);
+                }
+            } else {
+                int totalCount = 0;
+                for (int freq = 0; freq <= 15; freq++) {
+                    totalCount += simulatedFrequencyCount.get(purpose).get(freq);
+                }
+                for (int freq = 0; freq <= 15; freq++) {
+                    double share = ((double) simulatedFrequencyCount.get(purpose).get(freq)) / ((double) totalCount);
+                    simulatedFrequencyShare.get(purpose).replace(freq, share);
+                }
             }
         }
     }
 
+    private void printFinalCoefficientsTable(Map<Purpose, Map<String, Map<String, Double>>> finalCoefficientsTable) throws FileNotFoundException {
 
-    private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+        logger.info("Writing act frequency coefficient + calibration factors: " + zeroMandAccompanyCoefficientsPath);
+        PrintWriter pw = new PrintWriter(zeroMandAccompanyCoefficientsPath);
 
+        StringBuilder header = new StringBuilder("variable");
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            if (!purpose.equals(Purpose.SHOPPING) && !purpose.equals(Purpose.RECREATION) && !purpose.equals(Purpose.OTHER)) {
+                header.append(",");
+                header.append(purpose.toString().toLowerCase());
+            }
+        }
+        pw.println(header);
+
+        for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("zero").keySet()) {
+            StringBuilder line = new StringBuilder(variableNames);
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                if (!purpose.equals(Purpose.SHOPPING) && !purpose.equals(Purpose.RECREATION) && !purpose.equals(Purpose.OTHER)) {
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(purpose).get("zero").get(variableNames));
+                }
+            }
+            pw.println(line);
+        }
+        pw.close();
+
+        logger.info("Writing act frequency coefficient + calibration factors: " + countMandCoefficientsPath);
+        PrintWriter pww = new PrintWriter(countMandCoefficientsPath);
+
+        StringBuilder headerr = new StringBuilder("variable");
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            headerr.append(",");
+            headerr.append(purpose.toString().toLowerCase());
+        }
+        pww.println(headerr);
+
+        for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("count").keySet()) {
+            StringBuilder line = new StringBuilder(variableNames);
+            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+                line.append(",");
+                line.append(finalCoefficientsTable.get(purpose).get("count").get(variableNames));
+            }
+            pww.println(line);
+        }
+        pww.close();
+
+
+        logger.info("Writing act frequency coefficient + calibration factors: " + countAccompanyCoefficientsPath);
+        PrintWriter pwww = new PrintWriter(countAccompanyCoefficientsPath);
+
+        StringBuilder headerrr = new StringBuilder("variable");
+
+        headerrr.append(",");
+        headerrr.append(Purpose.ACCOMPANY.toString().toLowerCase());
+
+        pwww.println(headerrr);
+
+        for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("count").keySet()) {
+            StringBuilder line = new StringBuilder(variableNames);
+            line.append(",");
+            line.append(finalCoefficientsTable.get(Purpose.ACCOMPANY).get("count").get(variableNames));
+            pwww.println(line);
+        }
+        pwww.close();
+
+
+        logger.info("Writing act frequency coefficient + calibration factors: " + countShoppingRecreationOtherCoefficientsPath);
+        PrintWriter pwwww = new PrintWriter(countShoppingRecreationOtherCoefficientsPath);
+
+        StringBuilder headerrrr = new StringBuilder("variable");
+        for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+            if (!purpose.equals(Purpose.ACCOMPANY)) {
+                headerrrr.append(",");
+                headerrrr.append(purpose.toString().toLowerCase());
+            }
+        }
+        pwwww.println(headerrrr);
+
+        for (String variableNames : finalCoefficientsTable.get(Purpose.SHOPPING).get("count").keySet()) {
+            StringBuilder line = new StringBuilder(variableNames);
+            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+                if (!purpose.equals(Purpose.ACCOMPANY)) {
+                    line.append(",");
+                    line.append(finalCoefficientsTable.get(purpose).get("count").get(variableNames));
+                }
+            }
+            pwwww.println(line);
+        }
+        pwwww.close();
     }
 }
