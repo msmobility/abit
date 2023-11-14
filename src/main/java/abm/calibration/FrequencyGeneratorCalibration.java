@@ -27,8 +27,8 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
     DataSet dataSet;
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.02;
-    double stepSize = 10;
+    private static final double TERMINATION_THRESHOLD = 0.05;
+    double stepSize = 1;
     Map<Purpose, Map<Integer, Double>> objectiveFrequencyShare = new HashMap<>();
     Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCount = new HashMap<>();
 
@@ -50,17 +50,18 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     String countAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.ac-rr.count.output");
 
     String countShoppingRecreationOtherCoefficientsPath = AbitResources.instance.getString("actgen.sh-re-ot.count.output");
-
+    boolean calibrateMandatoryActGen;
+    boolean calibrateDiscretionaryActGen;
 
     @Override
     public void setup() {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
-        boolean calibrateMandatoryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
+        calibrateMandatoryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
             frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateMandatoryActGen));
         }
 
-        boolean calibrateDiscretionaryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
+        calibrateDiscretionaryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
             frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateDiscretionaryActGen));
         }
@@ -91,6 +92,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         simulatedFrequencyShare.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
         simulatedFrequencyShareOnTheFly.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
         calibrationFactors.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
+        finalCoefficientsTable.putIfAbsent(Purpose.ACCOMPANY, new HashMap<>());
         for (int freq = 0; freq <= 7; freq++) {
             objectiveFrequencyShare.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
             simulatedFrequencyCount.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0);
@@ -109,6 +111,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 simulatedFrequencyShare.putIfAbsent(purpose, new HashMap<>());
                 simulatedFrequencyShareOnTheFly.putIfAbsent(purpose, new HashMap<>());
                 calibrationFactors.putIfAbsent(purpose, new HashMap<>());
+                finalCoefficientsTable.putIfAbsent(purpose, new HashMap<>());
                 for (int freq = 0; freq <= 15; freq++) {
                     objectiveFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
                     simulatedFrequencyCount.get(purpose).putIfAbsent(freq, 0);
@@ -136,53 +139,59 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         //Todo: loop through the calibration process until criteria are met
         for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
-
+            logger.info("Iteration......" + iteration);
             double maxDifference = 0.0;
 
-            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
-                for (int frequencies = 0; frequencies <= 7; frequencies++) {
-                    double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
-                    double simulatedCountShare = simulatedFrequencyCount.get(purpose).get(frequencies);
-                    double differenceCount = observedCountShare - simulatedCountShare;
-                    double countFactor = stepSize * (observedCountShare - simulatedCountShare);
-                    calibrationFactors.get(purpose).replace(frequencies, countFactor);
-                    logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + differenceCount);
-                    if (Math.abs(differenceCount) > maxDifference) {
-                        maxDifference = differenceCount;
+            if (calibrateMandatoryActGen){
+                for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+                    for (int frequencies = 0; frequencies <= 7; frequencies++) {
+                        double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                        double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                        double difference = observedCountShare - simulatedCountShare;
+                        double factor = -1 * stepSize * (observedCountShare - simulatedCountShare);
+                        calibrationFactors.get(purpose).replace(frequencies, factor);
+                        logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                        if (Math.abs(difference) > maxDifference) {
+                            maxDifference = Math.abs(difference);
+                        }
                     }
+                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                 }
-                ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactorMandatoryActs(calibrationFactors.get(purpose));
             }
 
-            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-                if (purpose.equals(ACCOMPANY)) {
-                    for (int frequencies = 0; frequencies <= 7; frequencies++) {
-                        double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
-                        double simulatedZeroShare = simulatedFrequencyCount.get(purpose).get(frequencies);
-                        double differenceZero = observedZeroShare - simulatedZeroShare;
-                        double zeroFactor = stepSize * (observedZeroShare - simulatedZeroShare);
-                        calibrationFactors.get(purpose).replace(frequencies, zeroFactor);
-                        logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + differenceZero);
-                        if (Math.abs(differenceZero) > maxDifference) {
-                            maxDifference = differenceZero;
+            if (calibrateDiscretionaryActGen){
+
+                for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+                    if (purpose.equals(ACCOMPANY)) {
+                        for (int frequencies = 0; frequencies <= 7; frequencies++) {
+                            double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                            double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                            double difference = observedZeroShare - simulatedZeroShare;
+                            double factor = -1 * stepSize * (observedZeroShare - simulatedZeroShare);
+                            calibrationFactors.get(purpose).replace(frequencies, factor);
+                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                            if (Math.abs(difference) > maxDifference) {
+                                maxDifference = Math.abs(difference);
+                            }
                         }
-                    }
-                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactorAccompanyActs(calibrationFactors.get(purpose));
-                } else {
-                    for (int frequencies = 0; frequencies <= 15; frequencies++) {
-                        double observedCountShare = objectiveFrequencyShare.get(purpose).get(0);
-                        double simulatedCountShare = simulatedFrequencyCount.get(purpose).get(0);
-                        double differenceCount = observedCountShare - simulatedCountShare;
-                        double countFactor = stepSize * (observedCountShare - simulatedCountShare);
-                        calibrationFactors.get(purpose).replace(0, countFactor);
-                        logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + 0 + "\t" + " difference: " + differenceCount);
-                        if (Math.abs(differenceCount) > maxDifference) {
-                            maxDifference = differenceCount;
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                    } else {
+                        for (int frequencies = 0; frequencies <= 15; frequencies++) {
+                            double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+                            double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+                            double difference = observedCountShare - simulatedCountShare;
+                            double factor = -1 * stepSize * (observedCountShare - simulatedCountShare);
+                            calibrationFactors.get(purpose).replace(frequencies, factor);
+                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+                            if (Math.abs(difference) > maxDifference) {
+                                maxDifference = Math.abs(difference);
+                            }
                         }
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                     }
-                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactorNonAccompanyActs(calibrationFactors.get(purpose));
                 }
             }
+
 
 
             for (Person person : dataSet.getPersons().values()) {
@@ -216,8 +225,6 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                             simulatedFrequencyCountOnTheFly.get(Purpose.SHOPPING).replace(numOfAct, simluatedShoppingCount + 1);
                         }
                     }
-                } else {
-                    break;
                 }
             }
 
@@ -245,6 +252,8 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
             if (maxDifference <= TERMINATION_THRESHOLD) {
                 break;
+            } else {
+                logger.info("MAX Diff: " + maxDifference);
             }
 
 
@@ -256,7 +265,11 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         for (Purpose purpose : Purpose.getAllPurposes()) {
             if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)) {
                 finalCoefficientsTable.get(purpose).replace("zero", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
-                finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountWorkEducationCoefficients());
+                } else {
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                }
             } else {
                 finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
             }
@@ -442,9 +455,6 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
     private void printFinalCoefficientsTable(Map<Purpose, Map<String, Map<String, Double>>> finalCoefficientsTable) throws FileNotFoundException {
 
-        String countAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.ac-rr.count.output");
-
-
         logger.info("Writing act frequency coefficient + calibration factors: " + zeroMandAccompanyCoefficientsPath);
         PrintWriter pw = new PrintWriter(zeroMandAccompanyCoefficientsPath);
 
@@ -459,7 +469,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("zero").keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
-            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+            for (Purpose purpose : Purpose.getAllPurposes()) {
                 if (!purpose.equals(Purpose.SHOPPING) && !purpose.equals(Purpose.RECREATION) && !purpose.equals(Purpose.OTHER)) {
                     line.append(",");
                     line.append(finalCoefficientsTable.get(purpose).get("zero").get(variableNames));
@@ -481,7 +491,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("count").keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
-            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
                 line.append(",");
                 line.append(finalCoefficientsTable.get(purpose).get("count").get(variableNames));
             }
