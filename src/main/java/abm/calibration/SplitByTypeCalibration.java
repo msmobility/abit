@@ -6,12 +6,13 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.properties.AbitResources;
+
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SplitByTypeCalibration implements ModelComponent{
     //Todo define a few calibration parameters
@@ -19,7 +20,8 @@ public class SplitByTypeCalibration implements ModelComponent{
     private static final int MAX_ITERATION = 2_000_000;
     private static final double TERMINATION_THRESHOLD = 0.005;
     double stepSize = 10;
-    String inputFolder = AbitResources.instance.getString("act.split.type.output");
+    String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output");
+    String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output");
     DataSet dataSet;
     Map<DiscretionaryActivityType, Double> objectiveSplitByType = new HashMap<>();
     Map<DiscretionaryActivityType, Double> simulatedSplitByType = new HashMap<>();
@@ -39,9 +41,12 @@ public class SplitByTypeCalibration implements ModelComponent{
         //Todo: initialize all the data containers that might be needed for calibration
 
         objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.0);
+        simulatedSplitByType.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.0);
+        calibrationFactors.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.0);
         for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()) {
             objectiveSplitByType.putIfAbsent(activityType, 0.0);
             simulatedSplitByType.putIfAbsent(activityType, 0.0);
+            calibrationFactors.putIfAbsent(activityType, 0.0);
         }
     }
 
@@ -55,42 +60,114 @@ public class SplitByTypeCalibration implements ModelComponent{
 
     @Override
     public void run() {
-
+        logger.info("Start calibrating the split by type model......");
         //Todo: loop through the calibration process until criteria are met
+        for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
+            double maxDifference = 0.0;
 
+            double observedShare;
+            double simulatedShare;
+            double difference;
+            double factor;
+
+            // for model that splits discretionary acts to be on mandatory tours or NOT on mandatory tours
+            observedShare = objectiveSplitByType.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+            simulatedShare = simulatedSplitByType.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
+            difference = observedShare - simulatedShare;
+            factor = stepSize * (observedShare - simulatedShare);
+
+            calibrationFactors.replace(DiscretionaryActivityType.ON_MANDATORY_TOUR, factor);
+            logger.info("Split by type " + "\t" + DiscretionaryActivityType.ON_MANDATORY_TOUR + " difference: " + difference);
+            if (Math.abs(difference) > maxDifference) {
+                maxDifference = Math.abs(difference);
+            }
+
+
+            //for models splitting discretionary acts onto discretionary tours
+            for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()) {
+                observedShare = objectiveSplitByType.get(activityType);
+                simulatedShare = simulatedSplitByType.get(activityType);
+                difference = observedShare - simulatedShare;
+                factor = stepSize * (observedShare - simulatedShare);
+
+                calibrationFactors.replace(activityType, factor);
+                logger.info("Split by type " + "\t" + activityType + " difference: " + difference);
+                if (Math.abs(difference) > maxDifference) {
+                    maxDifference = Math.abs(difference);
+                }
+
+            }
+
+            if (maxDifference <= TERMINATION_THRESHOLD) {
+                break;
+            }
+
+            splitByTypeCalibration.updateCalibrationFactor(calibrationFactors);
+
+            dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated)
+                    .flatMap(household -> household.getPersons().stream())
+                    .flatMap(person -> person.getPlan().getTours().values().stream())
+                    .flatMap(tour -> tour.getActivities().values().stream())
+                    .filter(act -> act.getDiscretionaryActivityType()!=null)
+                    .forEach(a -> {
+                        splitByTypeCalibration.assignActType(a,a.getPerson());
+                    });
+
+            assignActTypeForDiscretionaryTourActs(dataSet, Purpose.ACCOMPANY);
+            assignActTypeForDiscretionaryTourActs(dataSet, Purpose.SHOPPING);
+            assignActTypeForDiscretionaryTourActs(dataSet, Purpose.OTHER);
+            assignActTypeForDiscretionaryTourActs(dataSet, Purpose.RECREATION);
+
+            summarizeSimulatedResult();
+
+        }
 
 
         //Todo: obtain the updated coefficients + calibration factors
-
+        Map<String, Double> finalSplitOntoMandatoryCoefficientsTable = splitByTypeCalibration.obtainSplitOntoMandatoryCoefficientsTable();
+        Map<DiscretionaryActivityType, Map<String, Double>> finalSplitOntoDiscretionaryCoefficientsTable = splitByTypeCalibration.obtainSplitOntoDiscretionaryCoefficientsTable();
 
         //Todo: print the coefficients table to input folder
-
+        try{
+            printSplitOntoMandatoryFinalCoefficientsTable(finalSplitOntoMandatoryCoefficientsTable);
+            printSplitOntoDiscretionaryFinalCoefficientsTable(finalSplitOntoDiscretionaryCoefficientsTable);
+        }catch(FileNotFoundException e){
+            System.err.println("Output path of the coefficient table is not correct.");
+        }
     }
 
-    private void readObjectiveValues() {
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.19);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY, 0.14);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, 0.06);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.SHOP_ON_SHOP, 0.11);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, 0.05);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_SHOP, 0.17);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.OTHER_ON_OTHER, 0.06);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, 0.05);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_SHOP, 0.09);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_OTHER, 0.04);
-        objectiveSplitByType.putIfAbsent(DiscretionaryActivityType.RECREATION_ON_RECREATION, 0.06);
-
-    }
-
-    private void summarizeSimulatedResult() {
-
-/*        long numActOnMandTour = dataSet.getHouseholds().values().stream()
+    private void assignActTypeForDiscretionaryTourActs(DataSet dataSet, Purpose purpose) {
+        dataSet.getHouseholds().values().parallelStream()
                 .filter(Household::getSimulated)
                 .flatMap(household -> household.getPersons().stream())
                 .flatMap(person -> person.getPlan().getTours().values().stream())
                 .flatMap(tour -> tour.getActivities().values().stream())
-                .filter(act -> act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ON_MANDATORY_TOUR))
-                .count();*/
+                .filter(act -> act.getPurpose().equals(purpose) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR))
+                .forEach(a -> {
+                    splitByTypeCalibration.assignActTypeForDiscretionaryTourActs(a, a.getPerson(),
+                            (int) a.getPerson().getPlan().getTours().values().stream()
+                                    .flatMap(tour -> tour.getActivities().values().stream())
+                                    .filter(act -> act.getPurpose().equals(purpose) && act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ON_DISCRETIONARY_TOUR))
+                                    .count());
+                });
+    }
+
+    private void readObjectiveValues() {
+        objectiveSplitByType.put(DiscretionaryActivityType.ON_MANDATORY_TOUR, 0.191987);
+        objectiveSplitByType.put(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY, 0.135349);
+        objectiveSplitByType.put(DiscretionaryActivityType.SHOP_ON_ACCOMPANY, 0.058427);
+        objectiveSplitByType.put(DiscretionaryActivityType.SHOP_ON_SHOP, 0.113881);
+        objectiveSplitByType.put(DiscretionaryActivityType.OTHER_ON_ACCOMPANY, 0.050158);
+        objectiveSplitByType.put(DiscretionaryActivityType.OTHER_ON_SHOP, 0.172274);
+        objectiveSplitByType.put(DiscretionaryActivityType.OTHER_ON_OTHER, 0.057610);
+        objectiveSplitByType.put(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, 0.046020);
+        objectiveSplitByType.put(DiscretionaryActivityType.RECREATION_ON_SHOP, 0.087200);
+        objectiveSplitByType.put(DiscretionaryActivityType.RECREATION_ON_OTHER, 0.042793);
+        objectiveSplitByType.put(DiscretionaryActivityType.RECREATION_ON_RECREATION, 0.061117);
+    }
+
+    private void summarizeSimulatedResult() {
+
         int numActOnMandTour = 0;
         int numAccompanyPrimary = 0;
         int numShopPrimary = 0;
@@ -116,49 +193,60 @@ public class SplitByTypeCalibration implements ModelComponent{
                             if(act.getDiscretionaryActivityType() != null) {
                                 numDiscretionaryAct++;}
 
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ON_MANDATORY_TOUR)) {
-                                numActOnMandTour+=1;}
+                            DiscretionaryActivityType type = act.getDiscretionaryActivityType();
 
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_PRIMARY)) {
-                                numAccompanyPrimary++;}
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_PRIMARY)) {
-                                numShopPrimary++;}
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_PRIMARY)) {
-                                numOtherPrimary++;}
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_PRIMARY)) {
-                                numRecreationPrimary++;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY)) {
-                                numAccompanyOnAccompany+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_ON_ACCOMPANY)) {
-                                numShopOnAccompany++;
+                            if (type != null) {
+                                switch (type) {
+                                    case ON_MANDATORY_TOUR:
+                                        numActOnMandTour++;
+                                        break;
+                                    case ACCOMPANY_PRIMARY:
+                                        numAccompanyPrimary++;
+                                        break;
+                                    case SHOP_PRIMARY:
+                                        numShopPrimary++;
+                                        break;
+                                    case OTHER_PRIMARY:
+                                        numOtherPrimary++;
+                                        break;
+                                    case RECREATION_PRIMARY:
+                                        numRecreationPrimary++;
+                                        break;
+                                    case ACCOMPANY_ON_ACCOMPANY:
+                                        numAccompanyOnAccompany++;
+                                        break;
+                                    case SHOP_ON_ACCOMPANY:
+                                        numShopOnAccompany++;
+                                        break;
+                                    case SHOP_ON_SHOP:
+                                        numShopOnShop++;
+                                        break;
+                                    case OTHER_ON_ACCOMPANY:
+                                        numOtherOnAccompany++;
+                                        break;
+                                    case OTHER_ON_SHOP:
+                                        numOtherOnShop++;
+                                        break;
+                                    case OTHER_ON_OTHER:
+                                        numOtherOnOther++;
+                                        break;
+                                    case RECREATION_ON_ACCOMPANY:
+                                        numRecreationOnAccompany++;
+                                        break;
+                                    case RECREATION_ON_SHOP:
+                                        numRecreationOnShop++;
+                                        break;
+                                    case RECREATION_ON_OTHER:
+                                        numRecreationOnOther++;
+                                        break;
+                                    case RECREATION_ON_RECREATION:
+                                        numRecreationOnRecreation++;
+                                        break;
+                                    // Add more cases as needed
+                                    default:
+                                        // Handle other cases or do nothing
+                                }
                             }
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.SHOP_ON_SHOP)) {
-                                numShopOnShop+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_ON_ACCOMPANY)) {
-                                numOtherOnAccompany+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_ON_SHOP)) {
-                                numOtherOnShop+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.OTHER_ON_OTHER)) {
-                                numOtherOnOther+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY)) {
-                                numRecreationOnAccompany+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_ON_SHOP)) {
-                                numRecreationOnShop+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_ON_OTHER)) {
-                                numRecreationOnOther+=1;}
-
-                            if(act.getDiscretionaryActivityType().equals(DiscretionaryActivityType.RECREATION_ON_RECREATION)) {
-                                numRecreationOnRecreation+=1;}
-
 
                         }
                     }
@@ -176,11 +264,49 @@ public class SplitByTypeCalibration implements ModelComponent{
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnAccompany/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_SHOP, (double) numRecreationOnShop/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
         simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_OTHER, (double) numRecreationOnOther/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
-        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_ACCOMPANY, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
+        simulatedSplitByType.replace(DiscretionaryActivityType.RECREATION_ON_RECREATION, (double) numRecreationOnRecreation/(numRecreationOnAccompany+numRecreationOnShop+numRecreationOnOther+numRecreationOnRecreation+numRecreationPrimary) );
 
     }
 
-    private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+    public void printSplitOntoMandatoryFinalCoefficientsTable(Map<String, Double> finalSplitOntoMandatoryCoefficientsTable) throws FileNotFoundException {
+        logger.info("Writing split onto mandatory model coefficients + calibration factors: " + ontoMandInputFolder);
+        PrintWriter pw = new PrintWriter(ontoMandInputFolder);
 
+        StringBuilder header = new StringBuilder("variable");
+        header.append(",");
+        header.append("discAllActSplit");
+
+        pw.println(header);
+
+        for (String variableNames : finalSplitOntoMandatoryCoefficientsTable.keySet()){
+            StringBuilder line = new StringBuilder(variableNames);
+            line.append(",");
+            line.append(finalSplitOntoMandatoryCoefficientsTable.get(variableNames));
+            pw.println(line);
+        }
+        pw.close();
+    }
+
+    public void printSplitOntoDiscretionaryFinalCoefficientsTable(Map<DiscretionaryActivityType, Map<String, Double>> finalSplitOntoDiscretionaryCoefficientsTable) throws FileNotFoundException {
+        logger.info("Writing split onto discretionary coefficients + calibration factors: " + ontoDiscInputFolder);
+        PrintWriter pw = new PrintWriter(ontoDiscInputFolder);
+
+        StringBuilder header = new StringBuilder("variable");
+        for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()){
+            header.append(",");
+            header.append(activityType.toString().toLowerCase());
+        }
+        pw.println(header);
+
+
+        for (String variableNames : finalSplitOntoDiscretionaryCoefficientsTable.get(DiscretionaryActivityType.ACCOMPANY_ON_ACCOMPANY).keySet()){
+            StringBuilder line = new StringBuilder(variableNames);
+            for (DiscretionaryActivityType activityType : DiscretionaryActivityType.getDiscretionaryOntoDiscretionaryTypes()){
+                line.append(",");
+                line.append(finalSplitOntoDiscretionaryCoefficientsTable.get(activityType).get(variableNames));
+            }
+            pw.println(line);
+        }
+        pw.close();
     }
 }
