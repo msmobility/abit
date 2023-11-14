@@ -3,7 +3,9 @@ package abm.data.timeOfDay;
 import abm.properties.InternalProperties;
 
 import java.time.DayOfWeek;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -11,15 +13,15 @@ import java.util.*;
  * if the window is available (true) or not (false)
  **/
 
-public class BlockedTimeOfWeekLinkedList {
+public class CarBlockedTimeOfWeekLinkedList {
 
 
     private LinkedList<Integer> internalList;
     private static final int MAX_VALUE = (int) (7 * 24 * 60);
 
 
-    public BlockedTimeOfWeekLinkedList() {
-        internalList = new LinkedList<>();
+    public CarBlockedTimeOfWeekLinkedList() {
+        internalList = new LinkedList<Integer>();
     }
 
     public void blockTime(int from, int until) {
@@ -31,6 +33,7 @@ public class BlockedTimeOfWeekLinkedList {
                 internalList.add(i);
             }
         }
+
     }
 
     public void setAvailable(int from, int to) {
@@ -44,8 +47,6 @@ public class BlockedTimeOfWeekLinkedList {
     }
 
     public int isAvailable(int minute) {
-
-
         if (internalList.contains(minute)) {
             return 0;
         } else {
@@ -71,13 +72,13 @@ public class BlockedTimeOfWeekLinkedList {
     }
 
     public List<Integer> getMinutes() {
-        return internalList;
+        return new ArrayList<>(internalList);
     }
 
 
-    public BlockedTimeOfWeekLinkedList getForThisDayOfWeek(DayOfWeek dayOfWeek) {
+    public CarBlockedTimeOfWeekLinkedList getForThisDayOfWeek(DayOfWeek dayOfWeek) {
         int midnightBefore = (dayOfWeek.ordinal()) * 24 * 60;
-        BlockedTimeOfWeekLinkedList availableTimeOfDay = new BlockedTimeOfWeekLinkedList();
+        CarBlockedTimeOfWeekLinkedList availableTimeOfDay = new CarBlockedTimeOfWeekLinkedList();
 
         this.internalList.forEach(m -> {
             if (m > midnightBefore && m < midnightBefore + 60 * 24) {
