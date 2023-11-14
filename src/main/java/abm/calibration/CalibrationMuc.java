@@ -21,14 +21,13 @@ public class CalibrationMuc {
     boolean calibrateMandatoryActDayOfWeekAssignment;
     boolean calibrateMandatoryActStartTime;
     boolean calibrateMandatoryActDurationTime;
-    boolean calibrateMandatoryActDestinationChoice;
+    boolean calibrateMainDestinationChoice;
+    boolean calibrateStopDestinationChoice;
     boolean calibrateDiscretionaryActGeneration;
     boolean calibrateDiscretionaryActSplitByType;
     boolean calibrateDiscretionaryActDayOfWeekAssignment;
     boolean calibrateDiscretionaryActStartTime;
     boolean calibrateDiscretionaryActDuration;
-    boolean calibrateDiscretionaryActPrimaryActDestinationChoice;
-    boolean calibrateDiscretionaryActStopDestinationChoice;
     boolean calibrateDiscretionaryActStopType;
     boolean calibrateTourModeChoice;
     boolean calibrateSubTourGeneration;
@@ -44,7 +43,9 @@ public class CalibrationMuc {
     private DayOfWeekMandatoryAssignmentCalibration dayOfWeekMandatoryAssignmentCalibration;
     private DayOfWeekDiscretionaryAssignmentCalibration dayOfWeekDiscretionaryAssignmentCalibration;
     private TimeAssignmentCalibration timeAssignmentCalibration;
-    private DestinationChoiceCalibration destinationChoiceCalibration;
+    private MainDestinationChoiceCalibration mainDestinationChoiceCalibration;
+
+    private StopDestinationChoiceCalibration stopDestinationChoiceCalibration;
     private SplitByTypeCalibration splitByTypeCalibration;
     private SplitStopByTypeCalibration splitStopByTypeCalibration;
     private TourModeChoiceCalibration tourModeChoiceCalibration;
@@ -73,8 +74,11 @@ public class CalibrationMuc {
         calibrateMandatoryActDurationTime = Boolean.parseBoolean(AbitResources.instance.getString("act.mand.duration.calibration"));
         calibrationList.put("ManActDuration", calibrateMandatoryActDurationTime);
 
-        calibrateMandatoryActDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.mand.destination.calibration"));
-        calibrationList.put("ManActDestination", calibrateMandatoryActDestinationChoice);
+        calibrateMainDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.main.destination.calibration"));
+        calibrationList.put("MainActDestination", calibrateMainDestinationChoice);
+
+        calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.destination.calibration"));
+        calibrationList.put("StopDestination", calibrateStopDestinationChoice);
 
         calibrateDiscretionaryActGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
         calibrationList.put("DiscActGeneration", calibrateDiscretionaryActGeneration);
@@ -93,12 +97,6 @@ public class CalibrationMuc {
 
         calibrateDiscretionaryActStopType = Boolean.parseBoolean(AbitResources.instance.getString("act.split.stop.type.calibration"));
         calibrationList.put("DiscActStopOnto", calibrateDiscretionaryActStopType);
-
-        calibrateDiscretionaryActPrimaryActDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.disc.primary.destination.calibration"));
-        calibrationList.put("DiscActPrimaryActDestination", calibrateDiscretionaryActPrimaryActDestinationChoice);
-
-        calibrateDiscretionaryActStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString(""));
-        calibrationList.put("DiscActStopDestination", calibrateDiscretionaryActStopDestinationChoice);
 
         calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
         calibrationList.put("TourModeChoice", calibrateTourModeChoice);
@@ -133,7 +131,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
-            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration(dataSet);
             frequencyGeneratorCalibration.setup();
             frequencyGeneratorCalibration.load();
             frequencyGeneratorCalibration.run();
@@ -153,11 +151,11 @@ public class CalibrationMuc {
             timeAssignmentCalibration.run();
         }
 
-        if (calibrateMandatoryActDestinationChoice){
-            destinationChoiceCalibration = new DestinationChoiceCalibration();
-            destinationChoiceCalibration.setup();
-            destinationChoiceCalibration.load();
-            destinationChoiceCalibration.run();
+        if (calibrateMainDestinationChoice){
+            mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
+            mainDestinationChoiceCalibration.setup();
+            mainDestinationChoiceCalibration.load();
+            mainDestinationChoiceCalibration.run();
         }
 
         if (calibrateDiscretionaryActSplitByType) {
@@ -188,15 +186,15 @@ public class CalibrationMuc {
             splitStopByTypeCalibration.run();
         }
 
-        if (calibrateDiscretionaryActPrimaryActDestinationChoice || calibrateDiscretionaryActStopDestinationChoice){
-            destinationChoiceCalibration = new DestinationChoiceCalibration();
-            destinationChoiceCalibration.setup();
-            destinationChoiceCalibration.load();
-            destinationChoiceCalibration.run();
+        if (calibrateStopDestinationChoice){
+            stopDestinationChoiceCalibration = new StopDestinationChoiceCalibration(dataSet);
+            stopDestinationChoiceCalibration.setup();
+            stopDestinationChoiceCalibration.load();
+            stopDestinationChoiceCalibration.run();
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration();
+            tourModeChoiceCalibration = new TourModeChoiceCalibration( dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();

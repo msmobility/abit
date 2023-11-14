@@ -1,14 +1,14 @@
 package abm.data.plans;
 
-import java.util.*;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-public enum Mode {
+public enum HabitualMode {
 
-    TRAIN,
-    TRAM_METRO,
-    BUS,
+
     CAR_DRIVER,
     CAR_PASSENGER,
+    PT,
     BIKE,
     WALK,
     UNKNOWN;
@@ -20,15 +20,26 @@ public enum Mode {
     // across all modes, which would end up, e.g. looking for coefficients for Mode.UNKNOWN or final choices of it.
     // However, this may not be obvious because getModes() is here a static method but with the interface it
     // would be non-static, so an instance of the used Mode (here Mode as interface) shoudl exist e.g. in the dataset.
-    public static SortedSet<Mode> getModes(){
-        SortedSet<Mode> modes = new TreeSet<>();
-        modes.add(TRAIN);
-        modes.add(TRAM_METRO);
-        modes.add(BUS);
+
+    public static SortedSet<HabitualMode> getHabitualModes() {
+        SortedSet<HabitualMode> modes = new TreeSet<>();
         modes.add(CAR_DRIVER);
         modes.add(CAR_PASSENGER);
+        modes.add(PT);
+        modes.add(BIKE);
+        modes.add(WALK);
+        modes.add(UNKNOWN);
+        return modes;
+    }
+
+    public static SortedSet<HabitualMode> getHabitualModesWithoutUnknown() {
+        SortedSet<HabitualMode> modes = new TreeSet<>();
+        modes.add(CAR_DRIVER);
+        modes.add(CAR_PASSENGER);
+        modes.add(PT);
         modes.add(BIKE);
         modes.add(WALK);
         return modes;
     }
+
 }

@@ -447,9 +447,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             case BIKE:
                 predictor += coefficients.get("p.t_mand_habmode_cycle");
                 break;
-            case BUS:
-            case TRAM_METRO:
-            case TRAIN:
+            case PT:
                 predictor += coefficients.get("p.t_mand_habmode_PT");
                 break;
             case WALK:

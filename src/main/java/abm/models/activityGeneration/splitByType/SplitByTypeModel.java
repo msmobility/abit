@@ -398,9 +398,7 @@ public class SplitByTypeModel implements SplitByType{
 
         switch (person.getHabitualMode()){
             //todo this should be the time on the habitual mode instead, not a dummy variable!
-            case BUS:
-            case TRAIN:
-            case TRAM_METRO:
+            case PT:
                 utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_PT");
                 break;
             case CAR_DRIVER:
