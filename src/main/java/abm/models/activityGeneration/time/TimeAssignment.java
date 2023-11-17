@@ -7,4 +7,6 @@ public interface TimeAssignment {
     void assignStartTimeAndDuration(Activity activity);
 
     void assignDurationToStop(Activity activity);
+
+    void assignDurationAndThenStartTime(Activity activity);
 }

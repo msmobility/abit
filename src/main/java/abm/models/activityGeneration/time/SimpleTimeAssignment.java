@@ -32,4 +32,9 @@ public class SimpleTimeAssignment implements TimeAssignment {
         activity.setEndTime_min(midnight + startTime + duration);
 
     }
+
+    @Override
+    public void assignDurationAndThenStartTime(Activity activity) {
+
+    }
 }
