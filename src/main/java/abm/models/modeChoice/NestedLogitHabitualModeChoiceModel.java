@@ -92,9 +92,9 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         double probabilityAutoP;
         if (expsumNestAuto > 0) {
             probabilityAutoD =
-                    (Math.exp(utilityAutoD / nestingCoefficientAutoModes) / expsumNestAuto) * (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
+                    (expsumNestAuto / expsumTopLevel) * Math.exp(utilityAutoD) / (Math.exp(utilityAutoD) + Math.exp(utilityAutoP));
             probabilityAutoP =
-                    (Math.exp(utilityAutoP / nestingCoefficientAutoModes) / expsumNestAuto) * (Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) / expsumTopLevel);
+                    (expsumNestAuto / expsumTopLevel) * Math.exp(utilityAutoP) / (Math.exp(utilityAutoD) + Math.exp(utilityAutoP));
         } else {
             probabilityAutoD = 0.0;
             probabilityAutoP = 0.0;
@@ -222,15 +222,15 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         //Todo add the latest calibration factors to the utility calculation
         switch (person.getOccupation()) {
             case EMPLOYED:
-                utility += utility + coefficients.get(habitualMode).get("calibration_employed");
+                utility += coefficients.get(habitualMode).get("calibration_employed");
             case STUDENT:
-                utility += utility + coefficients.get(habitualMode).get("calibration_student");
+                utility += coefficients.get(habitualMode).get("calibration_student");
             case TODDLER:
-                utility += utility + coefficients.get(habitualMode).get("calibration_toddler");
+                utility += coefficients.get(habitualMode).get("calibration_toddler");
             case RETIREE:
-                utility += utility + coefficients.get(habitualMode).get("calibration_retiree");
+                utility += coefficients.get(habitualMode).get("calibration_retiree");
             case UNEMPLOYED:
-                utility += utility + coefficients.get(habitualMode).get("calibration_unemployed");
+                utility += coefficients.get(habitualMode).get("calibration_unemployed");
         }
 
         //Todo add updated calibration factor to the utility calculation, starting from 0
@@ -303,7 +303,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         double travelTime = 0;
         double travelDistanceAuto = 0;
         if (person.getOccupation().equals(Occupation.EMPLOYED)) {
-
+            travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
             if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
             } else if (habitualMode == HabitualMode.PT) {
@@ -323,6 +323,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
         if (person.getOccupation().equals(Occupation.STUDENT)) {
+            travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
             if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
                 travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
             } else if (habitualMode == HabitualMode.PT) {
