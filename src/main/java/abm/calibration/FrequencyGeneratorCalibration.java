@@ -285,32 +285,32 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     }
 
     private void readObjectiveValues() {
-        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.007);
-        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.039);
-        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.057);
-        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.090);
-        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.196);
-        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.539);
-        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.060);
-        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.012);
+        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.3500);
+        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.0413);
+        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.0491);
+        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.0602);
+        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.1235);
+        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.3326);
+        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.0357);
+        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.0076);
 
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.084);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.034);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.054);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.063);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.145);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.606);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.013);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.001);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.5076);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.0272);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.0312);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.0362);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.0801);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.3112);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.0064);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.0002);
 
-        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.641);
-        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.161);
-        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.073);
-        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.037);
-        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.027);
-        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.044);
-        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.014);
-        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.003);
+        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.6632);
+        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.1603);
+        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.0680);
+        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.0350);
+        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.0248);
+        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.0362);
+        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.0111);
+        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.0013);
 
         objectiveFrequencyShare.get(Purpose.RECREATION).put(0, 0.155);
         objectiveFrequencyShare.get(Purpose.RECREATION).put(1, 0.190);
