@@ -13,6 +13,14 @@ public class Person {
     private final int id;
     private final Household household;
     private HabitualMode habitualMode;
+    private double habitualModeGcCarD;
+    private double habitualModeGcCarP;
+    private double habitualModeGcPT;
+
+
+
+    private double habitualModeBike;
+    private double habitualModeWalk;
 
     private int age;
 
@@ -28,6 +36,14 @@ public class Person {
     private School school;
 
     private Disability disability;
+
+    private int jobDuration;
+    private int jobStartTimeWorkdays;
+    private int jobStartTimeWeekends;
+
+
+
+    private  String employmentType;
     private final Attributes attributes = new Attributes();
     private Plan plan;
 
@@ -162,4 +178,76 @@ public class Person {
     public void setEmploymentStatus(EmploymentStatus employmentStatus) {
         this.employmentStatus = employmentStatus;
     }
+    public String getEmploymentType() {
+        return employmentType;
+    }
+
+    public void setEmploymentType(String employmentType) {
+        this.employmentType = employmentType;
+    }
+
+    public int getJobDuration(){
+        return jobDuration;
+    }
+
+    public void setJobDuration(){
+        this.jobDuration = jobDuration;
+    }
+
+    public int getJobStartTimeWorkdays(){
+        return jobStartTimeWorkdays;
+    }
+
+    public void setJobStartTimeWorkdays(){
+        this.jobStartTimeWorkdays = jobStartTimeWorkdays;
+    }
+
+    public int getJobStartTimeWeekends(){
+        return jobStartTimeWeekends;
+    }
+
+    public void setJobStartTimeWeekends(){
+        this.jobStartTimeWeekends = jobStartTimeWeekends;
+    }
+
+    public double getHabitualModeGcCarD() {
+        return habitualModeGcCarD;
+    }
+
+    public void setHabitualModeGcCarD(double habitualModeGcCarD) {
+        this.habitualModeGcCarD = habitualModeGcCarD;
+    }
+
+    public double getHabitualModeGcCarP() {
+        return habitualModeGcCarP;
+    }
+
+    public void setHabitualModeGcCarP(double habitualModeGcCarP) {
+        this.habitualModeGcCarP = habitualModeGcCarP;
+    }
+
+    public double getHabitualModeGcPT() {
+        return habitualModeGcPT;
+    }
+
+    public void setHabitualModeGcPT(double habitualModeGcPT) {
+        this.habitualModeGcPT = habitualModeGcPT;
+    }
+
+    public double getHabitualModeGcBike() {
+        return habitualModeBike;
+    }
+
+    public void setHabitualModeGcBike(double habitualModeBike) {
+        this.habitualModeBike = habitualModeBike;
+    }
+
+    public double getHabitualModeGcWalk() {
+        return habitualModeWalk;
+    }
+
+    public void setHabitualModeGcWalk(double habitualModeWalk) {
+        this.habitualModeWalk = habitualModeWalk;
+    }
+
 }
