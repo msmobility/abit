@@ -6,7 +6,6 @@ import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
-import javax.xml.datatype.Duration;
 import java.util.Optional;
 
 public class Person {
@@ -14,6 +13,14 @@ public class Person {
     private final int id;
     private final Household household;
     private HabitualMode habitualMode;
+    private double habitualModeGcCarD;
+    private double habitualModeGcCarP;
+    private double habitualModeGcPT;
+
+
+
+    private double habitualModeBike;
+    private double habitualModeWalk;
 
     private int age;
 
@@ -31,9 +38,7 @@ public class Person {
     private Disability disability;
 
     private int jobDuration;
-
     private int jobStartTimeWorkdays;
-
     private int jobStartTimeWeekends;
 
 
@@ -203,6 +208,46 @@ public class Person {
 
     public void setJobStartTimeWeekends(){
         this.jobStartTimeWeekends = jobStartTimeWeekends;
+    }
+
+    public double getHabitualModeGcCarD() {
+        return habitualModeGcCarD;
+    }
+
+    public void setHabitualModeGcCarD(double habitualModeGcCarD) {
+        this.habitualModeGcCarD = habitualModeGcCarD;
+    }
+
+    public double getHabitualModeGcCarP() {
+        return habitualModeGcCarP;
+    }
+
+    public void setHabitualModeGcCarP(double habitualModeGcCarP) {
+        this.habitualModeGcCarP = habitualModeGcCarP;
+    }
+
+    public double getHabitualModeGcPT() {
+        return habitualModeGcPT;
+    }
+
+    public void setHabitualModeGcPT(double habitualModeGcPT) {
+        this.habitualModeGcPT = habitualModeGcPT;
+    }
+
+    public double getHabitualModeGcBike() {
+        return habitualModeBike;
+    }
+
+    public void setHabitualModeGcBike(double habitualModeBike) {
+        this.habitualModeBike = habitualModeBike;
+    }
+
+    public double getHabitualModeGcWalk() {
+        return habitualModeWalk;
+    }
+
+    public void setHabitualModeGcWalk(double habitualModeWalk) {
+        this.habitualModeWalk = habitualModeWalk;
     }
 
 }

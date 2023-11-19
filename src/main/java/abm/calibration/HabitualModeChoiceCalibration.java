@@ -193,6 +193,8 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                 }
             }
         }
+
+
     }
 
     private void printFinalCoefficientsTable(Map<HabitualMode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
