@@ -22,7 +22,17 @@ public class Zone implements Location, Id {
     private RegioStaRGem5 regioStaRGem5Type;
     private Geometry geometry;
     private String name;
+
+
+    private double distToRail_meter;
     private final Attributes attributes = new Attributes();
+    public double getDistToRail_meter() {
+        return distToRail_meter;
+    }
+
+    public void setDistToRail_meter(double distToRail_meter) {
+        this.distToRail_meter = distToRail_meter;
+    }
 
     public Zone(int id) {
         this.id = id;
