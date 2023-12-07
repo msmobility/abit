@@ -137,19 +137,19 @@ public class CalibrationMuc {
             frequencyGeneratorCalibration.run();
         }
 
-        if (calibrateMandatoryActDayOfWeekAssignment) {
-            dayOfWeekMandatoryAssignmentCalibration = new DayOfWeekMandatoryAssignmentCalibration();
-            dayOfWeekMandatoryAssignmentCalibration.setup();
-            dayOfWeekMandatoryAssignmentCalibration.load();
-            dayOfWeekMandatoryAssignmentCalibration.run();
-        }
+//        if (calibrateMandatoryActDayOfWeekAssignment) {
+//            dayOfWeekMandatoryAssignmentCalibration = new DayOfWeekMandatoryAssignmentCalibration();
+//            dayOfWeekMandatoryAssignmentCalibration.setup();
+//            dayOfWeekMandatoryAssignmentCalibration.load();
+//            dayOfWeekMandatoryAssignmentCalibration.run();
+//        }
 
-        if (calibrateMandatoryActStartTime || calibrateMandatoryActDurationTime) {
-            timeAssignmentCalibration = new TimeAssignmentCalibration();
-            timeAssignmentCalibration.setup();
-            timeAssignmentCalibration.load();
-            timeAssignmentCalibration.run();
-        }
+//        if (calibrateMandatoryActStartTime || calibrateMandatoryActDurationTime) {
+//            timeAssignmentCalibration = new TimeAssignmentCalibration();
+//            timeAssignmentCalibration.setup();
+//            timeAssignmentCalibration.load();
+//            timeAssignmentCalibration.run();
+//        }
 
 
         if (calibrateDiscretionaryActSplitByType) {
@@ -159,26 +159,26 @@ public class CalibrationMuc {
             splitByTypeCalibration.run();
         }
 
-        if (calibrateDiscretionaryActDayOfWeekAssignment) {
-            dayOfWeekDiscretionaryAssignmentCalibration = new DayOfWeekDiscretionaryAssignmentCalibration();
-            dayOfWeekDiscretionaryAssignmentCalibration.setup();
-            dayOfWeekDiscretionaryAssignmentCalibration.load();
-            dayOfWeekDiscretionaryAssignmentCalibration.run();
-        }
+//        if (calibrateDiscretionaryActDayOfWeekAssignment) {
+//            dayOfWeekDiscretionaryAssignmentCalibration = new DayOfWeekDiscretionaryAssignmentCalibration();
+//            dayOfWeekDiscretionaryAssignmentCalibration.setup();
+//            dayOfWeekDiscretionaryAssignmentCalibration.load();
+//            dayOfWeekDiscretionaryAssignmentCalibration.run();
+//        }
 
-        if (calibrateDiscretionaryActStartTime || calibrateDiscretionaryActDuration){
-            timeAssignmentCalibration = new TimeAssignmentCalibration();
-            timeAssignmentCalibration.setup();
-            timeAssignmentCalibration.load();
-            timeAssignmentCalibration.run();
-        }
+//        if (calibrateDiscretionaryActStartTime || calibrateDiscretionaryActDuration){
+//            timeAssignmentCalibration = new TimeAssignmentCalibration();
+//            timeAssignmentCalibration.setup();
+//            timeAssignmentCalibration.load();
+//            timeAssignmentCalibration.run();
+//        }
 
-        if (calibrateDiscretionaryActStopType){
-            splitStopByTypeCalibration = new SplitStopByTypeCalibration(dataSet);
-            splitStopByTypeCalibration.setup();
-            splitStopByTypeCalibration.load();
-            splitStopByTypeCalibration.run();
-        }
+//        if (calibrateDiscretionaryActStopType){
+//            splitStopByTypeCalibration = new SplitStopByTypeCalibration(dataSet);
+//            splitStopByTypeCalibration.setup();
+//            splitStopByTypeCalibration.load();
+//            splitStopByTypeCalibration.run();
+//        }
 
         if (calibrateMainDestinationChoice){
             mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
