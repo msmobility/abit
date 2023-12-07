@@ -77,13 +77,11 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         final Double nestingCoefficientAutoModes = coefficients.get(HabitualMode.CAR_DRIVER).get("nestingCoefficient");
 
-        double expsumNestAuto =
-                Math.exp(utilityAutoD / nestingCoefficientAutoModes) +
-                        Math.exp(utilityAutoP / nestingCoefficientAutoModes);
-
+        double expsumNestAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityAutoD / nestingCoefficientAutoModes) +
+                Math.exp(utilityAutoP / nestingCoefficientAutoModes)));
 
         double expsumTopLevel =
-                Math.exp(nestingCoefficientAutoModes * Math.log(expsumNestAuto)) +
+                expsumNestAuto +
                         Math.exp(utilityBicycle) +
                         Math.exp(utilityPT) +
                         Math.exp(utilityWalk);
@@ -235,7 +233,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         //Todo add updated calibration factor to the utility calculation, starting from 0
         if (runCalibration) {
-            utility = utility + updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
+            utility += updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
         }
         return utility;
     }
