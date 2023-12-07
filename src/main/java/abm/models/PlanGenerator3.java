@@ -4,6 +4,7 @@ import abm.data.DataSet;
 import abm.data.geo.Location;
 import abm.data.plans.*;
 import abm.data.pop.*;
+import abm.io.input.BikeOwnershipReader;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -17,6 +18,7 @@ import abm.models.modeChoice.TourModeChoice;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
+import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -28,6 +30,7 @@ public class PlanGenerator3 implements Callable {
 
     private static Logger logger = Logger.getLogger(PlanGenerator3.class);
 
+    private BikeOwnershipReader bikeOwnershipModel;
     private HabitualModeChoice habitualModeChoice;
     private Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private DestinationChoice destinationChoice;
@@ -54,7 +57,7 @@ public class PlanGenerator3 implements Callable {
     private final int thread;
     private final SubtourModeChoice subtourModeChoice;
 
-    private final int TRIALS_RESCHEDULING = 30;
+    private final int TRIALS_RESCHEDULING = -1;
 
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
@@ -78,6 +81,7 @@ public class PlanGenerator3 implements Callable {
         this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
+        this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
 
     }
 
@@ -191,6 +195,7 @@ public class PlanGenerator3 implements Callable {
 
         Plan plan = Plan.initializePlan(person);
 
+        bikeOwnershipModel.assignBicycleOwnership(person);
         habitualModeChoice.chooseHabitualMode(person);
 
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
@@ -201,12 +206,12 @@ public class PlanGenerator3 implements Callable {
             for (DayOfWeek day : dayOfWeeks) {
                 Activity activity = new Activity(person, purpose);
                 activity.setDayOfWeek(day);
-                timeAssignment.assignStartTimeAndDuration(activity);
+                timeAssignment.assignDurationAndThenStartTime(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignStartTimeAndDuration(activity);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -297,12 +302,12 @@ public class PlanGenerator3 implements Callable {
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignStartTimeAndDuration(activity);
+                timeAssignment.assignDurationAndThenStartTime(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignStartTimeAndDuration(activity);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -339,12 +344,12 @@ public class PlanGenerator3 implements Callable {
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignStartTimeAndDuration(activity);
+                timeAssignment.assignDurationAndThenStartTime(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignStartTimeAndDuration(activity);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -395,12 +400,12 @@ public class PlanGenerator3 implements Callable {
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignStartTimeAndDuration(activity);
+                timeAssignment.assignDurationAndThenStartTime(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignStartTimeAndDuration(activity);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
@@ -469,12 +474,12 @@ public class PlanGenerator3 implements Callable {
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_PRIMARY) {
                 dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignStartTimeAndDuration(activity);
+                timeAssignment.assignDurationAndThenStartTime(activity);
                 destinationChoice.selectMainActivityDestination(person, activity);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignStartTimeAndDuration(activity);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
                     destinationChoice.selectMainActivityDestination(person, activity);
                     maxTrial += 1;
                 }
