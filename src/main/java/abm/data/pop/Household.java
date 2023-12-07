@@ -30,6 +30,10 @@ public class Household {
     private Boolean simulated;
 
 
+
+    private int partition;
+
+
     public Household(int id, Location location, int numberOfCars) {
         this.id = id;
         this.numberOfCars = numberOfCars;
@@ -63,6 +67,14 @@ public class Household {
 
     public List<Vehicle> getVehicles() {
         return vehicles;
+    }
+
+    public int getPartition() {
+        return partition;
+    }
+
+    public void setPartition(int partition) {
+        this.partition = partition;
     }
 
 }
