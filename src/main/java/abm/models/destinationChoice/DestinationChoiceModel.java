@@ -154,6 +154,9 @@ public class DestinationChoiceModel implements DestinationChoice {
                 final double travelDistanceInKm = travelDistanceInMeters / 1000;
                 final double attractor = zoneAttractorsByPurpose.get(stopActivity.getPurpose()).get(z);
                 double workStopUtility = attractor * Math.exp((coefficientsStop.get(mainActPurpose).get("ALPHA") + coefficientsStop.get(mainActPurpose).get("ALPHA_calibration")) * Math.exp((coefficientsStop.get(mainActPurpose).get("BETA") + coefficientsStop.get(mainActPurpose).get("BETA_calibration")) * travelDistanceInKm));
+                if (runCalibrationStop){
+                    workStopUtility = attractor * Math.exp((coefficientsStop.get(mainActPurpose).get("ALPHA") + coefficientsStop.get(mainActPurpose).get("ALPHA_calibration")) * Math.exp((coefficientsStop.get(mainActPurpose).get("BETA") + coefficientsStop.get(mainActPurpose).get("BETA_calibration") + updatedCalibrationFactorsStop.get(mainActPurpose).get("BETA_calibration")) * travelDistanceInKm));
+                }
                 workStopUtilityList.setIndexed(z.getId(), workStopUtility);
             }
             final int selectedIndex = MitoUtil.select(workStopUtilityList.toNonIndexedArray());
@@ -172,6 +175,9 @@ public class DestinationChoiceModel implements DestinationChoice {
                 final double travelDistanceInKm = travelDistanceInMeters / 1000;
                 final double attractor = zoneAttractorsByPurpose.get(stopActivity.getPurpose()).get(z);
                 double otherStopUtility = attractor * Math.exp((coefficientsStop.get(mainActPurpose).get("ALPHA") + coefficientsStop.get(mainActPurpose).get("ALPHA_calibration")) * Math.exp((coefficientsStop.get(mainActPurpose).get("BETA") + coefficientsStop.get(mainActPurpose).get("BETA_calibration")) * travelDistanceInKm));
+                if (runCalibrationStop){
+                    otherStopUtility = attractor * Math.exp((coefficientsStop.get(mainActPurpose).get("ALPHA") + coefficientsStop.get(mainActPurpose).get("ALPHA_calibration")) * Math.exp((coefficientsStop.get(mainActPurpose).get("BETA") + coefficientsStop.get(mainActPurpose).get("BETA_calibration") + updatedCalibrationFactorsStop.get(mainActPurpose).get("BETA_calibration")) * travelDistanceInKm));
+                }
                 othersStopUtilityList.setIndexed(z.getId(), otherStopUtility);
             }
             final int selectedIndex = MitoUtil.select(othersStopUtilityList.toNonIndexedArray());
@@ -219,8 +225,6 @@ public class DestinationChoiceModel implements DestinationChoice {
 //        MicroscopicLocation microDestination = new MicroscopicLocation(randomCoordinate.x, randomCoordinate.y);
 //        microDestination.setZone(destination);
 //        activity.setLocation(microDestination);
-//
-//
 //    }
 
     public void updateCalibrationFactorsMain(Map<Purpose, Map<String, Double>> newCalibrationFactorsMain) {
@@ -276,6 +280,5 @@ public class DestinationChoiceModel implements DestinationChoice {
         }
         return this.coefficientsStop;
     }
-
 
 }

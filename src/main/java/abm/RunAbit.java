@@ -56,14 +56,24 @@ public class RunAbit {
         long start = System.currentTimeMillis();
 
         //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
-        for (Household household : dataSet.getHouseholds().values()) {
-            if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
-                final int i = AbitUtils.getRandomObject().nextInt(threads);
-                householdsByThread.putIfAbsent(i, new ArrayList<>());
-                householdsByThread.get(i).add(household);
-                household.setSimulated(Boolean.TRUE);
+        if (AbitResources.instance.getDouble("scale.factor", 1.0) >= 1){
+            for (Household household : dataSet.getHouseholds().values()) {
+                if (household.getPartition() == 2){
+                    final int i = AbitUtils.getRandomObject().nextInt(threads);
+                    householdsByThread.putIfAbsent(i, new ArrayList<>());
+                    householdsByThread.get(i).add(household);
+                    household.setSimulated(Boolean.TRUE);
+                }
             }
-
+        }else {
+            for (Household household : dataSet.getHouseholds().values()) {
+                if (AbitUtils.getRandomObject().nextDouble() < AbitResources.instance.getDouble("scale.factor", 1.0)) {
+                    final int i = AbitUtils.getRandomObject().nextInt(threads);
+                    householdsByThread.putIfAbsent(i, new ArrayList<>());
+                    householdsByThread.get(i).add(household);
+                    household.setSimulated(Boolean.TRUE);
+                }
+            }
         }
 
         for (int i = 0; i < threads; i++) {

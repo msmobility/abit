@@ -24,7 +24,7 @@ public class TimeOfWeekDistribution {
 
     public TimeOfWeekDistribution() {
         internalMap = new TreeMap<>();
-        for (int i = 0; i < MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
+        for (int i = 0; i <= MAX_VALUE; i = i + InternalProperties.SEARCH_INTERVAL_MIN) {
             internalMap.put(i, 0.);
         }
     }
@@ -42,7 +42,7 @@ public class TimeOfWeekDistribution {
         if (internalMap.containsKey(minute)) {
             return internalMap.get(minute);
         } else {
-            int newIndex = Math.round(minute/ InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
+            int newIndex = Math.round((float) minute / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN;
             return internalMap.get(newIndex);
         }
 

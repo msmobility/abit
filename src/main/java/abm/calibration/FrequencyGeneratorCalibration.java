@@ -142,13 +142,16 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             logger.info("Iteration......" + iteration);
             double maxDifference = 0.0;
 
-            if (calibrateMandatoryActGen){
+            if (calibrateMandatoryActGen) {
                 for (Purpose purpose : Purpose.getMandatoryPurposes()) {
                     for (int frequencies = 0; frequencies <= 7; frequencies++) {
                         double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
                         double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);
                         double difference = observedCountShare - simulatedCountShare;
-                        double factor = -1 * stepSize * (observedCountShare - simulatedCountShare);
+                        double factor = stepSize * (observedCountShare - simulatedCountShare);
+                        if (frequencies == 0) {
+                            factor = -1 * factor;
+                        }
                         calibrationFactors.get(purpose).replace(frequencies, factor);
                         logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
                         if (Math.abs(difference) > maxDifference) {
@@ -159,21 +162,29 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 }
             }
 
-            if (calibrateDiscretionaryActGen){
+            if (calibrateDiscretionaryActGen) {
 
                 for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
                     if (purpose.equals(ACCOMPANY)) {
+                        double totalCountError = 0.0;
                         for (int frequencies = 0; frequencies <= 7; frequencies++) {
                             double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
                             double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
                             double difference = observedZeroShare - simulatedZeroShare;
-                            double factor = -1 * stepSize * (observedZeroShare - simulatedZeroShare);
-                            calibrationFactors.get(purpose).replace(frequencies, factor);
+                            double factor = stepSize * (observedZeroShare - simulatedZeroShare);
+                            if (frequencies == 0) {
+                                factor = -1 * factor;
+                            } else {
+                                totalCountError += Math.abs(difference);
+                                factor = -1 * factor;
+                            }
+                           calibrationFactors.get(purpose).replace(frequencies, factor);
                             logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
-                            if (Math.abs(difference) > maxDifference) {
-                                maxDifference = Math.abs(difference);
+                            if (totalCountError > maxDifference) {
+                                maxDifference = totalCountError;
                             }
                         }
+                        logger.info("Total count error for " + purpose.toString() + "\t" + " difference: " + totalCountError);
                         ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                     } else {
                         for (int frequencies = 0; frequencies <= 15; frequencies++) {
@@ -193,18 +204,17 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             }
 
 
-
             for (Person person : dataSet.getPersons().values()) {
                 if (person.getHousehold().getSimulated()) {
                     for (Purpose purpose : Purpose.getAllPurposes()) {
 
                         int numOfAct = frequencyGeneratorsForCalibration.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
 
-                        if (purpose.equals(Purpose.WORK) && person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT))) {
+                        if (purpose.equals(Purpose.WORK) && person.getAge() <= 70 && person.getAge() >= 15) {
                             int simluatedWorkCount = simulatedFrequencyCountOnTheFly.get(Purpose.WORK).get(numOfAct);
                             simulatedFrequencyCountOnTheFly.get(Purpose.WORK).replace(numOfAct, simluatedWorkCount + 1);
                         }
-                        if (purpose.equals(Purpose.EDUCATION) && !person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+                        if (purpose.equals(Purpose.EDUCATION) && person.getAge() >= 10 && person.getOccupation().equals(Occupation.STUDENT)) {
                             int simluatedEducationCount = simulatedFrequencyCountOnTheFly.get(Purpose.EDUCATION).get(numOfAct);
                             simulatedFrequencyCountOnTheFly.get(Purpose.EDUCATION).replace(numOfAct, simluatedEducationCount + 1);
                         }
@@ -257,6 +267,21 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             }
 
 
+            //Reset the simulated frequency count on the fly
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(Purpose.ACCOMPANY)) {
+                    for (int freq = 0; freq <= 7; freq++) {
+                        simulatedFrequencyCountOnTheFly.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0);
+                        simulatedFrequencyShare.get(Purpose.ACCOMPANY).putIfAbsent(freq, 0.0);
+                    }
+                } else {
+                    for (int freq = 0; freq <= 15; freq++) {
+                        simulatedFrequencyCountOnTheFly.get(purpose).putIfAbsent(freq, 0);
+                        simulatedFrequencyShare.get(purpose).putIfAbsent(freq, 0.0);
+                    }
+                }
+            }
+
         }
         logger.info("Finished the calibration of activity frequency generation model.");
 
@@ -268,7 +293,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
                     finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountWorkEducationCoefficients());
                 } else {
-                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainAccompanyCountCoefficients());
                 }
             } else {
                 finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
@@ -285,32 +310,32 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     }
 
     private void readObjectiveValues() {
-        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.007);
-        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.039);
-        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.057);
-        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.090);
-        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.196);
-        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.539);
-        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.060);
-        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.012);
+        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.3738);
+        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.0351);
+        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.0456);
+        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.0633);
+        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.1218);
+        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.3219);
+        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.0319);
+        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.0066);
 
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.084);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.034);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.054);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.063);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.145);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.606);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.013);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.001);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.2085);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.0470);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.0674);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.0596);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.1520);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.4498);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.0141);
+        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.0016);
 
-        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.641);
-        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.161);
-        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.073);
-        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.037);
-        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.027);
-        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.044);
-        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.014);
-        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.003);
+        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.6215);
+        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.1743);
+        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.0778);
+        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.0396);
+        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.0307);
+        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.0407);
+        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.0135);
+        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.0019);
 
         objectiveFrequencyShare.get(Purpose.RECREATION).put(0, 0.155);
         objectiveFrequencyShare.get(Purpose.RECREATION).put(1, 0.190);
@@ -342,7 +367,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         objectiveFrequencyShare.get(Purpose.SHOPPING).put(10, 0.008);
         objectiveFrequencyShare.get(Purpose.SHOPPING).put(11, 0.002);
         objectiveFrequencyShare.get(Purpose.SHOPPING).put(12, 0.001);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(13, 0.002);
+        objectiveFrequencyShare.get(Purpose.SHOPPING).put(13, 0.000);
         objectiveFrequencyShare.get(Purpose.SHOPPING).put(14, 0.000);
         objectiveFrequencyShare.get(Purpose.SHOPPING).put(15, 0.000);
 
@@ -375,22 +400,21 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 int numberActsOfShoppingPerWeek = 0;
 
                 for (Person person : household.getPersons()) {
-                    if (person.getPlan() == null) {
-                        numberDaysOfWorkPerWeek = 0;
-                        numberDaysOfEducationPerWeek = 0;
-                        numberDaysOfAccompanyPerWeek = 0;
-                        numberActsOfRecreationPerWeek = 0;
-                        numberActsOfOtherPerWeek = 0;
-                        numberActsOfShoppingPerWeek = 0;
-                    } else {
+                    numberDaysOfWorkPerWeek = 0;
+                    numberDaysOfEducationPerWeek = 0;
+                    numberDaysOfAccompanyPerWeek = 0;
+                    numberActsOfRecreationPerWeek = 0;
+                    numberActsOfOtherPerWeek = 0;
+                    numberActsOfShoppingPerWeek = 0;
+                    if (person.getPlan() != null) {
                         Plan plan = person.getPlan();
                         for (Tour tour : plan.getTours().values()) {
                             for (Activity act : tour.getActivities().values()) {
 
-                                if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) && act.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
+                                if (person.getAge() <= 70 && person.getAge() >= 15 && act.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
                                     numberDaysOfWorkPerWeek += 1;
                                 }
-                                if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && act.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
+                                if (person.getAge() >= 10 && person.getOccupation().equals(Occupation.STUDENT) && act.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
                                     numberDaysOfEducationPerWeek += 1;
                                 }
                                 if (act.getPurpose().equals(Purpose.ACCOMPANY) && numberDaysOfAccompanyPerWeek < 7) {
@@ -408,34 +432,40 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                             }
                         }
 
-                        for (Activity unfittedActs : plan.getUnmetActivities().values()){
-                            if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) && unfittedActs.getPurpose().equals(Purpose.WORK) && numberDaysOfWorkPerWeek < 7) {
+                        for (Activity unfittedActs : plan.getUnmetActivities().values()) {
+                            if (person.getAge() <= 70 && person.getAge() >= 15 && unfittedActs.getPurpose().equals(Purpose.WORK)) {
                                 numberDaysOfWorkPerWeek += 1;
                             }
-                            if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED) && unfittedActs.getPurpose().equals(Purpose.EDUCATION) && numberDaysOfEducationPerWeek < 7) {
+                            if (person.getAge() >= 10 && person.getOccupation().equals(Occupation.STUDENT) && unfittedActs.getPurpose().equals(Purpose.EDUCATION)) {
                                 numberDaysOfEducationPerWeek += 1;
                             }
-                            if (unfittedActs.getPurpose().equals(Purpose.ACCOMPANY) && numberDaysOfAccompanyPerWeek < 7) {
+                            if (unfittedActs.getPurpose().equals(Purpose.ACCOMPANY)) {
                                 numberDaysOfAccompanyPerWeek += 1;
                             }
-                            if (unfittedActs.getPurpose().equals(Purpose.RECREATION) && numberActsOfRecreationPerWeek < 15) {
+                            if (unfittedActs.getPurpose().equals(Purpose.RECREATION)) {
                                 numberActsOfRecreationPerWeek += 1;
                             }
-                            if (unfittedActs.getPurpose().equals(Purpose.OTHER) && numberActsOfOtherPerWeek < 15) {
+                            if (unfittedActs.getPurpose().equals(Purpose.OTHER)) {
                                 numberActsOfOtherPerWeek += 1;
                             }
-                            if (unfittedActs.getPurpose().equals(Purpose.SHOPPING) && numberActsOfShoppingPerWeek < 15) {
+                            if (unfittedActs.getPurpose().equals(Purpose.SHOPPING)) {
                                 numberActsOfShoppingPerWeek += 1;
                             }
                         }
 
                     }
 
-                    if (person.getAge() < 70 && person.getAge() > 15 && (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT))) {
+                    if (numberDaysOfWorkPerWeek > 7 || numberDaysOfEducationPerWeek > 7 || numberDaysOfAccompanyPerWeek > 7 ||
+                            numberActsOfOtherPerWeek > 15 || numberActsOfRecreationPerWeek > 15 || numberActsOfShoppingPerWeek > 15) {
+                        System.out.println("scheck here");
+                    }
+
+
+                    if (person.getAge() <= 70 && person.getAge() >= 15) {
                         int simluatedWorkCount = simulatedFrequencyCount.get(Purpose.WORK).get(numberDaysOfWorkPerWeek);
                         simulatedFrequencyCount.get(Purpose.WORK).replace(numberDaysOfWorkPerWeek, simluatedWorkCount + 1);
                     }
-                    if (!person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+                    if (person.getAge() >= 10 && person.getOccupation().equals(Occupation.STUDENT)) {
                         int simluatedEducationCount = simulatedFrequencyCount.get(Purpose.EDUCATION).get(numberDaysOfEducationPerWeek);
                         simulatedFrequencyCount.get(Purpose.EDUCATION).replace(numberDaysOfEducationPerWeek, simluatedEducationCount + 1);
                     }
@@ -531,7 +561,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         pwww.println(headerrr);
 
-        for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get("count").keySet()) {
+        for (String variableNames : finalCoefficientsTable.get(Purpose.ACCOMPANY).get("count").keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
             line.append(",");
             line.append(finalCoefficientsTable.get(Purpose.ACCOMPANY).get("count").get(variableNames));

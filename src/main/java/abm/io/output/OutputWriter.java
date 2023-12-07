@@ -22,6 +22,8 @@ public class OutputWriter {
         try {
             final String runId = AbitResources.instance.getString("run.id");
             String outputFolder = AbitResources.instance.getString("base.directory") + "/output/" + runId + "/";
+            //String outputFolder = "C:/Users/Wei/Documents" + "/output/" + runId + "/";
+
             new File(outputFolder).mkdirs();
 
             new TourPrinter(dataSet).print(outputFolder + "/tours.csv");
@@ -30,9 +32,9 @@ public class OutputWriter {
             new LegPrinter(dataSet).print(outputFolder + "/legs.csv");
             //new PersonSummaryPrinter(dataSet).print("output/person_summary.csv"); really needed? only if something more complex is required.
             new PersonUseOfTimePrinter(dataSet).print(outputFolder + "/use_of_time.csv");
-            new PersonSummaryPrinter(dataSet).print(outputFolder+"habitualMode.csv");
-            //new PlansToMATSimPlans(dataSet).print(outputFolder);
-            //new PlansToMATSimPlansVehOnlyWeekLong(dataSet).print(outputFolder);
+            //new PersonSummaryPrinter(dataSet).print(outputFolder+"habitualMode.csv");
+            new PlansToMATSimPlans(dataSet).print(outputFolder);
+            new PlansToMATSimPlansVehOnlyWeekLong(dataSet).print(outputFolder);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();

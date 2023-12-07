@@ -180,7 +180,9 @@ public class TimeAssignmentModel implements TimeAssignment {
             } else {
                 startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
             }
+
             double startTimeProbability = timeOfWeekDistribution.probability(startTime);
+
             if (startTimeProbability == 0) {
                 startTime = timeOfWeekDistribution.selectTime();
                 newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval((startTime - midnight) / 60, activity.getPurpose())).selectTime();
@@ -211,5 +213,53 @@ public class TimeAssignmentModel implements TimeAssignment {
         activity.setStartTime_min(midnight + startTime);
         activity.setEndTime_min(midnight + startTime + duration);
 
+    }
+
+    @Override
+    public void assignDurationAndThenStartTime(Activity activity) {
+
+        final DayOfWeek dayOfWeek = activity.getDayOfWeek();
+        int travelTime = 30; //default travel time
+        int startTime;
+        int initialDuration = typicalDuration.get(activity.getPurpose());
+
+        //Select duration first
+        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval(8, activity.getPurpose())).selectTime();
+        if (newDuration + travelTime > initialDuration) {
+            //tour does not fit here! Make it shorter
+            newDuration = initialDuration;
+        }
+
+        //Select start time next
+        int midnight = (activity.getDayOfWeek().ordinal()) * 24 * 60;
+
+        BlockedTimeOfWeekLinkedList blockedTimeOfWeek = activity.getPerson().getPlan().getBlockedTimeOfDay();
+
+        TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
+        //newDuration = 60;
+        timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailabilityAndDuration(timeOfWeekDistribution, blockedTimeOfWeek, newDuration);
+        timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
+
+        if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation() == Occupation.EMPLOYED
+                && activity.getPerson().getSiloJobDuration() > 0) {
+            newDuration = activity.getPerson().getSiloJobDuration();
+            if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)) {
+                startTime = activity.getPerson().getSiloJobStartTimeWeekends() + midnight;
+            } else {
+                startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
+            }
+
+            double startTimeProbability = timeOfWeekDistribution.probability(startTime);
+
+            if (startTimeProbability == 0) {
+                startTime = timeOfWeekDistribution.selectTime();
+            }
+        } else {
+            startTime = timeOfWeekDistribution.selectTime();
+        }
+
+        // Setters
+        activity.setStartTime_min(startTime);
+        activity.setEndTime_min(startTime + newDuration);
     }
 }
