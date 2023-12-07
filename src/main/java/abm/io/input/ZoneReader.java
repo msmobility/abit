@@ -17,6 +17,7 @@ public class ZoneReader implements Reader {
     private String zoneIdField = "id";
     private String zoneNameField = "AGS";
     private String areaTypeField = "BBSR_type";
+    private String distToRailMeter = "distToTransit_m";
 
     private final DataSet dataSet;
 
@@ -47,6 +48,13 @@ public class ZoneReader implements Reader {
             final Object areaType = feature.getAttribute(areaTypeField);
             if (areaType != null) {
                 zone.setAreaType1(BBSRType.valueOf(Integer.parseInt(areaType.toString())));
+            }
+
+            final Object distToRail_meter = feature.getAttribute(distToRailMeter);
+            if (distToRail_meter != null) {
+                zone.setDistToRail_meter((Double) distToRail_meter);
+            }else{
+                zone.setDistToRail_meter(Double.POSITIVE_INFINITY);
             }
 
             //todo temporary assignment of zones, need to be extracted from the shapefile or any other file
