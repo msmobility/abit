@@ -123,9 +123,9 @@ public class PlansToMATSimPlansVehOnlyWeekLong {
     }
 
     public void print(String folder) {
-        for (DayOfWeek day : DayOfWeek.values()) {
-            convertPlansToMATSim(ConfigUtils.createConfig(), folder);
-        }
+
+        convertPlansToMATSim(ConfigUtils.createConfig(), folder);
+
     }
 
 }
