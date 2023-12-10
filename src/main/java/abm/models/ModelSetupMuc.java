@@ -2,6 +2,7 @@ package abm.models;
 
 import abm.data.DataSet;
 import abm.data.plans.Purpose;
+import abm.io.input.BikeOwnershipReader;
 import abm.models.activityGeneration.frequency.*;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
@@ -33,10 +34,16 @@ public class ModelSetupMuc implements ModelSetup{
     private final SubtourDestinationChoice subtourDestinationChoice;
     private final SubtourModeChoice subtourModeChoice;
 
+    public BikeOwnershipReader getBikeOwnershipReader() {
+        return bikeOwnershipReader;
+    }
+
+    private final BikeOwnershipReader bikeOwnershipReader;
+
 
     public ModelSetupMuc(DataSet dataSet) {
 
-
+        bikeOwnershipReader = new BikeOwnershipReader(dataSet);
         dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
         tourModeChoice = new NestedLogitTourModeChoiceModel(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);

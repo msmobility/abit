@@ -28,7 +28,7 @@ public class SplitByTypeModel implements SplitByType{
 
     public SplitByTypeModel(DataSet dataSet) {
         this.dataSet = dataSet;
-        this.splitOntoMandatoryCoefficients = new CoefficientsReader(dataSet, "discAllActSplit", Path.of(AbitResources.instance.getString("act.split.type"))).readCoefficients();
+        this.splitOntoMandatoryCoefficients = new CoefficientsReader(dataSet, "discAllActSplit", Path.of(AbitResources.instance.getString("act.split.type.onto.mandatory"))).readCoefficients();
 
         this.splitOntoDiscretionaryCoefficients = new HashMap<>();
 
@@ -436,6 +436,7 @@ public class SplitByTypeModel implements SplitByType{
                 break;
         }
 
+        utility += splitOntoMandatoryCoefficients.get("calibration");
 
         if (runCalibration) {
             utility = utility + updatedCalibrationFactors.get(DiscretionaryActivityType.ON_MANDATORY_TOUR);
@@ -508,6 +509,8 @@ public class SplitByTypeModel implements SplitByType{
                 utility += numActsNotOnMandatoryTours * splitOntoDiscretionaryCoefficients.get(discretionaryActivityType).get("p.acts_recreation_disc");
                 break;
         }
+
+        utility += splitOntoDiscretionaryCoefficients.get(discretionaryActivityType).get("calibration");
 
         if (runCalibration) {
             utility = utility + updatedCalibrationFactors.get(discretionaryActivityType);

@@ -100,7 +100,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         } else if (purpose.equals(Purpose.EDUCATION)) {
 
-            if (person.getEmploymentStatus().equals(EmploymentStatus.FULLTIME_EMPLOYED)) {
+            if (! person.getOccupation().equals(Occupation.STUDENT)) {
                 numOfActivity = 0;
             } else {
                 numOfActivity = polrEstimateTrips(person);
@@ -140,20 +140,20 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         double mu = getPredictor(pp, countCoef);
 
         double[] intercepts = new double[6];
-        intercepts[0] = countCoef.get("1|2") - countCoef.get("calibration_1|2");
-        intercepts[1] = countCoef.get("2|3") - countCoef.get("calibration_2|3");
-        intercepts[2] = countCoef.get("3|4") - countCoef.get("calibration_3|4");
-        intercepts[3] = countCoef.get("4|5") - countCoef.get("calibration_4|5");
-        intercepts[4] = countCoef.get("5|6") - countCoef.get("calibration_5|6");
-        intercepts[5] = countCoef.get("6|7") - countCoef.get("calibration_6|7");
+        intercepts[0] = countCoef.get("1|2") + countCoef.get("calibration_1|2");
+        intercepts[1] = countCoef.get("2|3") + countCoef.get("calibration_2|3");
+        intercepts[2] = countCoef.get("3|4") + countCoef.get("calibration_3|4");
+        intercepts[3] = countCoef.get("4|5") + countCoef.get("calibration_4|5");
+        intercepts[4] = countCoef.get("5|6") + countCoef.get("calibration_5|6");
+        intercepts[5] = countCoef.get("6|7") + countCoef.get("calibration_6|7");
 
         if (runCalibration){
-            intercepts[0] -= updatedCalibrationFactors.get(1);
-            intercepts[1] -= updatedCalibrationFactors.get(2);
-            intercepts[2] -= updatedCalibrationFactors.get(3);
-            intercepts[3] -= updatedCalibrationFactors.get(4);
-            intercepts[4] -= updatedCalibrationFactors.get(5);
-            intercepts[5] -= updatedCalibrationFactors.get(6);
+            intercepts[0] += updatedCalibrationFactors.get(1);
+            intercepts[1] += updatedCalibrationFactors.get(2);
+            intercepts[2] += updatedCalibrationFactors.get(3);
+            intercepts[3] += updatedCalibrationFactors.get(4);
+            intercepts[4] += updatedCalibrationFactors.get(5);
+            intercepts[5] += updatedCalibrationFactors.get(6);
         }
 
         int i = 0;
@@ -161,15 +161,15 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         double prob = 1 - phi;
         cumProb += prob;
 
-        while (randomNumber > cumProb) {
+        while (cumProb < randomNumber) {
             i++;
             if (i < 7) {
-                prob = Math.exp(intercepts[i - 1] - mu) / (1 + Math.exp(intercepts[i - 1] - mu));
+                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
             } else {
                 prob = 1;
             }
             if (i > 1) {
-                prob -= Math.exp(intercepts[i - 2] - mu) / (1 + Math.exp(intercepts[i - 2] - mu));
+                prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
             }
             cumProb += phi * prob;
         }
@@ -189,11 +189,15 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             binaryUtility += updatedCalibrationFactors.get(0);
         }
         double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
-        double mu = Math.exp(getPredictor(pp, countCoef));
-        double theta = countCoef.get("theta") + countCoef.get("calibration");
+
+        double mu;
         if (runCalibration){
-            theta += updatedCalibrationFactors.get(0);
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(1));
+        } else{
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
         }
+
+        double theta = countCoef.get("theta") ;
 
         NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
 
@@ -222,11 +226,13 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      */
     private int nbEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
-        double mu = Math.exp(getPredictor(pp, countCoef));
-        double theta = countCoef.get("theta") + countCoef.get("calibration");
+        double mu;
         if (runCalibration){
-            theta += updatedCalibrationFactors.get(0);
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(0));
+        } else{
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
         }
+        double theta = countCoef.get("theta") + countCoef.get("calibration");
 
         NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
 
@@ -451,16 +457,13 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 break;
             case EMPLOYED:
                 //todo move this into the person reader and then define a partTime variable status?
-                final Tour workTour = pp.getPlan().getTours().values().stream().
-                        filter(t -> t.getMainActivity().getPurpose().equals(Purpose.WORK)).findAny().orElse(null);
-                if (workTour != null) {
-                    if (workTour.getMainActivity().getDuration() > 6 * 60) {
-                        predictor += coefficients.get("p.occupationStatus_Employed");
-                    } else {
-                        predictor += coefficients.get("p.occupationStatus_Halftime");
-                    }
+                if (pp.getEmploymentStatus().equals(EmploymentStatus.HALFTIME_EMPLOYED)){
+                    predictor += coefficients.get("p.occupationStatus_Halftime");
+                    break;
+                }else{
+                    predictor += coefficients.get("p.occupationStatus_Employed");
+                    break;
                 }
-                break;
             case UNEMPLOYED:
                 predictor += coefficients.get("p.occupationStatus_Unemployed");
                 break;
@@ -620,6 +623,14 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     public Map<String, Double> obtainCountCoefficients() {
         double originalCalibrationFactor = countCoef.get("calibration");
         double updatedCalibrationFactor = updatedCalibrationFactors.get(0);
+        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+        this.countCoef.replace("calibration", latestCalibrationFactor);
+        return countCoef;
+    }
+
+    public Map<String, Double> obtainAccompanyCountCoefficients() {
+        double originalCalibrationFactor = countCoef.get("calibration");
+        double updatedCalibrationFactor = updatedCalibrationFactors.get(1);
         double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
         this.countCoef.replace("calibration", latestCalibrationFactor);
         return countCoef;

@@ -42,15 +42,16 @@ public class Person {
     private int jobStartTimeWeekends;
 
 
-
-    private  String employmentType;
+    private String employmentType;
     private final Attributes attributes = new Attributes();
     private Plan plan;
+
+    private boolean bikeOwnership;
 
 
     private EmploymentStatus employmentStatus;
 
-//    public Person(int id, Household household) {
+    //    public Person(int id, Household household) {
 //        this.id = id;
 //        this.household = household;
 //    }
@@ -155,22 +156,27 @@ public class Person {
 
 
     public boolean hasBicycle() {
-        return true;
+        return bikeOwnership;
+    }
+
+    public void setHasBicycle(boolean bikeOwnership) {
+        this.bikeOwnership = bikeOwnership;
     }
 
     public Disability getDisability() {
         return disability;
     }
 
-    public boolean hasWorkActivity(){
-        for(Tour tour : plan.getTours().values()){
-            if(tour.getMainActivity().getPurpose().equals(Purpose.WORK)){
+    public boolean hasWorkActivity() {
+        for (Tour tour : plan.getTours().values()) {
+            if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
                 return true;
             }
         }
 
         return false;
     }
+
     public EmploymentStatus getEmploymentStatus() {
         return employmentStatus;
     }
@@ -178,6 +184,7 @@ public class Person {
     public void setEmploymentStatus(EmploymentStatus employmentStatus) {
         this.employmentStatus = employmentStatus;
     }
+
     public String getEmploymentType() {
         return employmentType;
     }
@@ -186,27 +193,27 @@ public class Person {
         this.employmentType = employmentType;
     }
 
-    public int getJobDuration(){
+    public int getJobDuration() {
         return jobDuration;
     }
 
-    public void setJobDuration(){
+    public void setJobDuration() {
         this.jobDuration = jobDuration;
     }
 
-    public int getJobStartTimeWorkdays(){
+    public int getJobStartTimeWorkdays() {
         return jobStartTimeWorkdays;
     }
 
-    public void setJobStartTimeWorkdays(){
+    public void setJobStartTimeWorkdays() {
         this.jobStartTimeWorkdays = jobStartTimeWorkdays;
     }
 
-    public int getJobStartTimeWeekends(){
+    public int getJobStartTimeWeekends() {
         return jobStartTimeWeekends;
     }
 
-    public void setJobStartTimeWeekends(){
+    public void setJobStartTimeWeekends() {
         this.jobStartTimeWeekends = jobStartTimeWeekends;
     }
 
