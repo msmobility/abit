@@ -2,6 +2,7 @@ package abm.calibration;
 
 import abm.data.DataSet;
 
+import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.properties.AbitResources;
 
 import org.apache.log4j.Logger;
@@ -195,7 +196,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration( dataSet);
+            tourModeChoiceCalibration = new TourModeChoiceCalibration(dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
