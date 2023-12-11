@@ -8,6 +8,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
 import abm.data.vehicle.Vehicle;
+import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -24,6 +25,8 @@ import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static abm.io.input.CalibrationZoneToRegionTypeReader.getRegionForZone;
+
 
 public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
@@ -35,7 +38,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
     private static final LogitTools<abm.data.plans.Mode> logitTools = new LogitTools<>(abm.data.plans.Mode.class);
     private Map<Purpose, List<Tuple<EnumSet<abm.data.plans.Mode>, Double>>> nests = null;
 
-    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> updatedCalibrationFactors = new HashMap<>();
+    Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> updatedCalibrationFactors = new HashMap<>();
 
     private final static double fuelCostEurosPerKm = 0.065;
     private final static double transitFareEurosPerKm = 0.12;
@@ -48,7 +51,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         this.purposeModeCoefficients = new HashMap<>();
 
         //the following loop will read the coefficient file Mode.getModes().size() times, which is acceptable?
-        Map<Purpose, Map<Mode, Map<String, Double>>> purposeModeCoefficients = new HashMap<>();
+
         Map<Purpose, List<Tuple<EnumSet<abm.data.plans.Mode>, Double>>> nests = new HashMap<>();
         for (Purpose purpose : Purpose.getAllPurposes()) {
             Map<Mode, Map<String, Double>> modeCoefficients = new HashMap<>();
@@ -81,16 +84,23 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
     public NestedLogitTourModeChoiceModel(DataSet dataSet, boolean runCalibration) {
         this(dataSet);
+        List<String> regions = new ArrayList<>();
+        regions.add("muc");
+        regions.add("nonMuc");
         this.updatedCalibrationFactors = new HashMap<>();
-        for (Purpose purpose : Purpose.getAllPurposes()) {
-            this.updatedCalibrationFactors.putIfAbsent(purpose, new HashMap<>());
-            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                this.updatedCalibrationFactors.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-                for (Mode mode : Mode.getModes()) {
-                    this.updatedCalibrationFactors.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+        for (String region : regions) {
+            this.updatedCalibrationFactors.putIfAbsent(region, new HashMap<>());
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                this.updatedCalibrationFactors.get(region).putIfAbsent(purpose, new HashMap<>());
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    this.updatedCalibrationFactors.get(region).get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                    for (Mode mode : Mode.getModes()) {
+                        this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                    }
                 }
             }
         }
+
         this.runCalibration = runCalibration;
     }
 
@@ -287,18 +297,24 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
                 break;
         }
 
+        //to account for calibration factors
+        String region = getRegionForZone(tour.getActivities().get(tour.getActivities().firstKey()).
+                getLocation().getZoneId());
 
         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-            utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + purpose.toString().toLowerCase() + "_" + tour.getMainActivity().getDayOfWeek().toString().toLowerCase());
+            utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + purpose.toString().toLowerCase() + "_" +
+                    tour.getMainActivity().getDayOfWeek().toString().toLowerCase() + "_" + region.toLowerCase());
 
         } else {
 
-            utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + tour.getMainActivity().getDayOfWeek().toString().toLowerCase());
+            utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + tour.getMainActivity().getDayOfWeek().toString().toLowerCase() +
+                     "_" + region.toLowerCase());
         }
 
 
         if (runCalibration) {
-            utility = utility + updatedCalibrationFactors.get(tour.getMainActivity().getPurpose()).get(tour.getMainActivity().getDayOfWeek()).get(mode);
+
+            utility = utility + updatedCalibrationFactors.get(region).get(tour.getMainActivity().getPurpose()).get(tour.getMainActivity().getDayOfWeek()).get(mode);
         }
 
         return utility;
@@ -397,14 +413,20 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         return generalizedCosts;
     }
 
-    public void updateCalibrationFactor(Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> newCalibrationFactors) {
-        for (Purpose purpose : Purpose.getAllPurposes()) {
-            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                for (Mode mode : Mode.getModes()) {
-                    double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(purpose).get(dayOfWeek).get(mode);
-                    double updatedCalibrationFactor = newCalibrationFactors.get(purpose).get(dayOfWeek).get(mode) + calibrationFactorFromLastIteration;
-                    this.updatedCalibrationFactors.get(purpose).get(dayOfWeek).replace(mode, updatedCalibrationFactor);
-                    logger.info("Calibration factor for " + purpose + "\t" + dayOfWeek + "\t" + "and " + mode + "\t" + ": " + updatedCalibrationFactor);
+    public void updateCalibrationFactor(Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> newCalibrationFactors) {
+        List<String> regions = new ArrayList<>();
+        regions.add("muc");
+        regions.add("nonMuc");
+
+        for (String region : regions) {
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    for (Mode mode : Mode.getModes()) {
+                        double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode);
+                        double updatedCalibrationFactor = newCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode) + calibrationFactorFromLastIteration;
+                        this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, updatedCalibrationFactor);
+                        logger.info("Calibration factor for " + purpose + "\t" + dayOfWeek + "\t" + region + "\t" + "and " + mode + "\t" + ": " + updatedCalibrationFactor);
+                    }
                 }
             }
         }
@@ -415,21 +437,30 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         double originalCalibrationFactor = 0.0;
         double updatedCalibrationFactor = 0.0;
         double latestCalibrationFactor = 0.0;
+        List<String> regions = new ArrayList<>();
+        regions.add("muc");
+        regions.add("nonMuc");
 
-        for (Purpose purpose : Purpose.getAllPurposes()) {
-            for (Mode mode : Mode.getModes()) {
-                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                    if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                        originalCalibrationFactor = this.purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase());
-                    } else {
-                        originalCalibrationFactor = this.purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + dayOfWeek.toString().toLowerCase());
-                    }
-                    updatedCalibrationFactor = updatedCalibrationFactors.get(purpose).get(dayOfWeek).get(mode);
-                    latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                    if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                        purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase(), latestCalibrationFactor);
-                    } else {
-                        purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + dayOfWeek.toString().toLowerCase(), latestCalibrationFactor);
+        for (String region : regions) {
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                for (Mode mode : Mode.getModes()) {
+                    for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                        if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+                            originalCalibrationFactor = this.purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase() +
+                                    "_" + region.toLowerCase());
+                        } else {
+                            originalCalibrationFactor = this.purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + dayOfWeek.toString().toLowerCase() + "_" +
+                                    region.toLowerCase());
+                        }
+                        updatedCalibrationFactor = updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode);
+                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+                        if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase()+
+                                    "_" + region.toLowerCase(), latestCalibrationFactor);
+                        } else {
+                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + dayOfWeek.toString().toLowerCase()+ "_" +
+                                    region.toLowerCase(), latestCalibrationFactor);
+                        }
                     }
                 }
             }

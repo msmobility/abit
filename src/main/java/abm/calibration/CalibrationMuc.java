@@ -2,6 +2,7 @@ package abm.calibration;
 
 import abm.data.DataSet;
 
+import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.properties.AbitResources;
 
 import org.apache.log4j.Logger;
@@ -131,7 +132,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateMandatoryActGeneration || calibrateDiscretionaryActGeneration) {
-            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration();
+            frequencyGeneratorCalibration = new FrequencyGeneratorCalibration(dataSet);
             frequencyGeneratorCalibration.setup();
             frequencyGeneratorCalibration.load();
             frequencyGeneratorCalibration.run();
@@ -153,7 +154,7 @@ public class CalibrationMuc {
 
 
         if (calibrateDiscretionaryActSplitByType) {
-            splitByTypeCalibration = new SplitByTypeCalibration();
+            splitByTypeCalibration = new SplitByTypeCalibration(dataSet);
             splitByTypeCalibration.setup();
             splitByTypeCalibration.load();
             splitByTypeCalibration.run();
@@ -195,7 +196,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateTourModeChoice){
-            tourModeChoiceCalibration = new TourModeChoiceCalibration();
+            tourModeChoiceCalibration = new TourModeChoiceCalibration(dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
