@@ -16,7 +16,10 @@ public class ZoneReader implements Reader {
     private static Logger logger = Logger.getLogger(ZoneReader.class);
     private String zoneIdField = "id";
     private String zoneNameField = "AGS";
-    private String areaTypeField = "BBSR_type";
+    private String bbsrTypeField = "BBSR_type";
+    private String regioStaR2TypeField = "RegioStaR2";
+    private String regioStaRGem5TypeField = "RegStaGe5";
+    private String regioStaR7TypeField = "RegioStaR7";
     private String distToRailMeter = "distToTransit_m";
 
     private final DataSet dataSet;
@@ -45,23 +48,32 @@ public class ZoneReader implements Reader {
             if (name != null) {
                 zone.setName(name.toString());
             }
-            final Object areaType = feature.getAttribute(areaTypeField);
+            final Object areaType = feature.getAttribute(bbsrTypeField);
             if (areaType != null) {
                 zone.setAreaType1(BBSRType.valueOf(Integer.parseInt(areaType.toString())));
+            }
+
+            final Object regioStaR2Type = feature.getAttribute(regioStaR2TypeField);
+            if (regioStaR2Type != null) {
+                zone.setRegioStaR2Type(RegioStaR2.valueOf(Integer.parseInt(regioStaR2Type.toString())));
+            }
+
+            final Object regioStaRGem5Type = feature.getAttribute(regioStaRGem5TypeField);
+            if (regioStaRGem5Type != null) {
+                zone.setRegioStaRGem5Type(RegioStaRGem5.valueOf(Integer.parseInt(regioStaRGem5Type.toString())));
+            }
+
+            final Object regioStaR7Type = feature.getAttribute(regioStaR7TypeField);
+            if (regioStaR7Type != null) {
+                zone.setRegioStaR7Type(RegioStaR7.valueOf(Integer.parseInt(regioStaR7Type.toString())));
             }
 
             final Object distToRail_meter = feature.getAttribute(distToRailMeter);
             if (distToRail_meter != null) {
                 zone.setDistToRail_meter((Double) distToRail_meter);
-            }else{
+            } else {
                 zone.setDistToRail_meter(Double.POSITIVE_INFINITY);
             }
-
-            //todo temporary assignment of zones, need to be extracted from the shapefile or any other file
-            zone.setRegioStaR2Type(RegioStaR2.URBAN);
-            zone.setRegioStaRGem5Type(RegioStaRGem5.METROPOLIS);
-            zone.setRegioStaR7Type(RegioStaR7.URBAN_METROPOLIS);
-
 
             dataSet.getZones().put(zoneId, zone);
             zoneCounter++;
