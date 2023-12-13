@@ -24,7 +24,7 @@ public class DefaultDataReaderManager implements DataReaderManager {
         new PersonReader(dataSet).read();
         populateZones(dataSet);
         new EconomicStatusReader(dataSet).read();
-
+        new CalibrationZoneToRegionTypeReader(dataSet).read();
 
         return dataSet;
     }

@@ -6,11 +6,9 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
-import abm.data.vehicle.Vehicle;
-import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
+import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.models.modeChoice.NestedLogitTourModeChoiceModel;
 import abm.properties.AbitResources;
-import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
@@ -19,6 +17,8 @@ import java.time.DayOfWeek;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static abm.io.input.CalibrationZoneToRegionTypeReader.getRegionForZone;
+
 public class TourModeChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(TourModeChoiceCalibration.class);
@@ -26,17 +26,24 @@ public class TourModeChoiceCalibration implements ModelComponent {
     private static final int MAX_ITERATION = 2_000;
     private static final double TERMINATION_THRESHOLD = 0.05;
 
-    double stepSize = 5;
+    double stepSize = 0.5;
     String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
     DataSet dataSet;
-    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> objectiveTourModeShare = new HashMap<>();
-    Map<Purpose, Map<DayOfWeek, Map<Mode, Integer>>> simulatedTourModeCount = new HashMap<>();
-    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> simulatedTourModeShare = new HashMap<>();
-    Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> calibrationFactors = new HashMap<>();
+    Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> objectiveTourModeShare = new HashMap<>();
+    Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Integer>>>> simulatedTourModeCount = new HashMap<>();
+    Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> simulatedTourModeShare = new HashMap<>();
+    Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> calibrationFactors = new HashMap<>();
     private NestedLogitTourModeChoiceModel tourModeChoiceModelCalibration;
+    //private CalibrationZoneToRegionTypeReader zoneToRegionMap;
+
+    List<String> regions = new ArrayList<>();
+    {regions.add("muc");
+    regions.add("nonMuc");}
+
 
     public TourModeChoiceCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
+
     }
 
     @Override
@@ -47,21 +54,28 @@ public class TourModeChoiceCalibration implements ModelComponent {
 
         //Todo: initialize all the data containers that might be needed for calibration
         //tourmodechoice
-        for (Purpose purpose : Purpose.getSortedPurposes()) {
-            objectiveTourModeShare.putIfAbsent(purpose, new HashMap<>());
-            simulatedTourModeCount.putIfAbsent(purpose, new HashMap<>());
-            simulatedTourModeShare.putIfAbsent(purpose, new HashMap<>());
-            calibrationFactors.putIfAbsent(purpose, new HashMap<>());
-            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                objectiveTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-                simulatedTourModeCount.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-                simulatedTourModeShare.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-                calibrationFactors.get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
-                for (Mode mode : Mode.values()) {
-                    objectiveTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
-                    simulatedTourModeCount.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
-                    simulatedTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
-                    calibrationFactors.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+
+        for (String region : regions) {
+            objectiveTourModeShare.putIfAbsent(region, new HashMap<>());
+            simulatedTourModeCount.putIfAbsent(region, new HashMap<>());
+            simulatedTourModeShare.putIfAbsent(region, new HashMap<>());
+            calibrationFactors.putIfAbsent(region, new HashMap<>());
+            for (Purpose purpose : Purpose.getSortedPurposes()) {
+                objectiveTourModeShare.get(region).putIfAbsent(purpose, new HashMap<>());
+                simulatedTourModeCount.get(region).putIfAbsent(purpose, new HashMap<>());
+                simulatedTourModeShare.get(region).putIfAbsent(purpose, new HashMap<>());
+                calibrationFactors.get(region).putIfAbsent(purpose, new HashMap<>());
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    objectiveTourModeShare.get(region).get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                    simulatedTourModeCount.get(region).get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                    simulatedTourModeShare.get(region).get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                    calibrationFactors.get(region).get(purpose).putIfAbsent(dayOfWeek, new HashMap<>());
+                    for (Mode mode : Mode.values()) {
+                        objectiveTourModeShare.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                        simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
+                        simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                        calibrationFactors.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                    }
                 }
             }
         }
@@ -88,23 +102,29 @@ public class TourModeChoiceCalibration implements ModelComponent {
             double maxDifference = 0.0;
 
             //Todo summarize share difference and share
-            for (Purpose purpose : Purpose.getAllPurposes()) {
-                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                    for (Mode mode : Mode.getModes()) {
-                        double observedShare = objectiveTourModeShare.get(purpose).get(dayOfWeek).get(mode);
-                        double simulatedShare = simulatedTourModeShare.get(purpose).get(dayOfWeek).get(mode);
-                        double difference = observedShare - simulatedShare;
-                        double factor = stepSize * (observedShare - simulatedShare);
-                        if (mode.equals(Mode.CAR_DRIVER)) {
-                            factor = 0.00;
-                        }
-                        if (dayOfWeek.equals(DayOfWeek.SUNDAY) && purpose.equals(Purpose.SHOPPING)) {
-                            factor = 0.00;
-                        }
-                        calibrationFactors.get(purpose).get(dayOfWeek).replace(mode, factor);
-                        logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + "difference: " + difference);
-                        if (Math.abs(difference) > maxDifference) {
-                            maxDifference = Math.abs(difference);
+            for (String region : regions) {
+                for (Purpose purpose : Purpose.getAllPurposes()) {
+                    for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                        for (Mode mode : Mode.getModes()) {
+                            double observedShare = objectiveTourModeShare.get(region).get(purpose).get(dayOfWeek).get(mode);
+                            double simulatedShare = simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).get(mode);
+                            double difference = observedShare - simulatedShare;
+                            double factor = stepSize * (observedShare - simulatedShare);
+                            if (mode.equals(Mode.CAR_DRIVER)) {
+                                factor = 0.00;
+                            }
+                            if (dayOfWeek.equals(DayOfWeek.SUNDAY) && purpose.equals(Purpose.SHOPPING)) {
+                                factor = 0.00;
+                            }
+                            calibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, factor);
+
+                            logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + region  + "\t" +
+                                    "difference: " + difference);
+
+
+                            if (Math.abs(difference) > maxDifference) {
+                                maxDifference = Math.abs(difference);
+                            }
                         }
                     }
                 }
@@ -202,364 +222,155 @@ public class TourModeChoiceCalibration implements ModelComponent {
 
     //WORK; EDUCATION; ACCOMPANY; OTHER; SHOP; RECR
     private void readObjectiveValues() {
-        //WORK
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.63);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.09);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.12);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.05);
+        //map for muc region
+        Map<Mode, Double> weekdayValuesMucWork = Map.of(
+                Mode.CAR_DRIVER, 0.38, Mode.CAR_PASSENGER, 0.01, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.18, Mode.TRAM_METRO, 0.26, Mode.BIKE, 0.12, Mode.WALK, 0.02);
+        Map<Mode, Double> weekendValuesMucWork = Map.of(
+                Mode.CAR_DRIVER, 0.44, Mode.CAR_PASSENGER, 0.01, Mode.BUS, 0.03,
+                Mode.TRAIN, 0.11, Mode.TRAM_METRO, 0.25, Mode.BIKE, 0.11, Mode.WALK, 0.02);
+        Map<Mode, Double> weekdayValuesMucEducation = Map.of(
+                Mode.CAR_DRIVER, 0.03, Mode.CAR_PASSENGER, 0.17, Mode.BUS, 0.10,
+                Mode.TRAIN, 0.13, Mode.TRAM_METRO, 0.24, Mode.BIKE, 0.21, Mode.WALK, 0.12);
+        Map<Mode, Double> weekendValuesMucEducation = Map.of(
+                Mode.CAR_DRIVER, 0.09, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.04,
+                Mode.TRAIN, 0.22, Mode.TRAM_METRO, 0.35, Mode.BIKE, 0.13, Mode.WALK, 0.05);
+        Map<Mode, Double> weekdayValuesMucAccompany = Map.of(
+                Mode.CAR_DRIVER, 0.46, Mode.CAR_PASSENGER, 0.16, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.04, Mode.TRAM_METRO, 0.10, Mode.BIKE, 0.10, Mode.WALK, 0.12);
+        Map<Mode, Double> weekendValuesMucAccompany = Map.of(
+                Mode.CAR_DRIVER, 0.30, Mode.CAR_PASSENGER, 0.24, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.04, Mode.TRAM_METRO, 0.18, Mode.BIKE, 0.06, Mode.WALK, 0.16);
+        Map<Mode, Double> weekdayValuesMucShop = Map.of(
+                Mode.CAR_DRIVER, 0.31, Mode.CAR_PASSENGER, 0.09, Mode.BUS, 0.04,
+                Mode.TRAIN, 0.06, Mode.TRAM_METRO, 0.13, Mode.BIKE, 0.12, Mode.WALK, 0.25);
+        Map<Mode, Double> weekendValuesMucShop = Map.of(
+                Mode.CAR_DRIVER, 0.31, Mode.CAR_PASSENGER, 0.13, Mode.BUS, 0.03,
+                Mode.TRAIN, 0.04, Mode.TRAM_METRO, 0.11, Mode.BIKE, 0.14, Mode.WALK, 0.23);
+        Map<Mode, Double> weekdayValuesMucOther = Map.of(
+                Mode.CAR_DRIVER, 0.28, Mode.CAR_PASSENGER, 0.12, Mode.BUS, 0.05,
+                Mode.TRAIN, 0.09, Mode.TRAM_METRO, 0.21, Mode.BIKE, 0.09, Mode.WALK, 0.16);
+        Map<Mode, Double> weekendValuesMucOther = Map.of(
+                Mode.CAR_DRIVER, 0.30, Mode.CAR_PASSENGER, 0.23, Mode.BUS, 0.03,
+                Mode.TRAIN, 0.07, Mode.TRAM_METRO, 0.13, Mode.BIKE, 0.08, Mode.WALK, 0.17);
+        Map<Mode, Double> weekdayValuesMucRecreation = Map.of(
+                Mode.CAR_DRIVER, 0.20, Mode.CAR_PASSENGER, 0.13, Mode.BUS, 0.04,
+                Mode.TRAIN, 0.08, Mode.TRAM_METRO, 0.17, Mode.BIKE, 0.17, Mode.WALK, 0.22);
+        Map<Mode, Double> weekendValuesMucRecreation = Map.of(
+                Mode.CAR_DRIVER, 0.22, Mode.CAR_PASSENGER, 0.19, Mode.BUS, 0.03,
+                Mode.TRAIN, 0.08, Mode.TRAM_METRO, 0.16, Mode.BIKE, 0.13, Mode.WALK, 0.20);
+        // maps for nonmuc region
+        Map<Mode, Double> weekdayValuesNonmucWork = Map.of(
+                Mode.CAR_DRIVER, 0.68, Mode.CAR_PASSENGER, 0.03, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.13, Mode.TRAM_METRO, 0.03, Mode.BIKE, 0.08, Mode.WALK, 0.03);
+        Map<Mode, Double> weekendValuesNonmucWork = Map.of(
+                Mode.CAR_DRIVER, 0.68, Mode.CAR_PASSENGER, 0.13, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.06, Mode.TRAM_METRO, 0.02, Mode.BIKE, 0.05, Mode.WALK, 0.05);
+        Map<Mode, Double> weekdayValuesNonmucEducation = Map.of(
+                Mode.CAR_DRIVER, 0.07, Mode.CAR_PASSENGER, 0.23, Mode.BUS, 0.25,
+                Mode.TRAIN, 0.12, Mode.TRAM_METRO, 0.03, Mode.BIKE, 0.16, Mode.WALK, 0.12);
+        Map<Mode, Double> weekendValuesNonmucEducation = Map.of(
+                Mode.CAR_DRIVER, 0.19, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.15,
+                Mode.TRAIN, 0.33, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.15, Mode.WALK, 0.11);
+        Map<Mode, Double> weekdayValuesNonmucAccompany = Map.of(
+                Mode.CAR_DRIVER, 0.69, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.05);
+        Map<Mode, Double> weekendValuesNonmucAccompany = Map.of(
+                Mode.CAR_DRIVER, 0.57, Mode.CAR_PASSENGER, 0.31, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.04);
+        Map<Mode, Double> weekdayValuesNonmucShop = Map.of(
+                Mode.CAR_DRIVER, 0.56, Mode.CAR_PASSENGER, 0.14, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.02, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.13, Mode.WALK, 0.13);
+        Map<Mode, Double> weekendValuesNonmucShop = Map.of(
+                Mode.CAR_DRIVER, 0.54, Mode.CAR_PASSENGER, 0.19, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.02, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.14, Mode.WALK, 0.10);
+        Map<Mode, Double> weekdayValuesNonmucOther = Map.of(
+                Mode.CAR_DRIVER, 0.52, Mode.CAR_PASSENGER, 0.17, Mode.BUS, 0.03,
+                Mode.TRAIN, 0.05, Mode.TRAM_METRO, 0.02, Mode.BIKE, 0.11, Mode.WALK, 0.11);
+        Map<Mode, Double> weekendValuesNonmucOther = Map.of(
+                Mode.CAR_DRIVER, 0.46, Mode.CAR_PASSENGER, 0.25, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.03, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.09, Mode.WALK, 0.15);
+        Map<Mode, Double> weekdayValuesNonmucRecreation = Map.of(
+                Mode.CAR_DRIVER, 0.33, Mode.CAR_PASSENGER, 0.22, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.03, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.17, Mode.WALK, 0.22);
+        Map<Mode, Double> weekendValuesNonmucRecreation = Map.of(
+                Mode.CAR_DRIVER, 0.35, Mode.CAR_PASSENGER, 0.27, Mode.BUS, 0.01,
+                Mode.TRAIN, 0.03, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.12, Mode.WALK, 0.22);
 
 
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.63);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.09);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.12);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.05);
+        // Initialize the main map for all combinations
+        objectiveTourModeShare = new HashMap<>();
 
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.63);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.09);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.12);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.05);
-
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.63);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.09);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.12);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.05);
-
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.63);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.09);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.12);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.05);
-
-
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.70);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.02);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.04);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.10);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.05);
-
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.72);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.05);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.07);
-        objectiveTourModeShare.get(Purpose.WORK).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.05);
-
-        //EDUCATION
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.09);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.31);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.07);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.10);
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.09);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.31);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.07);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.10);
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.09);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.31);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.07);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.10);
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.09);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.31);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.07);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.10);
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.09);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.31);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.12);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.07);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.10);
-
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.47);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.23);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.05);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.06);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.10);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.08);
-
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.19);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.23);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.04);
-        objectiveTourModeShare.get(Purpose.EDUCATION).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.00);
-
-        //ACCOMPANY
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.74);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.13);
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.74);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.13);
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.74);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.13);
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.74);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.13);
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.74);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.05);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.13);
-
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.81);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.12);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.00);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.04);
-
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.75);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.16);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.00);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.01);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.02);
-        objectiveTourModeShare.get(Purpose.ACCOMPANY).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.05);
-
-        //OTHER
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.48);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.13);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.18);
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.48);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.13);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.18);
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.48);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.13);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.18);
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.48);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.13);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.18);
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.48);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.13);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.18);
-
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.50);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.21);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.08);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.14);
-
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.45);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.22);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.07);
-        objectiveTourModeShare.get(Purpose.OTHER).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.21);
-
-        //SHOPPING
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.11);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.23);
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.11);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.23);
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.11);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.23);
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.11);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.23);
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.46);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.11);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.23);
-
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.47);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.14);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.02);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.13);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.21);
-
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.44);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.10);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.01);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.17);
-        objectiveTourModeShare.get(Purpose.SHOPPING).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.27);
-
-        //RECREATION
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.CAR_DRIVER, 0.39);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.CAR_PASSENGER, 0.17);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.BIKE, 0.15);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.MONDAY).put(Mode.WALK, 0.20);
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.CAR_DRIVER, 0.39);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.CAR_PASSENGER, 0.17);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.BIKE, 0.15);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.TUESDAY).put(Mode.WALK, 0.20);
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_DRIVER, 0.39);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.CAR_PASSENGER, 0.17);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.BIKE, 0.15);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.WEDNESDAY).put(Mode.WALK, 0.20);
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.CAR_DRIVER, 0.39);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.CAR_PASSENGER, 0.17);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.BIKE, 0.15);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.THURSDAY).put(Mode.WALK, 0.20);
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.CAR_DRIVER, 0.39);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.CAR_PASSENGER, 0.17);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.BUS, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.TRAIN, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.TRAM_METRO, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.BIKE, 0.15);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.FRIDAY).put(Mode.WALK, 0.20);
-
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.CAR_DRIVER, 0.35);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.CAR_PASSENGER, 0.25);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.BUS, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.TRAIN, 0.05);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SATURDAY).put(Mode.WALK, 0.17);
-
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.CAR_DRIVER, 0.37);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.CAR_PASSENGER, 0.24);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.BUS, 0.02);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.TRAIN, 0.03);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.TRAM_METRO, 0.04);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.BIKE, 0.11);
-        objectiveTourModeShare.get(Purpose.RECREATION).get(DayOfWeek.SUNDAY).put(Mode.WALK, 0.20);
-
+        for (String region : List.of("muc", "nonMuc")) {
+            Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>> purposeMap = new HashMap<>();
+            for (Purpose purpose : Purpose.values()) {
+                Map<DayOfWeek, Map<Mode, Double>> dayMap = new EnumMap<>(DayOfWeek.class);
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    Map<Mode, Double> values;
+                    if (region.equals("muc")) {
+                        switch (purpose) {
+                            case WORK:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucWork : weekdayValuesMucWork;
+                                break;
+                            case EDUCATION:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucEducation : weekdayValuesMucEducation;
+                                break;
+                            case ACCOMPANY:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucAccompany : weekdayValuesMucAccompany;
+                                break;
+                            case SHOPPING:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucShop : weekdayValuesMucShop;
+                                break;
+                            case OTHER:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucOther : weekdayValuesMucOther;
+                                break;
+                            case RECREATION:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesMucRecreation : weekdayValuesMucRecreation;
+                                break;
+                            default:
+                                values = new HashMap<>(); // Default empty map
+                        }
+                    } else {
+                        switch (purpose) {
+                            case WORK:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucWork : weekdayValuesNonmucWork;
+                                break;
+                            case EDUCATION:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucEducation : weekdayValuesNonmucEducation;
+                                break;
+                            case ACCOMPANY:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucAccompany : weekdayValuesNonmucAccompany;
+                                break;
+                            case SHOPPING:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucShop : weekdayValuesNonmucShop;
+                                break;
+                            case OTHER:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucOther : weekdayValuesNonmucOther;
+                                break;
+                            case RECREATION:
+                                values = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY ? weekendValuesNonmucRecreation : weekdayValuesNonmucRecreation;
+                                break;
+                            default:
+                                values = new HashMap<>(); // Default empty map
+                        }
+                    }
+                    dayMap.put(dayOfWeek, new HashMap<>(values));
+                }
+                purposeMap.put(purpose, dayMap);
+            }
+            objectiveTourModeShare.put(region, purposeMap);
+        }
     }
 
-    private void summarizeSimulatedResult() {
 
-        for (Purpose purpose : Purpose.getSortedPurposes()) {
-            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                for (Mode mode : Mode.values()) {
-                    simulatedTourModeCount.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
-                    simulatedTourModeShare.get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+    private void summarizeSimulatedResult() {
+        for (String region : regions) {
+            for (Purpose purpose : Purpose.getSortedPurposes()) {
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    for (Mode mode : Mode.values()) {
+                        simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
+                        simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                    }
                 }
             }
         }
@@ -572,24 +383,29 @@ public class TourModeChoiceCalibration implements ModelComponent {
                         Purpose purpose = tour.getMainActivity().getPurpose();
                         DayOfWeek dayOfWeek = tour.getMainActivity().getDayOfWeek();
                         Mode mode = tour.getTourMode();
-                        int count = simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode);
+                        String region = getRegionForZone(tour.getActivities().get(tour.getActivities().firstKey()).
+                                getLocation().getZoneId());
+
+                        int count = simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode);
                         count = count + 1;
-                        simulatedTourModeCount.get(purpose).get(dayOfWeek).replace(mode, count);
+                        simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).replace(mode, count);
 
                     }
 
                 }
             }
         }
-        for (Purpose purpose : Purpose.getSortedPurposes()) {
-            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
-                int cumulativeSum = 0;
-                for (Mode mode : Mode.getModes()) {
-                    cumulativeSum = cumulativeSum + simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode);
-                }
-                for (Mode mode : Mode.getModes()) {
-                    double share = (double) simulatedTourModeCount.get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
-                    simulatedTourModeShare.get(purpose).get(dayOfWeek).replace(mode, share);
+        for (String region : regions) {
+            for (Purpose purpose : Purpose.getSortedPurposes()) {
+                for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                    int cumulativeSum = 0;
+                    for (Mode mode : Mode.getModes()) {
+                        cumulativeSum = cumulativeSum + simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode);
+                    }
+                    for (Mode mode : Mode.getModes()) {
+                        double share = (double) simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
+                        simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).replace(mode, share);
+                    }
                 }
             }
         }
@@ -615,10 +431,14 @@ public class TourModeChoiceCalibration implements ModelComponent {
         for (String variableNames : finalCoefficientsTable.get(Purpose.WORK).get(Mode.BUS).keySet()) {
             StringBuilder line = new StringBuilder(variableNames);
 
-            if (variableNames.equals("calibration_education_monday") || variableNames.equals("calibration_education_tuesday") ||
-                    variableNames.equals("calibration_education_wednesday") || variableNames.equals("calibration_education_thursday") ||
-                    variableNames.equals("calibration_education_friday") || variableNames.equals("calibration_education_satday") ||
-                    variableNames.equals("calibration_education_sunday")) {
+            if (variableNames.equals("calibration_education_monday_muc") || variableNames.equals("calibration_education_tuesday_muc") ||
+                    variableNames.equals("calibration_education_wednesday_muc") || variableNames.equals("calibration_education_thursday_muc") ||
+                    variableNames.equals("calibration_education_friday_muc") || variableNames.equals("calibration_education_saturday_muc") ||
+                    variableNames.equals("calibration_education_sunday_muc")||variableNames.equals("calibration_education_monday_nonmuc") ||
+                    variableNames.equals("calibration_education_tuesday_nonmuc") ||
+                    variableNames.equals("calibration_education_wednesday_nonmuc") || variableNames.equals("calibration_education_thursday_nonmuc") ||
+                    variableNames.equals("calibration_education_friday_nonmuc") || variableNames.equals("calibration_education_saturday_nonmuc") ||
+                    variableNames.equals("calibration_education_sunday_nonmuc")) {
 
 
                 for (Mode mode : Mode.getModes()) {
@@ -667,4 +487,6 @@ public class TourModeChoiceCalibration implements ModelComponent {
         }
 
     }
+
+
 }
