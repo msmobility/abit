@@ -32,7 +32,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
     private final static Logger logger = LogManager.getLogger(NestedLogitTourModeChoiceModel.class);
     private final DataSet dataSet;
-    private boolean runCalibration = false;
+    private boolean runCalibration;
     private Map<Purpose, Map<Mode, Map<String, Double>>> purposeModeCoefficients;
 
     private static final LogitTools<abm.data.plans.Mode> logitTools = new LogitTools<>(abm.data.plans.Mode.class);
@@ -313,8 +313,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
 
         if (runCalibration) {
-
-            utility = utility + updatedCalibrationFactors.get(region).get(tour.getMainActivity().getPurpose()).get(tour.getMainActivity().getDayOfWeek()).get(mode);
+            utility += updatedCalibrationFactors.get(region).get(tour.getMainActivity().getPurpose()).get(tour.getMainActivity().getDayOfWeek()).get(mode);
         }
 
         return utility;
@@ -425,6 +424,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
                         double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode);
                         double updatedCalibrationFactor = newCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode) + calibrationFactorFromLastIteration;
                         this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, updatedCalibrationFactor);
+
                         logger.info("Calibration factor for " + purpose + "\t" + dayOfWeek + "\t" + region + "\t" + "and " + mode + "\t" + ": " + updatedCalibrationFactor);
                     }
                 }
