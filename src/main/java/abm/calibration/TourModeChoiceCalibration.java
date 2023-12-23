@@ -26,7 +26,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
     private static final int MAX_ITERATION = 2_000;
     private static final double TERMINATION_THRESHOLD = 0.05;
 
-    double stepSize = 5;
+    double stepSize = 0.5;
     String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
     DataSet dataSet;
     Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> objectiveTourModeShare = new HashMap<>();
@@ -117,8 +117,11 @@ public class TourModeChoiceCalibration implements ModelComponent {
                                 factor = 0.00;
                             }
                             calibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, factor);
+
                             logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + region  + "\t" +
                                     "difference: " + difference);
+
+
                             if (Math.abs(difference) > maxDifference) {
                                 maxDifference = Math.abs(difference);
                             }
@@ -270,8 +273,8 @@ public class TourModeChoiceCalibration implements ModelComponent {
                 Mode.CAR_DRIVER, 0.19, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.15,
                 Mode.TRAIN, 0.33, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.15, Mode.WALK, 0.11);
         Map<Mode, Double> weekdayValuesNonmucAccompany = Map.of(
-                Mode.CAR_DRIVER, 0.69, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.03,
-                Mode.TRAIN, 0.09, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.05, Mode.WALK, 0.05);
+                Mode.CAR_DRIVER, 0.69, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.02,
+                Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.05);
         Map<Mode, Double> weekendValuesNonmucAccompany = Map.of(
                 Mode.CAR_DRIVER, 0.57, Mode.CAR_PASSENGER, 0.31, Mode.BUS, 0.01,
                 Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.04);
