@@ -13,6 +13,7 @@ import org.matsim.core.utils.collections.Tuple;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SplitByTypeModel implements SplitByType{
 
@@ -327,17 +328,17 @@ public class SplitByTypeModel implements SplitByType{
 
         int age = person.getAge();
 
-        if (age < 15){
+        if (age < 10){
 
-        } else if (age < 25) {
+        } else if (age <= 18) {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_1");
-        } else if (age < 35) {
+        } else if (age <= 29) {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_2");
-        } else if (age < 45) {
+        } else if (age <= 49) {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_3");
-        } else if (age < 55) {
+        } else if (age <= 59) {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_4");
-        } else if (age < 65) {
+        } else if (age <= 69) {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_5");
         } else {
             utility += splitOntoMandatoryCoefficients.get("p.age_gr_6");
@@ -396,22 +397,23 @@ public class SplitByTypeModel implements SplitByType{
             utility += splitOntoMandatoryCoefficients.get("hh.cars_3");
         }
 
+        double totalMandatoryTime = calculateTotalMandatoryTime(person, person.getHabitualMode());
+
         switch (person.getHabitualMode()){
-            //todo this should be the time on the habitual mode instead, not a dummy variable!
             case PT:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_PT");
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_PT")*Math.sqrt(totalMandatoryTime);
                 break;
             case CAR_DRIVER:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car");
+            case CAR_PASSENGER:
+            case UNKNOWN:
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car")*Math.sqrt(totalMandatoryTime);
                 break;
             case BIKE:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_cycle");
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_cycle")*Math.sqrt(totalMandatoryTime);
                 break;
             case WALK:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_walk");
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_walk")*Math.sqrt(totalMandatoryTime);
                 break;
-            case UNKNOWN:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car");
 
         }
 
@@ -570,6 +572,52 @@ public class SplitByTypeModel implements SplitByType{
         }
 
         return this.splitOntoDiscretionaryCoefficients;
+    }
+
+    //calculates total time spent at mandatory acts using habitual mode (travel time + activity time)
+    public Double calculateTotalMandatoryTime(Person person, HabitualMode habitualMode) {
+        final double SPEED_WALK_KMH = 4;
+        final double SPEED_BICYCLE_KMH = 10;
+
+        double travelTime = 0;
+        double travelDistanceAuto = 0;
+
+        double totalMandatoryActsDuration = person.getPlan()
+                .getTours()
+                .values()
+                .stream()
+                .filter(t -> t.getMainActivity().getPurpose().equals(Purpose.WORK)||t.getMainActivity().getPurpose().equals(Purpose.EDUCATION))
+                .mapToLong(t -> t.getMainActivity().getDuration()) // Map to durations
+                .sum(); // Sum up the durations
+
+        List<Tour> tourList = person.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+
+        double totalMandatoryTravelTime = 0;
+
+        for (Tour tour : tourList) {
+            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER || habitualMode == HabitualMode.UNKNOWN) {
+                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.CAR_DRIVER, tour.getMainActivity().getStartTime_min());
+            } else if (habitualMode == HabitualMode.PT) {
+                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.BUS, tour.getMainActivity().getStartTime_min());
+                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.TRAIN, tour.getMainActivity().getStartTime_min());
+                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.TRAM_METRO, tour.getMainActivity().getStartTime_min());
+                travelTime = Math.min(travelTime_bus, travelTime_metro);
+                travelTime = Math.min(travelTime, travelTime_train);
+            } else if (habitualMode == HabitualMode.BIKE) {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, tour.getMainActivity().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
+            } else {
+                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, tour.getMainActivity().getStartTime_min());
+                travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
+            }
+
+            totalMandatoryTravelTime = totalMandatoryTravelTime + travelTime;
+        }
+
+
+        double totalMandatoryTime = totalMandatoryActsDuration + totalMandatoryTravelTime;
+
+        return totalMandatoryTime;
     }
 
 }
