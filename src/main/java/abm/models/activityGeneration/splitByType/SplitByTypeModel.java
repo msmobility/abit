@@ -401,18 +401,18 @@ public class SplitByTypeModel implements SplitByType{
 
         switch (person.getHabitualMode()){
             case PT:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_PT")*Math.sqrt(totalMandatoryTime);
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_PT")*totalMandatoryTime;
                 break;
             case CAR_DRIVER:
             case CAR_PASSENGER:
             case UNKNOWN:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car")*Math.sqrt(totalMandatoryTime);
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_car")*totalMandatoryTime;
                 break;
             case BIKE:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_cycle")*Math.sqrt(totalMandatoryTime);
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_cycle")*totalMandatoryTime;
                 break;
             case WALK:
-                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_walk")*Math.sqrt(totalMandatoryTime);
+                utility += splitOntoMandatoryCoefficients.get("p.t_mand_habmode_walk")*totalMandatoryTime;
                 break;
 
         }
@@ -610,12 +610,13 @@ public class SplitByTypeModel implements SplitByType{
                 travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, tour.getMainActivity().getStartTime_min());
                 travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
             }
+            travelTime = travelTime*2;
 
             totalMandatoryTravelTime = totalMandatoryTravelTime + travelTime;
         }
 
 
-        double totalMandatoryTime = totalMandatoryActsDuration + totalMandatoryTravelTime;
+        double totalMandatoryTime = Math.sqrt(totalMandatoryActsDuration + totalMandatoryTravelTime);
 
         return totalMandatoryTime;
     }
