@@ -20,17 +20,21 @@ import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import junitx.framework.Assert;
 import org.junit.Test;
+import org.apache.log4j.Logger;
 
 import java.util.Map;
 
 public class FrequencyGeneratorModelTest {
 
+    private Logger logger = Logger.getLogger(FrequencyGeneratorModelTest.class);
 
     @Test
     public void test() {
 
+        //Initialize the properties file
         AbitResources.initializeResources("C:/models/abit_standalone/abit.properties");
 
+        //Create dummy person, household, and zone
         DataSet dataSet = new DataSet();
         final Zone dummyZone = new Zone(1);
         dummyZone.setRegioStaR2Type(RegioStaR2.URBAN);
@@ -52,6 +56,7 @@ public class FrequencyGeneratorModelTest {
 
         int trips;
 
+        //Set up reference values, e.g. probabilities
         Map<Purpose, Integer> reference = Map.of(Purpose.WORK, 5,
                 Purpose.EDUCATION, 0,
                 Purpose.OTHER, 0,
@@ -59,14 +64,13 @@ public class FrequencyGeneratorModelTest {
                 Purpose.RECREATION, 1,
                 Purpose.SHOPPING, 2);
 
+        //Run the model
         for (Purpose purpose : Purpose.getAllPurposes()) {
             final FrequencyGeneratorModel frequencyGeneratorModel = new FrequencyGeneratorModel(dataSet, purpose);
             trips = frequencyGeneratorModel.calculateNumberOfActivitiesPerWeek(person, purpose);
-            System.out.println(trips + " of purpose " + purpose);
+            logger.info(trips + " of purpose " + purpose);
+            //Compare probabilities of the reference with the model output
             Assert.assertEquals((int) reference.get(purpose), trips);
         }
-
-
     }
-
 }
