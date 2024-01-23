@@ -24,9 +24,9 @@ public class TourModeChoiceCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(TourModeChoiceCalibration.class);
 
     private static final int MAX_ITERATION = 2_000;
-    private static final double TERMINATION_THRESHOLD = 0.05;
+    private static final double TERMINATION_THRESHOLD = 0.06;
 
-    double stepSize = 0.5;
+    double stepSize = 1.0;
     String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
     DataSet dataSet;
     Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> objectiveTourModeShare = new HashMap<>();
@@ -273,7 +273,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
                 Mode.CAR_DRIVER, 0.19, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.15,
                 Mode.TRAIN, 0.33, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.15, Mode.WALK, 0.11);
         Map<Mode, Double> weekdayValuesNonmucAccompany = Map.of(
-                Mode.CAR_DRIVER, 0.69, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.02,
+                Mode.CAR_DRIVER, 0.68, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.02,
                 Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.05);
         Map<Mode, Double> weekendValuesNonmucAccompany = Map.of(
                 Mode.CAR_DRIVER, 0.57, Mode.CAR_PASSENGER, 0.31, Mode.BUS, 0.01,
