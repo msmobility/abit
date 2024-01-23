@@ -32,7 +32,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
     private final static Logger logger = LogManager.getLogger(NestedLogitTourModeChoiceModel.class);
     private final DataSet dataSet;
-    private boolean runCalibration;
+    private boolean runCalibration = false;
     private Map<Purpose, Map<Mode, Map<String, Double>>> purposeModeCoefficients;
 
     private static final LogitTools<abm.data.plans.Mode> logitTools = new LogitTools<>(abm.data.plans.Mode.class);

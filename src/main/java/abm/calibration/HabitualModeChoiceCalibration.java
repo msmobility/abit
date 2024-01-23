@@ -23,7 +23,7 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
     private static final int MAX_ITERATION = 2_000_000;
     private static final double TERMINATION_THRESHOLD = 0.02;
-    double stepSize = 0.1;
+    double stepSize = 0.5;
     String inputFolder = AbitResources.instance.getString("habitual.mode.calibration.output");
     DataSet dataSet;
     Map<Occupation, Map<HabitualMode, Double>> objectiveHabitualModeShare = new HashMap<>();

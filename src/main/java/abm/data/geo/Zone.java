@@ -24,13 +24,13 @@ public class Zone implements Location, Id {
     private String name;
 
 
-    private double distToRail_meter;
+    private long distToRail_meter;
     private final Attributes attributes = new Attributes();
     public double getDistToRail_meter() {
         return distToRail_meter;
     }
 
-    public void setDistToRail_meter(double distToRail_meter) {
+    public void setDistToRail_meter(long distToRail_meter) {
         this.distToRail_meter = distToRail_meter;
     }
 
