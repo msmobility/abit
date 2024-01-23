@@ -49,7 +49,7 @@ public class RunAbit {
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
         ConcurrentExecutor executor = ConcurrentExecutor.fixedPoolService(threads);
-        Map<Integer, List<Household>> householdsByThread = new HashMap();
+        Map<Integer, List<Household>> householdsByThread = new HashMap<>();
 
         logger.info("Running plan generator using " + threads + " threads");
 
@@ -58,7 +58,7 @@ public class RunAbit {
         //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
         if (AbitResources.instance.getDouble("scale.factor", 1.0) >= 1){
             for (Household household : dataSet.getHouseholds().values()) {
-                if (household.getPartition() == 2){
+                if (household.getPartition() == 1){
                     final int i = AbitUtils.getRandomObject().nextInt(threads);
                     householdsByThread.putIfAbsent(i, new ArrayList<>());
                     householdsByThread.get(i).add(household);

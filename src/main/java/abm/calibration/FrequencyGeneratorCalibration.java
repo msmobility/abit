@@ -26,9 +26,9 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(HabitualModeChoiceCalibration.class);
     DataSet dataSet;
-    private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.05;
-    double stepSize = 1;
+    private static final int MAX_ITERATION = 2_000;
+    private static final double TERMINATION_THRESHOLD = 0.06;
+    double stepSize = 0.8;
     Map<Purpose, Map<Integer, Double>> objectiveFrequencyShare = new HashMap<>();
     Map<Purpose, Map<Integer, Integer>> simulatedFrequencyCount = new HashMap<>();
 
@@ -166,7 +166,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
                 for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
                     if (purpose.equals(ACCOMPANY)) {
-                        double totalCountError = 0.0;
+                        /*double totalCountError = 0.0;
                         for (int frequencies = 0; frequencies <= 7; frequencies++) {
                             double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
                             double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
@@ -185,8 +185,9 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                             }
                         }
                         logger.info("Total count error for " + purpose.toString() + "\t" + " difference: " + totalCountError);
-                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
-                    } else {
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));*/
+                    }
+                    else {
                         for (int frequencies = 0; frequencies <= 15; frequencies++) {
                             double observedCountShare = objectiveFrequencyShare.get(purpose).get(frequencies);
                             double simulatedCountShare = simulatedFrequencyShare.get(purpose).get(frequencies);

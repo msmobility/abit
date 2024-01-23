@@ -18,7 +18,7 @@ public class SplitByTypeCalibration implements ModelComponent{
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(SplitByTypeModel.class);
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.005;
+    private static final double TERMINATION_THRESHOLD = 0.01;
     double stepSize = 10;
     String ontoMandInputFolder = AbitResources.instance.getString("act.split.type.onto.mand.output");
     String ontoDiscInputFolder = AbitResources.instance.getString("act.split.type.onto.disc.output");

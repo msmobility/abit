@@ -26,7 +26,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     private final DataSet dataSet;
     private Map<HabitualMode, Map<String, Double>> coefficients;
 
-    private boolean runCalibration;
+    private boolean runCalibration = false;
     private Map<Occupation, Map<HabitualMode, Double>> updatedCalibrationFactors;
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet) {

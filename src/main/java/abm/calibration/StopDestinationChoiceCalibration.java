@@ -23,7 +23,7 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(StopDestinationChoiceCalibration.class);
     private static final int MAX_ITERATION = 1000; //2_000_000;
     private static final double TERMINATION_THRESHOLD_AVERAGE_DISTANCE = 1.00;
-    double stepSize = 0.0001;
+    double stepSize = 0.001;
 
     private final int NUMBER_OF_BINS = 10;
     String inputFolder = AbitResources.instance.getString("destination.choice.stop.act.output");

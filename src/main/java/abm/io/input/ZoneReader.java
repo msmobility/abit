@@ -18,9 +18,9 @@ public class ZoneReader implements Reader {
     private String zoneNameField = "AGS";
     private String bbsrTypeField = "BBSR_type";
     private String regioStaR2TypeField = "RegioStaR2";
-    private String regioStaRGem5TypeField = "RegStaGe5";
+    private String regioStaRGem5TypeField = "RegStaRGe5";
     private String regioStaR7TypeField = "RegioStaR7";
-    private String distToRailMeter = "distToTransit_m";
+    private String distToRailMeter = "dist2Trans";
 
     private final DataSet dataSet;
 
@@ -70,9 +70,9 @@ public class ZoneReader implements Reader {
 
             final Object distToRail_meter = feature.getAttribute(distToRailMeter);
             if (distToRail_meter != null) {
-                zone.setDistToRail_meter((Double) distToRail_meter);
+                zone.setDistToRail_meter((Long) distToRail_meter);
             } else {
-                zone.setDistToRail_meter(Double.POSITIVE_INFINITY);
+                zone.setDistToRail_meter((long) Double.POSITIVE_INFINITY);
             }
 
             dataSet.getZones().put(zoneId, zone);
