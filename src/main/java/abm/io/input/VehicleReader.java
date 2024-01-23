@@ -51,6 +51,7 @@ public class VehicleReader implements Reader {
         String[] header = br.readLine().split(REGEX);
 
         indexes.put("hhId", MitoUtil.findPositionInArray("id", header));
+        //indexes.put("hhId", MitoUtil.findPositionInArray("hh", header));
         indexes.put("numAutos", MitoUtil.findPositionInArray("autos", header));
         indexes.put("index", MitoUtil.findPositionInArray("index", header));
         indexes.put("vehId", MitoUtil.findPositionInArray("vehId", header));
