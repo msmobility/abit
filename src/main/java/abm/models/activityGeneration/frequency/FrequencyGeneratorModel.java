@@ -5,7 +5,6 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
-import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -18,12 +17,13 @@ import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
-import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class FrequencyGeneratorModel implements FrequencyGenerator {
@@ -36,6 +36,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     private Map<String, Double> zeroCoef;
     private final Map<String, Double> countCoef;
+
+    private double[] cumulativeProbabilities;
 
     private boolean runCalibration;
 
@@ -84,13 +86,14 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
         int numOfActivity;
+        Map<Integer, Double> cumProbMap = new HashMap<>();
 
         if (purpose.equals(Purpose.WORK)) {
 
             if (person.getAge() < 15 && person.getAge() > 70) {
                 numOfActivity = 0;
             } else {
-                numOfActivity = polrEstimateTrips(person);
+                numOfActivity = polrEstimateTripsWithMap(person, cumProbMap);
             }
 
             if (numOfActivity > 7) {
@@ -103,7 +106,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             if (! person.getOccupation().equals(Occupation.STUDENT)) {
                 numOfActivity = 0;
             } else {
-                numOfActivity = polrEstimateTrips(person);
+                numOfActivity = polrEstimateTripsWithMap(person, cumProbMap);
             }
 
             if (numOfActivity > 7) {
@@ -128,9 +131,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * Calculate 0-inflated binary + ordered logit
      *
      * @param pp
-     * @return
      */
-    private int polrEstimateTrips(Person pp) {
+    private int polrEstimateTripsWithMap(Person pp, Map<Integer, Double> cumProbMap) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
@@ -162,15 +164,20 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         cumProb += prob;
 
         while (cumProb < randomNumber) {
+            cumProbMap.put(i, cumProb);  // Save the result to the map
+
             i++;
+
             if (i < 7) {
                 prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
             } else {
                 prob = 1;
             }
+
             if (i > 1) {
                 prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
             }
+
             cumProb += phi * prob;
         }
         return i;

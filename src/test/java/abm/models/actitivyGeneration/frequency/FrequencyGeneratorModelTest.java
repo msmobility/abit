@@ -42,7 +42,6 @@ public class FrequencyGeneratorModelTest {
         dummyZone.setRegioStaR7Type(RegioStaR7.URBAN_METROPOLIS);
         dataSet.getZones().put(1, dummyZone);
 
-
         Household household = new Household(1, dummyZone, 1);
 
         Person person = new Person(1, household, 36, Gender.FEMALE,
