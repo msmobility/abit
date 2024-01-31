@@ -66,7 +66,7 @@ public class FrequencyGeneratorModelTest {
         //Run the model
         for (Purpose purpose : Purpose.getAllPurposes()) {
             final FrequencyGeneratorModel frequencyGeneratorModel = new FrequencyGeneratorModel(dataSet, purpose);
-            trips = frequencyGeneratorModel.calculateNumberOfActivitiesPerWeek(person, purpose);
+            trips = frequencyGeneratorModel.calculateProbabilityOfNumberOfActivitiesPerWeek(person, purpose);
             logger.info(trips + " of purpose " + purpose);
             //Compare probabilities of the reference with the model output
             Assert.assertEquals((int) reference.get(purpose), trips);

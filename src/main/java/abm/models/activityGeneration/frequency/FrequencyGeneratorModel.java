@@ -5,6 +5,7 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
+import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -17,13 +18,12 @@ import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
+import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class FrequencyGeneratorModel implements FrequencyGenerator {
@@ -36,8 +36,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     private Map<String, Double> zeroCoef;
     private final Map<String, Double> countCoef;
-
-    private double[] cumulativeProbabilities;
 
     private boolean runCalibration;
 
@@ -86,14 +84,13 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
         int numOfActivity;
-        Map<Integer, Double> cumProbMap = new HashMap<>();
 
         if (purpose.equals(Purpose.WORK)) {
 
             if (person.getAge() < 15 && person.getAge() > 70) {
                 numOfActivity = 0;
             } else {
-                numOfActivity = polrEstimateTripsWithMap(person, cumProbMap);
+                numOfActivity = polrEstimateTrips(person);
             }
 
             if (numOfActivity > 7) {
@@ -106,7 +103,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             if (! person.getOccupation().equals(Occupation.STUDENT)) {
                 numOfActivity = 0;
             } else {
-                numOfActivity = polrEstimateTripsWithMap(person, cumProbMap);
+                numOfActivity = polrEstimateTrips(person);
             }
 
             if (numOfActivity > 7) {
@@ -127,12 +124,57 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         return numOfActivity;
     }
 
+/* Set up probability recorder for testing
+*/
+    public int calculateProbabilityOfNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
+        int numOfActivity;
+
+        if (purpose.equals(Purpose.WORK)) {
+
+            if (person.getAge() < 15 && person.getAge() > 70) {
+                numOfActivity = 0;
+            } else {
+                numOfActivity = polrProbabilityEstimateTrips(person);
+            }
+
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
+
+
+        } else if (purpose.equals(Purpose.EDUCATION)) {
+
+            if (! person.getOccupation().equals(Occupation.STUDENT)) {
+                numOfActivity = 0;
+            } else {
+                numOfActivity = polrProbabilityEstimateTrips(person);
+            }
+
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
+
+        } else if (purpose.equals(Purpose.ACCOMPANY)) {
+            numOfActivity = hurdleProbabilityEstimateTrips(person);
+            if (numOfActivity > 7) {
+                numOfActivity = 7;
+            }
+        } else {
+            numOfActivity = nbProbabilityEstimateTrips(person);
+            if (numOfActivity > 15){
+                numOfActivity = 15;
+            }
+        }
+        return numOfActivity;
+    }
+
     /**
      * Calculate 0-inflated binary + ordered logit
      *
      * @param pp
+     * @return
      */
-    private int polrEstimateTripsWithMap(Person pp, Map<Integer, Double> cumProbMap) {
+    private int polrEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
@@ -164,20 +206,65 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         cumProb += prob;
 
         while (cumProb < randomNumber) {
-            cumProbMap.put(i, cumProb);  // Save the result to the map
-
             i++;
-
             if (i < 7) {
                 prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
             } else {
                 prob = 1;
             }
-
             if (i > 1) {
                 prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
             }
+            cumProb += phi * prob;
+        }
+        return i;
+    }
 
+    /**Add probability version
+     *
+     */
+
+    private int polrProbabilityEstimateTrips(Person pp) {
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
+        if (runCalibration) {
+            binaryUtility += updatedCalibrationFactors.get(0);
+        }
+        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
+        double mu = getPredictor(pp, countCoef);
+
+        double[] intercepts = new double[6];
+        intercepts[0] = countCoef.get("1|2") + countCoef.get("calibration_1|2");
+        intercepts[1] = countCoef.get("2|3") + countCoef.get("calibration_2|3");
+        intercepts[2] = countCoef.get("3|4") + countCoef.get("calibration_3|4");
+        intercepts[3] = countCoef.get("4|5") + countCoef.get("calibration_4|5");
+        intercepts[4] = countCoef.get("5|6") + countCoef.get("calibration_5|6");
+        intercepts[5] = countCoef.get("6|7") + countCoef.get("calibration_6|7");
+
+        if (runCalibration){
+            intercepts[0] += updatedCalibrationFactors.get(1);
+            intercepts[1] += updatedCalibrationFactors.get(2);
+            intercepts[2] += updatedCalibrationFactors.get(3);
+            intercepts[3] += updatedCalibrationFactors.get(4);
+            intercepts[4] += updatedCalibrationFactors.get(5);
+            intercepts[5] += updatedCalibrationFactors.get(6);
+        }
+
+        int i = 0;
+        double cumProb = 0;
+        double prob = 1 - phi;
+        cumProb += prob;
+
+        while (cumProb < randomNumber) {
+            i++;
+            if (i < 7) {
+                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
+            } else {
+                prob = 1;
+            }
+            if (i > 1) {
+                prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
+            }
             cumProb += phi * prob;
         }
         return i;
@@ -225,6 +312,46 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         return (i);
     }
 
+    /**Add probability version
+     *
+     */
+
+    private int hurdleProbabilityEstimateTrips(Person pp) {
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
+        if (runCalibration) {
+            binaryUtility += updatedCalibrationFactors.get(0);
+        }
+        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
+
+        double mu;
+        if (runCalibration){
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(1));
+        } else{
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
+        }
+
+        double theta = countCoef.get("theta") ;
+
+        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+
+        double p0_zero = Math.log(phi);
+        double p0_count = Math.log(1 - nb.cdf(0));
+        double logphi = p0_zero - p0_count;
+
+        int i = 0;
+        double cumProb = 0;
+        double prob = 1 - Math.exp(p0_zero);
+        cumProb += prob;
+
+        while (randomNumber > cumProb) {
+            i++;
+            prob = Math.exp(logphi + Math.log(nb.prob(i)));
+            cumProb += prob;
+        }
+        return (i);
+    }
+
     /**
      * Negative binomial
      *
@@ -232,6 +359,32 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @return
      */
     private int nbEstimateTrips(Person pp) {
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double mu;
+        if (runCalibration){
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(0));
+        } else{
+            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
+        }
+        double theta = countCoef.get("theta") + countCoef.get("calibration");
+
+        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+
+        int i = 0;
+        double cumProb = nb.prob(0);
+
+        while (randomNumber > cumProb) {
+            i++;
+            cumProb += nb.prob(i);
+        }
+        return (i);
+    }
+
+    /**Add probability version
+     *
+     */
+
+    private int nbProbabilityEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double mu;
         if (runCalibration){
