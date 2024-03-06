@@ -209,15 +209,15 @@ public class CalibrationMuc {
             subTourGenerationCalibration.run();
         }
 
-        if (calibrateSubTourStartTime || calibrateSubTourDuration){
-            subTourTimeAssignmentCalibration = new SubTourTimeAssignmentCalibration();
-            subTourTimeAssignmentCalibration.setup();
-            subTourTimeAssignmentCalibration.load();
-            subTourTimeAssignmentCalibration.run();
-        }
+//        if (calibrateSubTourStartTime || calibrateSubTourDuration){
+//            subTourTimeAssignmentCalibration = new SubTourTimeAssignmentCalibration();
+//            subTourTimeAssignmentCalibration.setup();
+//            subTourTimeAssignmentCalibration.load();
+//            subTourTimeAssignmentCalibration.run();
+//        }
 
         if (calibrateSubTourDestinationChoice){
-            subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration();
+            subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration(dataSet);
             subTourDestinationChoiceCalibration.setup();
             subTourDestinationChoiceCalibration.load();
             subTourDestinationChoiceCalibration.run();

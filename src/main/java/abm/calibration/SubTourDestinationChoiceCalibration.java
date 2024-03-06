@@ -1,31 +1,69 @@
 package abm.calibration;
 
+import abm.data.DataSet;
 import abm.data.plans.Mode;
+import abm.data.plans.Plan;
+import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
+import abm.models.activityGeneration.frequency.SubtourGeneratorModel;
+import abm.models.destinationChoice.SubtourDestinationChoiceModel;
+import abm.properties.AbitResources;
+import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.util.HashMap;
 import java.util.Map;
 
-public class SubTourDestinationChoiceCalibration implements ModelComponent{
+public class SubTourDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
+    static Logger logger = Logger.getLogger(SubTourDestinationChoiceCalibration.class);
+    private static final int MAX_ITERATION = 2_000_000;
+    private static final double TERMINATION_THRESHOLD = 0.02;
+    double stepSize = 0.5;
+    //String inputFolderWorkSubtour = AbitResources.instance.getString("actgen.subtour.work.output");
+    DataSet dataSet;
+
+    Map<Purpose, Double> objectiveAverageDistance = new HashMap<>();
+
+    Map<Purpose, Double> simulatedAverageDistance = new HashMap<>();
+    Map<Purpose, Integer> simulatedSubtourCount = new HashMap<>();
+
+    Map<Purpose, Double> calibrationFactors = new HashMap<>();
+
+    private SubtourDestinationChoiceModel subtourDestinationChoiceModel;
+
+    public SubTourDestinationChoiceCalibration(DataSet dataSet) {
+        this.dataSet = dataSet;
+    }
+
     @Override
     public void setup() {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
-
+        boolean calibrateSubtourDestinationChoiceModel = Boolean.parseBoolean(AbitResources.instance.getString("subtour.destination.calibration"));
+        subtourDestinationChoiceModel = new SubtourDestinationChoiceModel(dataSet, calibrateSubtourDestinationChoiceModel);
         //Todo: initialize all the data containers that might be needed for calibration
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            objectiveAverageDistance.put(purpose, 0.0);
+            simulatedAverageDistance.put(purpose, 0.0);
+            simulatedSubtourCount.put(purpose, 0);
+            calibrationFactors.put(purpose, 1.0);
+        }
     }
 
     @Override
     public void load() {
         //Todo: read objective values
-
+        readObjectiveValues();
         //Todo: consider having the result summarization in the statistics writer
+        summarizeSimulatedResult();
     }
 
     @Override
     public void run() {
-
+        logger.info("Start calibrating the subtour destination choice model......");
         //Todo: loop through the calibration process until criteria are met
-
 
 
         //Todo: obtain the updated coefficients + calibration factors
@@ -36,11 +74,33 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent{
     }
 
     private void readObjectiveValues() {
-
+        objectiveAverageDistance.put(Purpose.WORK, 3.6717);
+        objectiveAverageDistance.put(Purpose.EDUCATION, 3.6876);
     }
 
     private void summarizeSimulatedResult() {
+        for (Household household : dataSet.getHouseholds().values()) {
+            if (household.getSimulated()) {
+                for (Person person : household.getPersons()) {
+                    Plan plan = person.getPlan();
+                    for (Tour tour : plan.getTours().values()) {
+                        if ((tour.getMainActivity().getPurpose().equals(Purpose.WORK) || tour.getMainActivity().getPurpose().equals(Purpose.EDUCATION)) && tour.getMainActivity().getSubtour() != null) {
+                            int tourCount = simulatedSubtourCount.get(tour.getMainActivity().getPurpose());
+                            simulatedSubtourCount.replace(tour.getMainActivity().getPurpose(), tourCount + 1);
+                            double distance = (double) this.dataSet.getTravelDistances().getTravelDistanceInMeters(tour.getMainActivity().getLocation(), tour.getMainActivity().getSubtour().getSubtourActivity().getLocation(), Mode.UNKNOWN, 0.0) / 1000;
+                            simulatedAverageDistance.replace(tour.getMainActivity().getPurpose(), simulatedAverageDistance.get(tour.getMainActivity().getPurpose()) + distance);
+                        }
+                    }
+                }
+            }
+        }
 
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            int subtourCount = simulatedSubtourCount.get(purpose);
+            double totalDistance = simulatedAverageDistance.get(purpose);
+            double averageDistance = (double) totalDistance / subtourCount;
+            simulatedAverageDistance.replace(purpose, averageDistance);
+        }
     }
 
     private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {

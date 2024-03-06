@@ -22,12 +22,18 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
     private final Map<Zone, Double> zoneAttractors;
     private final IndexedDoubleMatrix2D utilityMatrix;
 
-    private static final double BETA = -0.8573;
-
+    private static final double BETA = -0.8573 * 0.60;
+    private boolean runCalibration = false;
     public SubtourDestinationChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
         zoneAttractors = loadBasicAttraction();
         utilityMatrix = loadUtilities();
+    }
+
+    public SubtourDestinationChoiceModel(DataSet dataSet, boolean runCalibration) {
+        this(dataSet);
+        this.runCalibration = runCalibration;
+
     }
 
 
