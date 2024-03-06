@@ -203,7 +203,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateSubTourGeneration){
-            subTourGenerationCalibration = new SubTourGenerationCalibration();
+            subTourGenerationCalibration = new SubTourGenerationCalibration(dataSet);
             subTourGenerationCalibration.setup();
             subTourGenerationCalibration.load();
             subTourGenerationCalibration.run();
