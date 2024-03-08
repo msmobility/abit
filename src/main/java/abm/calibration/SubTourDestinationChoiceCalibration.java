@@ -1,10 +1,7 @@
 package abm.calibration;
 
 import abm.data.DataSet;
-import abm.data.plans.Mode;
-import abm.data.plans.Plan;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
+import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.SubtourGeneratorModel;
@@ -13,16 +10,20 @@ import abm.properties.AbitResources;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SubTourDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(SubTourDestinationChoiceCalibration.class);
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.02;
-    double stepSize = 0.5;
-    //String inputFolderWorkSubtour = AbitResources.instance.getString("actgen.subtour.work.output");
+    private static final double TERMINATION_THRESHOLD_AVERAGE_DISTANCE = 0.5;
+    double stepSize = 0.1;
+
+    String inputFolder = AbitResources.instance.getString("subtour.destination.output");
     DataSet dataSet;
 
     Map<Purpose, Double> objectiveAverageDistance = new HashMap<>();
@@ -31,6 +32,7 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
     Map<Purpose, Integer> simulatedSubtourCount = new HashMap<>();
 
     Map<Purpose, Double> calibrationFactors = new HashMap<>();
+    Map<Purpose, Double> finalCalibrationFactors = new HashMap<>();
 
     private SubtourDestinationChoiceModel subtourDestinationChoiceModel;
 
@@ -49,6 +51,7 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
             simulatedAverageDistance.put(purpose, 0.0);
             simulatedSubtourCount.put(purpose, 0);
             calibrationFactors.put(purpose, 1.0);
+            finalCalibrationFactors.put(purpose, 1.0);
         }
     }
 
@@ -63,13 +66,54 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
     @Override
     public void run() {
         logger.info("Start calibrating the subtour destination choice model......");
+
         //Todo: loop through the calibration process until criteria are met
+        for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
+            double maxDifference = 0.0;
+            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+                double differenceAverageDistance = 0.0;
+                double factor = stepSize * (objectiveAverageDistance.get(purpose) - simulatedAverageDistance.get(purpose));
+                differenceAverageDistance = Math.abs(objectiveAverageDistance.get(purpose) - simulatedAverageDistance.get(purpose));
+
+                calibrationFactors.replace(purpose, factor);
+                logger.info("Subtour destination choice for" + purpose + "\t" + "average distance: " + simulatedAverageDistance.get(purpose));
+                if (differenceAverageDistance > maxDifference) {
+                    maxDifference = differenceAverageDistance;
+                }
+
+            }
+            if (maxDifference <= TERMINATION_THRESHOLD_AVERAGE_DISTANCE) {
+                break;
+            }
 
 
+            subtourDestinationChoiceModel.updateCalibration(calibrationFactors);
+            subtourDestinationChoiceModel.updateUtilities();
+
+
+            List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
+            simulatedHouseholds.parallelStream().forEach(household -> {
+                household.getPersons().stream().forEach(person -> {
+                    for (Tour tour : person.getPlan().getTours().values()) {
+                        if (tour.getMainActivity().getSubtour() != null) {
+                            subtourDestinationChoiceModel.chooseSubtourDestination(tour.getMainActivity().getSubtour().getSubtourActivity(), tour.getMainActivity());
+                        }
+                    }
+                });
+            });
+            summarizeSimulatedResult();
+        }
+
+        logger.info("Finished the calibration of subtour destination choice.");
         //Todo: obtain the updated coefficients + calibration factors
-
+        finalCalibrationFactors = subtourDestinationChoiceModel.obtainCoefficientsTable();
 
         //Todo: print the coefficients table to input folder
+        try {
+            printFinalCoefficientsTable(finalCalibrationFactors);
+        } catch (FileNotFoundException e) {
+            System.err.println("Output path of the coefficient table is not correct.");
+        }
 
     }
 
@@ -79,6 +123,11 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
     }
 
     private void summarizeSimulatedResult() {
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            simulatedAverageDistance.put(purpose, 0.0);
+            simulatedSubtourCount.put(purpose, 0);
+        }
+
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
@@ -103,7 +152,24 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
         }
     }
 
-    private void printFinalCoefficientsTable(Map<Mode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
+    private void printFinalCoefficientsTable(Map<Purpose, Double> finalCoefficientsTable) throws FileNotFoundException {
+        logger.info("Writing subtour destination choice coefficient + calibration factors: " + inputFolder);
+        PrintWriter pw = new PrintWriter(inputFolder);
 
+        StringBuilder header = new StringBuilder("variable");
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            header.append(",");
+            header.append(purpose);
+        }
+        pw.println(header);
+
+        StringBuilder line = new StringBuilder("calibration");
+        for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+            line.append(",");
+            line.append(finalCoefficientsTable.get(purpose));
+        }
+        pw.println(line);
+
+        pw.close();
     }
 }
