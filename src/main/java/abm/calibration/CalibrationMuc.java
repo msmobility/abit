@@ -224,7 +224,7 @@ public class CalibrationMuc {
         }
 
         if (calibrateSubTourModeChoice){
-            subTourModeChoiceCalibration = new SubTourModeChoiceCalibration();
+            subTourModeChoiceCalibration = new SubTourModeChoiceCalibration(dataSet);
             subTourModeChoiceCalibration.setup();
             subTourModeChoiceCalibration.load();
             subTourModeChoiceCalibration.run();
