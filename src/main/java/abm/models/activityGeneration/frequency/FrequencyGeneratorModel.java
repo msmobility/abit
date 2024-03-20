@@ -87,7 +87,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (purpose.equals(Purpose.WORK)) {
 
-            if (person.getAge() < 15 && person.getAge() > 70) {
+            if (person.getAge() < 15 || person.getAge() > 70) {
                 numOfActivity = 0;
             } else {
                 numOfActivity = polrEstimateTrips(person);
@@ -125,48 +125,38 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
     }
 
 /* Set up probability recorder for testing
-*/
-    public int calculateProbabilityOfNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
-        int numOfActivity;
+
+
+ */
+    public double calculateProbabilityOfNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
+        double probOfActivity;
 
         if (purpose.equals(Purpose.WORK)) {
 
-            if (person.getAge() < 15 && person.getAge() > 70) {
-                numOfActivity = 0;
+            if (person.getAge() < 15 || person.getAge() > 70) {
+                probOfActivity = 0.0;
             } else {
-                numOfActivity = polrProbabilityEstimateTrips(person);
+                probOfActivity = polrProbabilityEstimateTrips(person);
             }
-
-            if (numOfActivity > 7) {
-                numOfActivity = 7;
-            }
-
 
         } else if (purpose.equals(Purpose.EDUCATION)) {
 
             if (! person.getOccupation().equals(Occupation.STUDENT)) {
-                numOfActivity = 0;
+                probOfActivity = 0.0;
             } else {
-                numOfActivity = polrProbabilityEstimateTrips(person);
-            }
-
-            if (numOfActivity > 7) {
-                numOfActivity = 7;
+                probOfActivity = polrProbabilityEstimateTrips(person);
             }
 
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
-            numOfActivity = hurdleProbabilityEstimateTrips(person);
-            if (numOfActivity > 7) {
-                numOfActivity = 7;
+            probOfActivity = hurdleProbabilityEstimateTrips(person);
             }
-        } else {
-            numOfActivity = nbProbabilityEstimateTrips(person);
-            if (numOfActivity > 15){
-                numOfActivity = 15;
-            }
-        }
-        return numOfActivity;
+        else  {
+        probOfActivity = nbProbabilityEstimateTrips(person);
     }
+        return probOfActivity;
+    }
+
+
 
     /**
      * Calculate 0-inflated binary + ordered logit
@@ -224,7 +214,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      *
      */
 
-    private int polrProbabilityEstimateTrips(Person pp) {
+    private double polrProbabilityEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
@@ -267,7 +257,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             }
             cumProb += phi * prob;
         }
-        return i;
+        return cumProb;
     }
 
     /**
@@ -316,7 +306,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      *
      */
 
-    private int hurdleProbabilityEstimateTrips(Person pp) {
+    private double hurdleProbabilityEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
@@ -349,8 +339,9 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             prob = Math.exp(logphi + Math.log(nb.prob(i)));
             cumProb += prob;
         }
-        return (i);
+        return cumProb;
     }
+
 
     /**
      * Negative binomial
@@ -384,7 +375,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      *
      */
 
-    private int nbProbabilityEstimateTrips(Person pp) {
+    private double nbProbabilityEstimateTrips(Person pp) {
         double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double mu;
         if (runCalibration){
@@ -403,7 +394,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             i++;
             cumProb += nb.prob(i);
         }
-        return (i);
+        return cumProb;
     }
 
     /**

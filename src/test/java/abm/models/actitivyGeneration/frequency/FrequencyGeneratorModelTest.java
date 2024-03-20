@@ -53,23 +53,24 @@ public class FrequencyGeneratorModelTest {
 
         person.setHabitualMode(HabitualMode.PT);
 
-        int trips;
+        double probOfActivity;
 
-        //Set up reference values, e.g. probabilities
-        Map<Purpose, Integer> reference = Map.of(Purpose.WORK, 5,
-                Purpose.EDUCATION, 0,
-                Purpose.OTHER, 0,
-                Purpose.ACCOMPANY, 5,
-                Purpose.RECREATION, 1,
-                Purpose.SHOPPING, 2);
+        Map<Purpose, Double> reference = Map.of(
+                Purpose.WORK, 5.5,
+                Purpose.EDUCATION, 0.0,
+                Purpose.OTHER, 0.0,
+                Purpose.ACCOMPANY, 5.0,
+                Purpose.RECREATION, 1.0,
+                Purpose.SHOPPING, 2.0
+        );
 
         //Run the model
         for (Purpose purpose : Purpose.getAllPurposes()) {
             final FrequencyGeneratorModel frequencyGeneratorModel = new FrequencyGeneratorModel(dataSet, purpose);
-            trips = frequencyGeneratorModel.calculateProbabilityOfNumberOfActivitiesPerWeek(person, purpose);
-            logger.info(trips + " of purpose " + purpose);
+            probOfActivity = frequencyGeneratorModel.calculateProbabilityOfNumberOfActivitiesPerWeek(person, purpose);
+            logger.info(probOfActivity + "% probability of purpose " + purpose);
             //Compare probabilities of the reference with the model output
-            Assert.assertEquals((int) reference.get(purpose), trips);
+            Assert.assertEquals((double) reference.get(purpose), probOfActivity);
         }
     }
 }
