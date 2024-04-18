@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class LowEmissionZoneReader {
 
-    private DataSet dataSet;
+    private final DataSet dataSet;
     private final String LOW_EMISSION_ZONES_PATH = AbitResources.instance.getString("lowEmissionZones.input");
     public LowEmissionZoneReader(DataSet dataSet) {
         this.dataSet = dataSet;
