@@ -104,7 +104,7 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
                     for (Zone destination : dataSet.getZones().values()) {
                         final double logsum = dataSet.getLogsums().get(role).get(purpose).getIndexed(origin.getId(), destination.getId());
                         final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
-                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(BETAFIXED * (coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration")) * logsum);
+                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration") * logsum);
                         double expUtility = Math.exp(utility);
                         expUtilityMatrix.setIndexed(origin.getId(), destination.getId(), expUtility);
                     }
@@ -124,7 +124,7 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
                     for (Zone destination : dataSet.getZones().values()) {
                         final double logsum = dataSet.getLogsums().get(role).get(purpose).getIndexed(origin.getId(), destination.getId());
                         final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
-                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(BETAFIXED * (coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration")) * logsum);
+                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration") * logsum);
                         double expUtility = Math.exp(utility);
                         expUtilityMatrix.setIndexed(origin.getId(), destination.getId(), expUtility);
                     }
