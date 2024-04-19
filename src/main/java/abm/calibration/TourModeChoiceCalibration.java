@@ -24,9 +24,9 @@ public class TourModeChoiceCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(TourModeChoiceCalibration.class);
 
     private static final int MAX_ITERATION = 2_000;
-    private static final double TERMINATION_THRESHOLD = 0.06;
+    private static final double TERMINATION_THRESHOLD = 0.027;
 
-    double stepSize = 1.0;
+    double stepSize = 0.25;
     String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
     DataSet dataSet;
     Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> objectiveTourModeShare = new HashMap<>();
@@ -118,8 +118,11 @@ public class TourModeChoiceCalibration implements ModelComponent {
                             }
                             calibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, factor);
 
-                            logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + region  + "\t" +
-                                    "difference: " + difference);
+                            if (dayOfWeek.equals(DayOfWeek.MONDAY) || dayOfWeek.equals(DayOfWeek.SATURDAY)){
+                                logger.info("Tour mode choice model for " + purpose.toString() + "\t" + dayOfWeek.toString() + "\t" + " and " + mode.toString() + "\t" + region  + "\t" +
+                                        "difference: " + difference);
+                            }
+
 
 
                             if (Math.abs(difference) > maxDifference) {
@@ -227,13 +230,13 @@ public class TourModeChoiceCalibration implements ModelComponent {
                 Mode.CAR_DRIVER, 0.38, Mode.CAR_PASSENGER, 0.01, Mode.BUS, 0.02,
                 Mode.TRAIN, 0.18, Mode.TRAM_METRO, 0.26, Mode.BIKE, 0.12, Mode.WALK, 0.02);
         Map<Mode, Double> weekendValuesMucWork = Map.of(
-                Mode.CAR_DRIVER, 0.44, Mode.CAR_PASSENGER, 0.01, Mode.BUS, 0.03,
+                Mode.CAR_DRIVER, 0.47, Mode.CAR_PASSENGER, 0.01, Mode.BUS, 0.03,
                 Mode.TRAIN, 0.11, Mode.TRAM_METRO, 0.25, Mode.BIKE, 0.11, Mode.WALK, 0.02);
         Map<Mode, Double> weekdayValuesMucEducation = Map.of(
                 Mode.CAR_DRIVER, 0.03, Mode.CAR_PASSENGER, 0.17, Mode.BUS, 0.10,
                 Mode.TRAIN, 0.13, Mode.TRAM_METRO, 0.24, Mode.BIKE, 0.21, Mode.WALK, 0.12);
         Map<Mode, Double> weekendValuesMucEducation = Map.of(
-                Mode.CAR_DRIVER, 0.09, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.04,
+                Mode.CAR_DRIVER, 0.09, Mode.CAR_PASSENGER, 0.12, Mode.BUS, 0.04,
                 Mode.TRAIN, 0.22, Mode.TRAM_METRO, 0.35, Mode.BIKE, 0.13, Mode.WALK, 0.05);
         Map<Mode, Double> weekdayValuesMucAccompany = Map.of(
                 Mode.CAR_DRIVER, 0.46, Mode.CAR_PASSENGER, 0.16, Mode.BUS, 0.02,
@@ -271,7 +274,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
                 Mode.TRAIN, 0.12, Mode.TRAM_METRO, 0.03, Mode.BIKE, 0.16, Mode.WALK, 0.12);
         Map<Mode, Double> weekendValuesNonmucEducation = Map.of(
                 Mode.CAR_DRIVER, 0.19, Mode.CAR_PASSENGER, 0.07, Mode.BUS, 0.15,
-                Mode.TRAIN, 0.33, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.15, Mode.WALK, 0.11);
+                Mode.TRAIN, 0.28, Mode.TRAM_METRO, 0.05, Mode.BIKE, 0.15, Mode.WALK, 0.11);
         Map<Mode, Double> weekdayValuesNonmucAccompany = Map.of(
                 Mode.CAR_DRIVER, 0.68, Mode.CAR_PASSENGER, 0.18, Mode.BUS, 0.02,
                 Mode.TRAIN, 0.01, Mode.TRAM_METRO, 0.01, Mode.BIKE, 0.05, Mode.WALK, 0.05);
@@ -368,8 +371,8 @@ public class TourModeChoiceCalibration implements ModelComponent {
             for (Purpose purpose : Purpose.getSortedPurposes()) {
                 for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                     for (Mode mode : Mode.values()) {
-                        simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0);
-                        simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).putIfAbsent(mode, 0.0);
+                        simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).put(mode, 0);
+                        simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).put(mode, 0.0);
                     }
                 }
             }
@@ -397,6 +400,28 @@ public class TourModeChoiceCalibration implements ModelComponent {
         }
         for (String region : regions) {
             for (Purpose purpose : Purpose.getSortedPurposes()) {
+                for (Mode mode : Mode.getModes()) {
+
+                    int cumulativeSumByMode_Weekday = 0;
+                    int cumulativeSumByMode_Weekend = 0;
+                    for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+                            cumulativeSumByMode_Weekend = cumulativeSumByMode_Weekend + simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode);
+                        } else {
+                            cumulativeSumByMode_Weekday = cumulativeSumByMode_Weekday + simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode);
+                        }
+                    }
+
+                    for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+                            simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).replace(mode, cumulativeSumByMode_Weekend);
+                        }else{
+                            simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).replace(mode, cumulativeSumByMode_Weekday);
+                        }
+                    }
+
+                }
+
                 for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                     int cumulativeSum = 0;
                     for (Mode mode : Mode.getModes()) {
