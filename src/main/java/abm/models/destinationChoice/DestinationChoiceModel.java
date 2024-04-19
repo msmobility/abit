@@ -160,7 +160,7 @@ public class DestinationChoiceModel implements DestinationChoice {
                 workStopUtilityList.setIndexed(z.getId(), workStopUtility);
             }
             final int selectedIndex = MitoUtil.select(workStopUtilityList.toNonIndexedArray());
-            Zone destination = dataSet.getZones().get(selectedIndex);
+            Zone destination = dataSet.getZones().get(selectedIndex+1);
 
             final Coordinate randomCoordinate = destination.getRandomCoordinate(AbitUtils.getRandomObject());
             MicroscopicLocation microDestination = new MicroscopicLocation(randomCoordinate.x, randomCoordinate.y);
