@@ -86,10 +86,8 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
                 break;
             }
 
-
             subtourDestinationChoiceModel.updateCalibration(calibrationFactors);
             subtourDestinationChoiceModel.updateUtilities();
-
 
             List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
             simulatedHouseholds.parallelStream().forEach(household -> {
@@ -118,8 +116,8 @@ public class SubTourDestinationChoiceCalibration implements ModelComponent {
     }
 
     private void readObjectiveValues() {
-        objectiveAverageDistance.put(Purpose.WORK, 3.6717);
-        objectiveAverageDistance.put(Purpose.EDUCATION, 3.6876);
+        objectiveAverageDistance.put(Purpose.WORK, 1.2678);
+        objectiveAverageDistance.put(Purpose.EDUCATION, 1.2678);
     }
 
     private void summarizeSimulatedResult() {

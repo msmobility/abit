@@ -20,7 +20,7 @@ public class SubTourModeChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(SubTourModeChoiceCalibration.class);
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.02;
+    private static final double TERMINATION_THRESHOLD = 0.005;
     double stepSize = 0.1;
     String inputFolder = AbitResources.instance.getString("mode.choice.subtour.output");
     DataSet dataSet;

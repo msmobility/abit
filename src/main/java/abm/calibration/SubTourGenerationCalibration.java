@@ -19,7 +19,7 @@ public class SubTourGenerationCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(SubTourGenerationCalibration.class);
     private static final int MAX_ITERATION = 2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.02;
+    private static final double TERMINATION_THRESHOLD = 0.002;
     double stepSize = 0.5;
     String inputFolderWorkSubtour = AbitResources.instance.getString("actgen.subtour.work.output");
     String inputFolderEducationSubtour = AbitResources.instance.getString("actgen.subtour.education.output");
@@ -143,6 +143,14 @@ public class SubTourGenerationCalibration implements ModelComponent {
                 simulatedSubtourFrequencyShare.get(purpose).replace(Boolean.TRUE, trueShare);
                 simulatedSubtourFrequencyShare.get(purpose).replace(Boolean.FALSE, 1 - trueShare);
 
+            }
+
+            for (Purpose purpose : Purpose.getMandatoryPurposes()) {
+                simulatedSubtourFrequencyCountOnTheFly.get(purpose).putIfAbsent(Boolean.TRUE, 0);
+                simulatedSubtourFrequencyCountOnTheFly.get(purpose).putIfAbsent(Boolean.FALSE, 0);
+                simulatedTourCountOnTheFly.putIfAbsent(purpose, 0);
+                simulatedSubtourFrequencyShare.get(purpose).putIfAbsent(Boolean.TRUE, 0.0);
+                simulatedSubtourFrequencyShare.get(purpose).putIfAbsent(Boolean.FALSE, 0.0);
             }
 
         }

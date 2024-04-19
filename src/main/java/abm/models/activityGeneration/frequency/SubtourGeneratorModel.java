@@ -116,6 +116,8 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
             //todo add travel time from work location to pt: "isWorkplaceToPtStop>20min"
 
+            utility += workSubtourCoef.get("calibration");
+
             if (runCalibration) {
                 utility += updatedCalibrationFactors.get(purpose).get(Boolean.TRUE);
             }
@@ -137,6 +139,8 @@ public class SubtourGeneratorModel implements SubtourGenerator {
             if (person.getAge() < 16) {
                 utility += eduSubtourCoef.get("isAge<16");
             }
+
+            utility += eduSubtourCoef.get("calibration");
 
             if (runCalibration) {
                 utility += updatedCalibrationFactors.get(purpose).get(Boolean.TRUE);
