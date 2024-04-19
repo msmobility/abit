@@ -207,12 +207,40 @@ public class PlanGenerator3 implements Callable {
                 Activity activity = new Activity(person, purpose);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignDurationAndThenStartTime(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
+                if (purpose.equals(Purpose.WORK)){
+                    if (person.getJob()!=null){
+                        activity.setLocation(person.getJob().getLocation());
+                    }else{
+                        destinationChoice.selectMainActivityDestination(person, activity);
+                    }
+
+                }else{
+                    if (person.getSchool()!=null){
+                        activity.setLocation(person.getSchool().getLocation());
+                    }else{
+                        destinationChoice.selectMainActivityDestination(person, activity);
+                    }
+                }
+
+
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignDurationAndThenStartTime(activity);
-                    destinationChoice.selectMainActivityDestination(person, activity);
+                    if (purpose.equals(Purpose.WORK)){
+                        if (person.getJob()!=null){
+                            activity.setLocation(person.getJob().getLocation());
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
+
+                    }else{
+                        if (person.getSchool()!=null){
+                            activity.setLocation(person.getSchool().getLocation());
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
+                    }
                     maxTrial += 1;
                 }
 
