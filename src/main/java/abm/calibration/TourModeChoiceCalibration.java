@@ -24,9 +24,9 @@ public class TourModeChoiceCalibration implements ModelComponent {
     static Logger logger = Logger.getLogger(TourModeChoiceCalibration.class);
 
     private static final int MAX_ITERATION = 2_000;
-    private static final double TERMINATION_THRESHOLD = 0.027;
+    private static final double TERMINATION_THRESHOLD = 0.030;
 
-    double stepSize = 0.25;
+    double stepSize = 0.20;
     String inputFolder = AbitResources.instance.getString("tour.mode.coef.output");
     DataSet dataSet;
     Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> objectiveTourModeShare = new HashMap<>();
