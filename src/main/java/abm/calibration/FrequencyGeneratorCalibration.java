@@ -166,26 +166,26 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
                 for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
                     if (purpose.equals(ACCOMPANY)) {
-                        /*double totalCountError = 0.0;
-                        for (int frequencies = 0; frequencies <= 7; frequencies++) {
-                            double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
-                            double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
-                            double difference = observedZeroShare - simulatedZeroShare;
-                            double factor = stepSize * (observedZeroShare - simulatedZeroShare);
-                            if (frequencies == 0) {
-                                factor = -1 * factor;
-                            } else {
-                                totalCountError += Math.abs(difference);
-                                factor = -1 * factor;
-                            }
-                           calibrationFactors.get(purpose).replace(frequencies, factor);
-                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
-                            if (totalCountError > maxDifference) {
-                                maxDifference = totalCountError;
-                            }
-                        }
-                        logger.info("Total count error for " + purpose.toString() + "\t" + " difference: " + totalCountError);
-                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));*/
+//                        double totalCountError = 0.0;
+//                        for (int frequencies = 0; frequencies <= 7; frequencies++) {
+//                            double observedZeroShare = objectiveFrequencyShare.get(purpose).get(frequencies);
+//                            double simulatedZeroShare = simulatedFrequencyShare.get(purpose).get(frequencies);
+//                            double difference = observedZeroShare - simulatedZeroShare;
+//                            double factor = stepSize * (observedZeroShare - simulatedZeroShare);
+//                            if (frequencies == 0) {
+//                                factor = -1 * factor;
+//                            } else {
+//                                totalCountError += Math.abs(difference);
+//                                factor = -1 * factor;
+//                            }
+//                           calibrationFactors.get(purpose).replace(frequencies, factor);
+//                            logger.info("Frequency of mandatory trip model for " + purpose.toString() + "\t" + " and " + frequencies + "\t" + " difference: " + difference);
+//                            if (totalCountError > maxDifference) {
+//                                maxDifference = totalCountError;
+//                            }
+//                        }
+//                        logger.info("Total count error for " + purpose.toString() + "\t" + " difference: " + totalCountError);
+//                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                     }
                     else {
                         for (int frequencies = 0; frequencies <= 15; frequencies++) {
