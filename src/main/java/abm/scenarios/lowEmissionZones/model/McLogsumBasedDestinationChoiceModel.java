@@ -1,10 +1,9 @@
-package abm.models.destinationChoice;
+package abm.scenarios.lowEmissionZones.model;
 
 import abm.data.DataSet;
 import abm.data.geo.MicroscopicLocation;
 import abm.data.geo.Zone;
 import abm.data.plans.Activity;
-import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.Person;
@@ -12,12 +11,11 @@ import abm.data.vehicle.Car;
 import abm.data.vehicle.CarType;
 import abm.data.vehicle.Vehicle;
 import abm.io.input.CoefficientsReader;
-import abm.io.input.DefaultDataReaderManager;
 import abm.io.input.LogsumReader;
+import abm.models.destinationChoice.DestinationChoice;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
-import de.tum.bgu.msm.util.matrices.IndexedDoubleMatrix1D;
 import de.tum.bgu.msm.util.matrices.IndexedDoubleMatrix2D;
 import org.apache.log4j.Logger;
 import org.locationtech.jts.geom.Coordinate;
@@ -28,34 +26,18 @@ import java.util.List;
 import java.util.Map;
 
 public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
-
-    private static DataSet dataSet;
+    private final DataSet dataSet;
     private final static Logger logger = Logger.getLogger(McLogsumBasedDestinationChoiceModel.class);
     private final Map<Purpose, Map<Zone, Double>> zoneAttractorsByPurpose;
     private Map<Purpose, Map<String, IndexedDoubleMatrix2D>> expUtilityMatricesMainDestinationByPurposeByRole = new HashMap<>();
     private Map<Purpose, Map<String, IndexedDoubleMatrix2D>> expUtilityMatricesStopDestinationByPurposeByRole = new HashMap<>();
-
-    private Map<Purpose, Map<String, Double>> coefficientsMain;
-    private Map<Purpose, Map<String, Double>> coefficientsStop;
+    private final Map<Purpose, Map<String, Double>> coefficientsMain;
+    private final Map<Purpose, Map<String, Double>> coefficientsStop;
     private boolean runCalibrationMain = false;
     private boolean runCalibrationStop = false;
-
     private Map<Purpose, Map<String, Double>> updatedCalibrationFactorsMain = new HashMap<>();
     private Map<Purpose, Map<String, Double>> updatedCalibrationFactorsStop = new HashMap<>();
-    LogsumReader logsumReader;
     private final String[] roles = {"evOwner", "nonEvOwner"};
-
-    public static void main(String[] args) {
-        AbitResources.initializeResources(args[0]);
-        AbitUtils.loadHdf5Lib();
-        MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
-
-        logger.info("Reading data");
-        dataSet = new DefaultDataReaderManager().readData();
-
-        McLogsumBasedDestinationChoiceModel mcLogsumBasedDestinationChoiceModel = new McLogsumBasedDestinationChoiceModel(dataSet);
-    }
-
     public McLogsumBasedDestinationChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
         new LogsumReader(this.dataSet).read();
@@ -104,7 +86,12 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
                     for (Zone destination : dataSet.getZones().values()) {
                         final double logsum = dataSet.getLogsums().get(role).get(purpose).getIndexed(origin.getId(), destination.getId());
                         final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
-                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration") * logsum);
+                        double utility;
+                        if (runCalibrationMain){
+                            utility = Math.log10(Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA"))) + Math.exp((coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration_" + role) + updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration_" + role)) * logsum);
+                        }else{
+                            utility = Math.log10(Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA"))) + Math.exp(coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration_" + role) * logsum);
+                        }
                         double expUtility = Math.exp(utility);
                         expUtilityMatrix.setIndexed(origin.getId(), destination.getId(), expUtility);
                     }
@@ -124,7 +111,12 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
                     for (Zone destination : dataSet.getZones().values()) {
                         final double logsum = dataSet.getLogsums().get(role).get(purpose).getIndexed(origin.getId(), destination.getId());
                         final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
-                        double utility = Math.pow(attractor, coefficientsMain.get(purpose).get("ALPHA")+ coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp(coefficientsMain.get(purpose).get("BETA") + coefficientsMain.get(purpose).get("BETA_calibration") * logsum);
+                        double utility;
+                        if (runCalibrationStop){
+                            utility = Math.log10(Math.pow(attractor, coefficientsStop.get(purpose).get("ALPHA"))) + Math.exp((coefficientsStop.get(purpose).get("BETA") + coefficientsStop.get(purpose).get("BETA_calibration_" + role) + updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration_" + role)) * logsum);
+                        }else{
+                            utility = Math.log10(Math.pow(attractor, coefficientsStop.get(purpose).get("ALPHA"))) + Math.exp((coefficientsStop.get(purpose).get("BETA") + coefficientsStop.get(purpose).get("BETA_calibration_" + role)) * logsum);
+                        }
                         double expUtility = Math.exp(utility);
                         expUtilityMatrix.setIndexed(origin.getId(), destination.getId(), expUtility);
                     }
@@ -138,7 +130,7 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
         Path pathToFilePurpose = Path.of(AbitResources.instance.getString("destination.choice.attractors"));
         Map<Purpose, Map<Zone, Double>> zoneAttractorsByPurpose = new HashMap<>();
         for (Purpose purpose : Purpose.getAllPurposes()) {
-            String columnName = purpose.toString().toLowerCase(); //todo review this
+            String columnName = purpose.toString().toLowerCase();
             Map<String, Double> coefficients = new CoefficientsReader(dataSet, columnName, pathToFilePurpose).readCoefficients();
             Map<Zone, Double> attractorByZone = new HashMap<>();
             for (Zone zone : dataSet.getZones().values()) {
@@ -236,19 +228,23 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
 
     public void updateCalibrationFactorsMain(Map<Purpose, Map<String, Double>> newCalibrationFactorsMain) {
         for (Purpose purpose : Purpose.getAllPurposes()) {
-            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration");
-            double updatedCalibrationFactors = newCalibrationFactorsMain.get(purpose).get("BETA_calibration");
-            this.updatedCalibrationFactorsMain.get(purpose).replace("BETA_calibration", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
-            logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsMain);
+            for (String role : roles){
+                double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration_" + role);
+                double updatedCalibrationFactors = newCalibrationFactorsMain.get(purpose).get("BETA_calibration_" + role);
+                this.updatedCalibrationFactorsMain.get(purpose).replace("BETA_calibration_" + role, calibrationFactorsFromLastIteration + updatedCalibrationFactors);
+                logger.info("Calibration factor for " + purpose + "\t" + role + "\t" + ": " + updatedCalibrationFactorsMain);
+            }
         }
     }
 
     public void updateCalibrationFactorsStop(Map<Purpose, Map<String, Double>> newCalibrationFactorsStop) {
         for (Purpose purpose : Purpose.getAllPurposes()) {
-            double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration");
-            double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA_calibration");
-            this.updatedCalibrationFactorsStop.get(purpose).replace("BETA_calibration", calibrationFactorsFromLastIteration + updatedCalibrationFactors);
-            logger.info("Calibration factor for " + purpose + "\t" + ": " + updatedCalibrationFactorsStop);
+            for (String role:roles){
+                double calibrationFactorsFromLastIteration = this.updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration_" + role);
+                double updatedCalibrationFactors = newCalibrationFactorsStop.get(purpose).get("BETA_calibration_" + role);
+                this.updatedCalibrationFactorsStop.get(purpose).replace("BETA_calibration_" + role, calibrationFactorsFromLastIteration + updatedCalibrationFactors);
+                logger.info("Calibration factor for " + purpose + "\t" + role  + "\t" + ": " + updatedCalibrationFactorsStop);
+            }
         }
     }
 
@@ -257,11 +253,13 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
         double updatedCalibrationFactor = 0.0;
         double latestCalibrationFactor = 0.0;
         for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                originalCalibrationFactor = coefficientsMain.get(purpose).get("BETA_calibration");
-                updatedCalibrationFactor = updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration");
-                latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                coefficientsMain.get(purpose).replace("BETA_calibration", latestCalibrationFactor);
+            for (String role : roles){
+                if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
+                    originalCalibrationFactor = coefficientsMain.get(purpose).get("BETA_calibration_" + role);
+                    updatedCalibrationFactor = updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration_" + role);
+                    latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+                    coefficientsMain.get(purpose).replace("BETA_calibration_" + role, latestCalibrationFactor);
+                }
             }
         }
         return this.coefficientsMain;
@@ -272,11 +270,13 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
         double updatedCalibrationFactor = 0.0;
         double latestCalibrationFactor = 0.0;
         for (Purpose purpose : Purpose.values()) {
-            if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
-                originalCalibrationFactor = coefficientsStop.get(purpose).get("BETA_calibration");
-                updatedCalibrationFactor = updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration");
-                latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                coefficientsStop.get(purpose).replace("BETA_calibration", latestCalibrationFactor);
+            for (String role : roles){
+                if (!(purpose.equals(Purpose.HOME) || purpose.equals(Purpose.SUBTOUR))) {
+                    originalCalibrationFactor = coefficientsStop.get(purpose).get("BETA_calibration_" + role);
+                    updatedCalibrationFactor = updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration_" + role);
+                    latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+                    coefficientsStop.get(purpose).replace("BETA_calibration_" + role, latestCalibrationFactor);
+                }
             }
         }
         return this.coefficientsStop;
