@@ -12,6 +12,7 @@ import abm.models.ModelSetupMuc;
 import abm.io.output.OutputWriter;
 import abm.models.*;
 import abm.properties.AbitResources;
+import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
@@ -45,6 +46,7 @@ public class RunAbit {
 
         logger.info("Creating the sub-models");
         ModelSetup modelSetup = new ModelSetupMuc(dataSet);
+        //ModelSetup modelSetup = new ModelSetupMucLowEmissionZone(dataSet);
 
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
@@ -58,7 +60,7 @@ public class RunAbit {
         //TODO: parallelize by household not person because of vehicle assignment. Later, for joint travel/coordination destination, need to move parallelization into model steps?
         if (AbitResources.instance.getDouble("scale.factor", 1.0) >= 1){
             for (Household household : dataSet.getHouseholds().values()) {
-                if (household.getPartition() == 1){
+                if (household.getPartition() == 2){
                     final int i = AbitUtils.getRandomObject().nextInt(threads);
                     householdsByThread.putIfAbsent(i, new ArrayList<>());
                     householdsByThread.get(i).add(household);
