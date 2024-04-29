@@ -5,6 +5,7 @@ import abm.data.DataSet;
 import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.properties.AbitResources;
 
+import abm.scenarios.lowEmissionZones.model.McLogsumBasedDestinationChoiceModel;
 import org.apache.log4j.Logger;
 
 import java.util.HashMap;
@@ -24,6 +25,8 @@ public class CalibrationMuc {
     boolean calibrateMandatoryActDurationTime;
     boolean calibrateMainDestinationChoice;
     boolean calibrateStopDestinationChoice;
+    boolean calibrateMainMcLogsumDestinationChoice;
+    boolean calibrateStopMcLogsumDestinationChoice;
     boolean calibrateDiscretionaryActGeneration;
     boolean calibrateDiscretionaryActSplitByType;
     boolean calibrateDiscretionaryActDayOfWeekAssignment;
@@ -45,8 +48,11 @@ public class CalibrationMuc {
     private DayOfWeekDiscretionaryAssignmentCalibration dayOfWeekDiscretionaryAssignmentCalibration;
     private TimeAssignmentCalibration timeAssignmentCalibration;
     private MainDestinationChoiceCalibration mainDestinationChoiceCalibration;
-
     private StopDestinationChoiceCalibration stopDestinationChoiceCalibration;
+
+    private StopMcLogsumDestinationChoiceCalibration stopMcLogsumDestinationChoiceCalibration;
+
+    private MainMcLogsumDestinationChoiceCalibration mainMcLogsumDestinationChoiceCalibration;
     private SplitByTypeCalibration splitByTypeCalibration;
     private SplitStopByTypeCalibration splitStopByTypeCalibration;
     private TourModeChoiceCalibration tourModeChoiceCalibration;
@@ -80,6 +86,12 @@ public class CalibrationMuc {
 
         calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.destination.calibration"));
         calibrationList.put("StopDestination", calibrateStopDestinationChoice);
+
+        calibrateMainMcLogsumDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.main.mcLogsum.destination.calibration"));
+        calibrationList.put("McLogsumMainActDestination", calibrateMainMcLogsumDestinationChoice);
+
+        calibrateStopMcLogsumDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.mcLogsum.destination.calibration"));
+        calibrationList.put("McLogsumStopActDestination", calibrateStopMcLogsumDestinationChoice);
 
         calibrateDiscretionaryActGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
         calibrationList.put("DiscActGeneration", calibrateDiscretionaryActGeneration);
@@ -193,6 +205,20 @@ public class CalibrationMuc {
             stopDestinationChoiceCalibration.setup();
             stopDestinationChoiceCalibration.load();
             stopDestinationChoiceCalibration.run();
+        }
+
+        if (calibrateMainMcLogsumDestinationChoice){
+            mainMcLogsumDestinationChoiceCalibration = new MainMcLogsumDestinationChoiceCalibration(dataSet);
+            mainMcLogsumDestinationChoiceCalibration.setup();
+            mainMcLogsumDestinationChoiceCalibration.load();
+            mainMcLogsumDestinationChoiceCalibration.run();
+        }
+
+        if (calibrateStopMcLogsumDestinationChoice){
+            stopMcLogsumDestinationChoiceCalibration = new StopMcLogsumDestinationChoiceCalibration(dataSet);
+            stopMcLogsumDestinationChoiceCalibration.setup();
+            stopMcLogsumDestinationChoiceCalibration.load();
+            stopMcLogsumDestinationChoiceCalibration.run();
         }
 
         if (calibrateTourModeChoice){
