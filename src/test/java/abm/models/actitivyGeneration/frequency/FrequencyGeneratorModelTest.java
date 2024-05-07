@@ -44,6 +44,7 @@ public class FrequencyGeneratorModelTest {
 
         Household household = new Household(1, dummyZone, 1);
 
+
         Person person = new Person(1, household, 36, Gender.FEMALE,
                 Relationship.married, Occupation.EMPLOYED, true, null, 10000,
                 480, 480, 2000, null, Disability.WITHOUT);
@@ -53,15 +54,17 @@ public class FrequencyGeneratorModelTest {
 
         person.setHabitualMode(HabitualMode.PT);
 
+        person.setHasBicycle(true);
+
         double probOfActivity;
 
         Map<Purpose, Double> reference = Map.of(
                 Purpose.WORK, 5.5,
                 Purpose.EDUCATION, 0.0,
-                Purpose.OTHER, 0.0,
+                Purpose.OTHER, 0.155752,
                 Purpose.ACCOMPANY, 5.0,
-                Purpose.RECREATION, 1.0,
-                Purpose.SHOPPING, 2.0
+                Purpose.RECREATION, 0.975913,
+                Purpose.SHOPPING, 0.926973
         );
 
         //Run the model
