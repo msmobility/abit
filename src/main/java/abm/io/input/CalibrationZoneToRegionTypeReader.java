@@ -68,6 +68,6 @@ public class CalibrationZoneToRegionTypeReader implements Reader {
 
     // Utility method to get the region for a given zone
     public static String getRegionForZone(int zoneId) {
-        return zoneToRegionMap.getOrDefault(zoneId, "unknown"); // Default to "unknown" if not found
+        return zoneToRegionMap.getOrDefault(zoneId, "nonMuc"); // Default to "unknown" if not found
     }
 }
