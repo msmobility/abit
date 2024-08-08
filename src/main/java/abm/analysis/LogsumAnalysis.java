@@ -55,7 +55,7 @@ public class LogsumAnalysis {
         generateSyntheticPopulation();
         evForbidden = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
 
-        for (Purpose purpose: Purpose.getDiscretionaryPurposes()) {
+        for (Purpose purpose: Purpose.getAllPurposes()) {
             logger.info("Initializing logsum table for " + purpose + " purpose");
             initializeLogsumTable(purpose);
 
@@ -71,43 +71,43 @@ public class LogsumAnalysis {
 
         for (Zone destinationZone : dataSet.getZones().values()){
 
-                Plan plan = Plan.initializePlan(person);
+            Plan plan = Plan.initializePlan(person);
 
-                Activity homeAct = new Activity(person, Purpose.HOME);
-                homeAct.setLocation(person.getHousehold().getLocation());
+            Activity homeAct = new Activity(person, Purpose.HOME);
+            homeAct.setLocation(person.getHousehold().getLocation());
 
-                Activity fakeActivity = new Activity(person, purpose);
-                fakeActivity.setLocation(destinationZone);
-                fakeActivity.setDayOfWeek(DayOfWeek.MONDAY);
-                fakeActivity.setStartTime_min(480);
-                fakeActivity.setEndTime_min(960);
+            Activity fakeActivity = new Activity(person, purpose);
+            fakeActivity.setLocation(destinationZone);
+            fakeActivity.setDayOfWeek(DayOfWeek.MONDAY);
+            fakeActivity.setStartTime_min(480);
+            fakeActivity.setEndTime_min(960);
 
-                PlanTools planTools;
-                planTools = new PlanTools(dataSet.getTravelTimes());
-                planTools.addMainTour(plan, fakeActivity);
+            PlanTools planTools;
+            planTools = new PlanTools(dataSet.getTravelTimes());
+            planTools.addMainTour(plan, fakeActivity);
 
-                Leg leg1 = new Leg(homeAct, fakeActivity);
-                int travelTime1 = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), fakeActivity.getLocation(), Mode.UNKNOWN, fakeActivity.getStartTime_min());
-                leg1.setTravelTime_min(travelTime1);
+            Leg leg1 = new Leg(homeAct, fakeActivity);
+            int travelTime1 = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), fakeActivity.getLocation(), Mode.UNKNOWN, fakeActivity.getStartTime_min());
+            leg1.setTravelTime_min(travelTime1);
 
-                Leg leg2 = new Leg(fakeActivity, homeAct);
-                int travelTime2 = dataSet.getTravelTimes().getTravelTimeInMinutes(fakeActivity.getLocation(), person.getHousehold().getLocation(), Mode.UNKNOWN, fakeActivity.getEndTime_min());
-                leg2.setTravelTime_min(travelTime2);
+            Leg leg2 = new Leg(fakeActivity, homeAct);
+            int travelTime2 = dataSet.getTravelTimes().getTravelTimeInMinutes(fakeActivity.getLocation(), person.getHousehold().getLocation(), Mode.UNKNOWN, fakeActivity.getEndTime_min());
+            leg2.setTravelTime_min(travelTime2);
 
-                Tour fakeTour = new Tour(fakeActivity, 1);
-                fakeTour.getLegs().put(travelTime1, leg1);
-                fakeTour.getLegs().put(travelTime2, leg2);
-                fakeTour.getActivities().put(0, homeAct);
-                fakeTour.getActivities().put(fakeActivity.getStartTime_min(), fakeActivity);
-                fakeTour.getActivities().put(fakeActivity.getEndTime_min(), homeAct);
-                fakeActivity.setTour(fakeTour);
+            Tour fakeTour = new Tour(fakeActivity, 1);
+            fakeTour.getLegs().put(travelTime1, leg1);
+            fakeTour.getLegs().put(travelTime2, leg2);
+            fakeTour.getActivities().put(0, homeAct);
+            fakeTour.getActivities().put(fakeActivity.getStartTime_min(), fakeActivity);
+            fakeTour.getActivities().put(fakeActivity.getEndTime_min(), homeAct);
+            fakeActivity.setTour(fakeTour);
 
-                logsumTableByPurpose_base.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
-                logsumTableByPurpose_base.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner));
+            logsumTableByPurpose_base.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
+            //logsumTableByPurpose_base.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner));
 
-                boolean isLowEmissionZone = evForbidden.get(destinationZone.getId());
-                logsumTableByPurpose_lowEmissionRestriction.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
-                logsumTableByPurpose_lowEmissionRestriction.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner, isLowEmissionZone));
+            boolean isLowEmissionZone = evForbidden.get(destinationZone.getId()) && !evForbidden.get(person.getHousehold().getLocation().getZoneId());
+            //logsumTableByPurpose_lowEmissionRestriction.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
+            //logsumTableByPurpose_lowEmissionRestriction.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner, isLowEmissionZone));
 
         }
     }
@@ -128,54 +128,54 @@ public class LogsumAnalysis {
             throw new RuntimeException(e);
         }
 
-        PrintWriter pw_base_nonEvOwner;
-        try {
-            String role = "nonEvOwner";
-            pw_base_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
-            pw_base_nonEvOwner.println("origin,destination,logsum");
-            for (Zone origin : dataSet.getZones().values()) {
-                for (Zone destination : dataSet.getZones().values()) {
-                    pw_base_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_base.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-                }
-            }
-            pw_base_nonEvOwner.close();
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+//        PrintWriter pw_base_nonEvOwner;
+//        try {
+//            String role = "nonEvOwner";
+//            pw_base_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
+//            pw_base_nonEvOwner.println("origin,destination,logsum");
+//            for (Zone origin : dataSet.getZones().values()) {
+//                for (Zone destination : dataSet.getZones().values()) {
+//                    pw_base_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_base.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+//                }
+//            }
+//            pw_base_nonEvOwner.close();
+//        } catch (FileNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
         
-        PrintWriter pw_lowEmission_evOwner;
-        try {
-            String role = "evOwner";
-            pw_lowEmission_evOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction.csv");
-            pw_lowEmission_evOwner.println("origin,destination,logsum");
-            for (Zone origin : dataSet.getZones().values()) {
-                for (Zone destination : dataSet.getZones().values()) {
-                    pw_lowEmission_evOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-                }
-            }
-            pw_lowEmission_evOwner.close();
-            pw_lowEmission_evOwner.close();
+//        PrintWriter pw_lowEmission_evOwner;
+//        try {
+//            String role = "evOwner";
+//            pw_lowEmission_evOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction_AltStadtRing.csv");
+//            pw_lowEmission_evOwner.println("origin,destination,logsum");
+//            for (Zone origin : dataSet.getZones().values()) {
+//                for (Zone destination : dataSet.getZones().values()) {
+//                    pw_lowEmission_evOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+//                }
+//            }
+//            pw_lowEmission_evOwner.close();
+//            pw_lowEmission_evOwner.close();
+//
+//        } catch (FileNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
 
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        PrintWriter pw_lowEmission_nonEvOwner;
-        try {
-            String role = "nonEvOwner";
-            pw_lowEmission_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction.csv");
-            pw_lowEmission_nonEvOwner.println("origin,destination,logsum");
-            for (Zone origin : dataSet.getZones().values()) {
-                for (Zone destination : dataSet.getZones().values()) {
-                    pw_lowEmission_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-                }
-            }
-            pw_lowEmission_nonEvOwner.close();
-            pw_lowEmission_nonEvOwner.close();
-
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+//        PrintWriter pw_lowEmission_nonEvOwner;
+//        try {
+//            String role = "nonEvOwner";
+//            pw_lowEmission_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction_MittelerRing.csv");
+//            pw_lowEmission_nonEvOwner.println("origin,destination,logsum");
+//            for (Zone origin : dataSet.getZones().values()) {
+//                for (Zone destination : dataSet.getZones().values()) {
+//                    pw_lowEmission_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+//                }
+//            }
+//            pw_lowEmission_nonEvOwner.close();
+//            pw_lowEmission_nonEvOwner.close();
+//
+//        } catch (FileNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     private static void initializeLogsumTable(Purpose purpose) {

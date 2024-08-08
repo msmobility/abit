@@ -43,26 +43,34 @@ public class LogsumReader implements Reader{
         this.logsumPaths.putIfAbsent("evOwner", new HashMap<>());
         this.logsumPaths.putIfAbsent("nonEvOwner", new HashMap<>());
 
-        if (Boolean.parseBoolean(AbitResources.instance.getString("scenario.lowEmissionZon"))){
-            this.logsumPaths.get("evOwner").put(Purpose.SHOPPING, AbitResources.instance.getString("logsum.evOwner.SHOPPING.lez"));
-            this.logsumPaths.get("evOwner").put(Purpose.ACCOMPANY, AbitResources.instance.getString("logsum.evOwner.ACCOMPANY.lez"));
-            this.logsumPaths.get("evOwner").put(Purpose.OTHER, AbitResources.instance.getString("logsum.evOwner.OTHER.lez"));
-            this.logsumPaths.get("evOwner").put(Purpose.RECREATION, AbitResources.instance.getString("logsum.evOwner.RECREATION.lez"));
+        if (Boolean.parseBoolean(AbitResources.instance.getString("scenario.lowEmissionZone"))){
+            this.logsumPaths.get("evOwner").put(Purpose.SHOPPING, AbitResources.instance.getString("logsum.evOwner.SHOPPING.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.ACCOMPANY, AbitResources.instance.getString("logsum.evOwner.ACCOMPANY.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.OTHER, AbitResources.instance.getString("logsum.evOwner.OTHER.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.RECREATION, AbitResources.instance.getString("logsum.evOwner.RECREATION.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.WORK, AbitResources.instance.getString("logsum.evOwner.WORK.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.EDUCATION, AbitResources.instance.getString("logsum.evOwner.EDUCATION.base"));
 
             this.logsumPaths.get("nonEvOwner").put(Purpose.SHOPPING, AbitResources.instance.getString("logsum.nonEvOwner.SHOPPING.lez"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.ACCOMPANY, AbitResources.instance.getString("logsum.nonEvOwner.ACCOMPANY.lez"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.OTHER, AbitResources.instance.getString("logsum.nonEvOwner.OTHER.lez"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.RECREATION, AbitResources.instance.getString("logsum.nonEvOwner.RECREATION.lez"));
+            this.logsumPaths.get("nonEvOwner").put(Purpose.WORK, AbitResources.instance.getString("logsum.nonEvOwner.WORK.lez"));
+            this.logsumPaths.get("nonEvOwner").put(Purpose.EDUCATION, AbitResources.instance.getString("logsum.nonEvOwner.EDUCATION.lez"));
         }else{
             this.logsumPaths.get("evOwner").put(Purpose.SHOPPING, AbitResources.instance.getString("logsum.evOwner.SHOPPING.base"));
             this.logsumPaths.get("evOwner").put(Purpose.ACCOMPANY, AbitResources.instance.getString("logsum.evOwner.ACCOMPANY.base"));
             this.logsumPaths.get("evOwner").put(Purpose.OTHER, AbitResources.instance.getString("logsum.evOwner.OTHER.base"));
             this.logsumPaths.get("evOwner").put(Purpose.RECREATION, AbitResources.instance.getString("logsum.evOwner.RECREATION.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.WORK, AbitResources.instance.getString("logsum.evOwner.WORK.base"));
+            this.logsumPaths.get("evOwner").put(Purpose.EDUCATION, AbitResources.instance.getString("logsum.evOwner.EDUCATION.base"));
 
             this.logsumPaths.get("nonEvOwner").put(Purpose.SHOPPING, AbitResources.instance.getString("logsum.nonEvOwner.SHOPPING.base"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.ACCOMPANY, AbitResources.instance.getString("logsum.nonEvOwner.ACCOMPANY.base"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.OTHER, AbitResources.instance.getString("logsum.nonEvOwner.OTHER.base"));
             this.logsumPaths.get("nonEvOwner").put(Purpose.RECREATION, AbitResources.instance.getString("logsum.nonEvOwner.RECREATION.base"));
+            this.logsumPaths.get("nonEvOwner").put(Purpose.WORK, AbitResources.instance.getString("logsum.nonEvOwner.WORK.base"));
+            this.logsumPaths.get("nonEvOwner").put(Purpose.EDUCATION, AbitResources.instance.getString("logsum.nonEvOwner.EDUCATION.base"));
         }
 
 
@@ -77,7 +85,7 @@ public class LogsumReader implements Reader{
     @Override
     public void read() {
         for (String role : this.roles) {
-            for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
+            for (Purpose purpose : Purpose.getAllPurposes()) {
                 String path = this.logsumPaths.get(role).get(purpose);
                 IndexedDoubleMatrix2D logsumMatrix = this.readAndConvertToDoubleMatrix2D(path, this.factor, this.zoneMap.values());
                 this.logsumMatrixes.get(role).put(purpose, logsumMatrix);
