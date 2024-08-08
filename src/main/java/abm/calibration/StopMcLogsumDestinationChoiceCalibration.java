@@ -8,7 +8,7 @@ import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.properties.AbitResources;
-import abm.scenarios.lowEmissionZones.model.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;

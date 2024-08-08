@@ -1,4 +1,4 @@
-package abm.scenarios.lowEmissionZones.model;
+package abm.scenarios.lowEmissionZones.models.destinationChoice;
 
 import abm.data.DataSet;
 import abm.data.geo.MicroscopicLocation;
@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 import org.locationtech.jts.geom.Coordinate;
 
 import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;

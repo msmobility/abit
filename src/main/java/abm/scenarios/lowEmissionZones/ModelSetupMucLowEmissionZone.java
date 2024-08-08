@@ -15,9 +15,11 @@ import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.*;
 import abm.models.modeChoice.*;
-import abm.scenarios.lowEmissionZones.model.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
 import org.apache.commons.collections.map.HashedMap;
 
+import java.io.FileNotFoundException;
 import java.util.Map;
 
 public class ModelSetupMucLowEmissionZone implements ModelSetup {
@@ -43,11 +45,11 @@ public class ModelSetupMucLowEmissionZone implements ModelSetup {
     private final BikeOwnershipReader bikeOwnershipReader;
 
 
-    public ModelSetupMucLowEmissionZone(DataSet dataSet) {
+    public ModelSetupMucLowEmissionZone(DataSet dataSet) throws FileNotFoundException {
 
         bikeOwnershipReader = new BikeOwnershipReader(dataSet);
         dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
-        tourModeChoice = new NestedLogitTourModeChoiceModel(dataSet);
+        tourModeChoice = new NestedLogitTourModeChoiceModelLowEmissionZones(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
 
