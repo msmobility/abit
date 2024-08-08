@@ -1,16 +1,16 @@
-package abm;
+package abm.scenarios.lowEmissionZones.runner;
 
+import abm.CheckResults;
 import abm.calibration.CalibrationMuc;
 import abm.data.DataSet;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.io.input.DefaultDataReaderManager;
-import abm.io.output.*;
-import abm.models.ModelSetup;
-import abm.models.ModelSetupMuc;
 import abm.io.output.OutputWriter;
-import abm.models.*;
+import abm.io.output.StatisticsPrinter;
+import abm.models.ModelSetup;
+import abm.models.PlanGenerator3;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
 import abm.utils.AbitUtils;
@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RunAbit {
+public class RunAbitLowEmissionZones {
 
-    static Logger logger = Logger.getLogger(RunAbit.class);
+    static Logger logger = Logger.getLogger(RunAbitLowEmissionZones.class);
 
 
     /**
@@ -45,7 +45,8 @@ public class RunAbit {
         DataSet dataSet = new DefaultDataReaderManager().readData();
 
         logger.info("Creating the sub-models");
-        ModelSetup modelSetup = new ModelSetupMuc(dataSet);
+        //ModelSetup modelSetup = new ModelSetupMuc(dataSet);
+        ModelSetup modelSetup = new ModelSetupMucLowEmissionZone(dataSet);
 
         logger.info("Generating plans");
         int threads = Runtime.getRuntime().availableProcessors();
