@@ -22,6 +22,8 @@ public class ZoneReader implements Reader {
     private String regioStaR7TypeField = "RegioStaR7";
     private String distToRailMeter = "dist2Trans";
 
+    private String areakm2 = "area_km2";
+
     private final DataSet dataSet;
 
 
@@ -73,6 +75,13 @@ public class ZoneReader implements Reader {
                 zone.setDistToRail_meter((Long) distToRail_meter);
             } else {
                 zone.setDistToRail_meter((long) Double.POSITIVE_INFINITY);
+            }
+
+            final Object surfaceArea_km2 = feature.getAttribute(areakm2);
+            if (surfaceArea_km2 != null) {
+                zone.setAreaKm2((double) surfaceArea_km2);
+            } else {
+                zone.setAreaKm2(Double.POSITIVE_INFINITY);
             }
 
             dataSet.getZones().put(zoneId, zone);

@@ -23,6 +23,7 @@ public class Zone implements Location, Id {
     private Geometry geometry;
     private String name;
 
+    private double areaKm2;
 
     private long distToRail_meter;
     private final Attributes attributes = new Attributes();
@@ -119,5 +120,13 @@ public class Zone implements Location, Id {
 
     public void setAttribute(String key, Object value) {
         attributes.putAttribute(key, value);
+    }
+
+    public double getAreaKm2() {
+        return areaKm2;
+    }
+
+    public void setAreaKm2(double areaKm2) {
+        this.areaKm2 = areaKm2;
     }
 }
