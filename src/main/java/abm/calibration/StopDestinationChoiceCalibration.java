@@ -21,9 +21,9 @@ import java.util.stream.Collectors;
 public class StopDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(StopDestinationChoiceCalibration.class);
-    private static final int MAX_ITERATION = 1000; //2_000_000;
+    private static final int MAX_ITERATION = 100; //2_000_000;
     private static final double TERMINATION_THRESHOLD_AVERAGE_DISTANCE = 1.00;
-    double stepSize = 0.001;
+    double stepSize = 0.01;
 
     private final int NUMBER_OF_BINS = 10;
     String inputFolder = AbitResources.instance.getString("destination.choice.stop.act.output");
@@ -55,19 +55,15 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
             simulatedStopDestinationDistanceShare.putIfAbsent(purpose, new HashMap<>());
             calibrationFactors.putIfAbsent(purpose, new HashMap<>());
             calibrationFactors.get(purpose).put("ALPHA_calibration", 0.);
-            calibrationFactors.get(purpose).put("BETA_calibration", 0.);
+            calibrationFactors.get(purpose).put("BETA_calibration", 1.);
             simulatedStopDestinationAverageDistance_km.put(purpose, 0.);
             numberOfAct.put(purpose, 0);
-
             for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                 objectiveStopDestinationDistanceShare.get(purpose).put(i, 0.);
                 simulatedStopDestinationDistanceCount.get(purpose).put(i, 0);
                 simulatedStopDestinationDistanceShare.get(purpose).put(i, 0.);
-
             }
-
         }
-
     }
 
     @Override
@@ -104,7 +100,9 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
 //                        differenceTotalBinShare += Math.abs(differenceForBin);
 //                    }
 //                }
-                double factor = stepSize * (objectiveStopDestinationAverageDistance_km.get(purpose) - simulatedStopDestinationAverageDistance_km.get(purpose));
+                double factor = (simulatedStopDestinationAverageDistance_km.get(purpose) / objectiveStopDestinationAverageDistance_km.get(purpose));
+                factor = Math.max(factor, 0.5);
+                factor = Math.min(factor, 2);
                 differenceAverageDistance = Math.abs(objectiveStopDestinationAverageDistance_km.get(purpose) - simulatedStopDestinationAverageDistance_km.get(purpose));
 
                 calibrationFactors.get(purpose).replace("BETA_calibration", factor);
@@ -119,21 +117,19 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
             }
 
             destinationChoiceModel.updateCalibrationFactorsStop(calibrationFactors);
+            destinationChoiceModel.updateStopDestinationProbability();
 
             List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
-            simulatedHouseholds.parallelStream().forEach(household -> {
-                household.getPersons().stream().forEach(person -> {
-                    for (Tour tour : person.getPlan().getTours().values()) {
-                        for (Activity activity : tour.getActivities().values()) {
-                            if (!activity.equals(tour.getMainActivity())) {
-                                destinationChoiceModel.selectStopDestination(person, tour, activity);
-                                break;
-                            }
-
+            simulatedHouseholds.parallelStream().forEach(household -> household.getPersons().forEach(person -> {
+                for (Tour tour : person.getPlan().getTours().values()) {
+                    for (Activity activity : tour.getActivities().values()) {
+                        if (!activity.equals(tour.getMainActivity())) {
+                            destinationChoiceModel.selectStopDestination(person, tour, activity);
+                            break;
                         }
                     }
-                });
-            });
+                }
+            }));
 
             summarizeSimulatedResult();
 
@@ -151,7 +147,6 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
     }
 
     private void readObjectiveValues() {
-
         // each bin is 0.2km wide, from 0 to 2 km, 10 bins in total.
         objectiveStopDestinationDistanceShare.get(Purpose.WORK).put(1, 0.2847);
         objectiveStopDestinationDistanceShare.get(Purpose.WORK).put(2, 0.1746);
@@ -227,7 +222,6 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
         objectiveStopDestinationAverageDistance_km.put(Purpose.OTHER, 3.6220093126038324);
         objectiveStopDestinationAverageDistance_km.put(Purpose.RECREATION, 3.6220093126038324);
 
-
     }
 
     private void summarizeSimulatedResult() {
@@ -235,7 +229,6 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
         for (Purpose purpose : Purpose.getAllPurposes()) {
             simulatedStopDestinationAverageDistance_km.put(purpose, 0.);
             numberOfAct.put(purpose, 0);
-
             for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                 simulatedStopDestinationDistanceCount.get(purpose).put(i, 0);
                 simulatedStopDestinationDistanceShare.get(purpose).put(i, 0.);
@@ -250,7 +243,7 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
                         for (Activity activity : tour.getActivities().values()) {
                             if (!activity.equals(tour.getMainActivity())) {
                                 double distanceInMeters;
-                                if (tourPurpose.equals(Purpose.WORK)) {
+                                if (tourPurpose.equals(Purpose.WORK) ) {
                                     distanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(household.getLocation(), activity.getLocation(), Mode.UNKNOWN, 0.);
                                 } else {
                                     distanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(tour.getMainActivity().getLocation(), activity.getLocation(), Mode.UNKNOWN, 0.);
@@ -270,7 +263,6 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
                                 numberOfAct.put(tourPurpose, numberOfAct.get(tourPurpose) + 1);
                                 break;
                             }
-
                         }
                     }
                 }
@@ -287,15 +279,8 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
                 for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                     simulatedStopDestinationDistanceShare.get(purpose).put(i, ((double) (simulatedStopDestinationDistanceCount.get(Purpose.EDUCATION).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.RECREATION).get(i))) / ((double) (numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION))));
                 }
-                simulatedStopDestinationAverageDistance_km.put(purpose, (simulatedStopDestinationAverageDistance_km.get(Purpose.EDUCATION)+simulatedStopDestinationAverageDistance_km.get(Purpose.ACCOMPANY)+simulatedStopDestinationAverageDistance_km.get(Purpose.SHOPPING)+simulatedStopDestinationAverageDistance_km.get(Purpose.OTHER)+simulatedStopDestinationAverageDistance_km.get(Purpose.RECREATION))/(double)(numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION)));
+                simulatedStopDestinationAverageDistance_km.put(purpose, simulatedStopDestinationAverageDistance_km.get(purpose) / numberOfAct.get(purpose));
             }
-
-
-
-
-
-
-
         }
 
     }

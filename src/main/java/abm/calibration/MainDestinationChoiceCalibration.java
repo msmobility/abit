@@ -8,6 +8,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.properties.AbitResources;
+import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
@@ -20,9 +21,9 @@ import java.util.stream.Collectors;
 public class MainDestinationChoiceCalibration implements ModelComponent {
     //Todo define a few calibration parameters
     static Logger logger = Logger.getLogger(MainDestinationChoiceCalibration.class);
-    private static final int MAX_ITERATION = 1;//2_000_000;
-    private static final double TERMINATION_THRESHOLD = 0.10;
-    double stepSize = 0.1;
+    private static final int MAX_ITERATION = 100;//2_000_000;
+    private static final double TERMINATION_THRESHOLD = 1.0;
+    double stepSize = 0.0005;
 
     private final int NUMBER_OF_BINS = 10;
     String inputFolder = AbitResources.instance.getString("destination.choice.main.act.output");
@@ -83,30 +84,44 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
         for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
             double maxDifference = 0.0;
             for (Purpose purpose : Purpose.getAllPurposes()) {
-                double[] observedTotalBinShare = new double[NUMBER_OF_BINS];
-                double[] simulatedTotalBinShare = new double[NUMBER_OF_BINS];
-                double differenceTotalBinShare = 0.0;
-                for (int i = 1; i <= NUMBER_OF_BINS; i++) {
-                    observedTotalBinShare[i-1] = objectiveMainDestinationDistanceShare.get(purpose).get(i);
-                    simulatedTotalBinShare[i-1] = simulatedMainDestinationDistanceShare.get(purpose).get(i);
-                    double differenceForBin = observedTotalBinShare[i-1] - simulatedTotalBinShare[i-1];
-                    differenceTotalBinShare += Math.abs(differenceForBin);
-                }
+//                double[] observedTotalBinShare = new double[NUMBER_OF_BINS];
+//                double[] simulatedTotalBinShare = new double[NUMBER_OF_BINS];
+//                double differenceTotalBinShare = 0.0;
+//                for (int i = 1; i <= NUMBER_OF_BINS; i++) {
+//                    observedTotalBinShare[i-1] = objectiveMainDestinationDistanceShare.get(purpose).get(i);
+//                    simulatedTotalBinShare[i-1] = simulatedMainDestinationDistanceShare.get(purpose).get(i);
+//                    double differenceForBin = observedTotalBinShare[i-1] - simulatedTotalBinShare[i-1];
+//                    differenceTotalBinShare += Math.abs(differenceForBin);
+//                }
+
+                double differenceAverageDistance = 0.0;
+                double factor = (simulatedMainDestinationAverageDistance_km.get(purpose) / objectiveMainDestinationAverageDistance_km.get(purpose));
+                factor = Math.max(factor, 0.5);
+                factor = Math.min(factor, 2);
+                differenceAverageDistance = Math.abs(objectiveMainDestinationAverageDistance_km.get(purpose) - simulatedMainDestinationAverageDistance_km.get(purpose));
+
 
                 //todo calculate the difference between observed and simulated average distance
                 //if observation > simulation, beta should be increased (-1.0 ->-0.5)
                 //if observation < simulation, beta should be decreased (-1.0 -> -1.5)
-                double factor = stepSize * (objectiveMainDestinationAverageDistance_km.get(purpose) - simulatedMainDestinationAverageDistance_km.get(purpose));
-                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                    factor = 0;
-                    differenceTotalBinShare = 0;
+                //double factor = stepSize * (objectiveMainDestinationAverageDistance_km.get(purpose) - simulatedMainDestinationAverageDistance_km.get(purpose));
+//                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+//                    factor = 0;
+//                    differenceTotalBinShare = 0;
+//                }
+
+                if (purpose.equals(Purpose.EDUCATION)){
+                    calibrationFactors.get(purpose).replace("BETA_calibration", 1.0);
+                }else{
+                    calibrationFactors.get(purpose).replace("BETA_calibration", factor);
                 }
 
-
-                calibrationFactors.get(purpose).replace("BETA_calibration", factor);
-                logger.info("Main destination choice for" + purpose.toString() + "\t" + "difference: " + differenceTotalBinShare);
-                if (Math.abs(differenceTotalBinShare) > maxDifference) {
-                    maxDifference = differenceTotalBinShare;
+                //logger.info("Main destination choice for" + purpose.toString() + "\t" + "difference: " + differenceTotalBinShare);
+                logger.info("Main destination choice for" + purpose + "\t" + "average distance: " + simulatedMainDestinationAverageDistance_km.get(purpose));
+                if (!purpose.equals(Purpose.WORK) && !purpose.equals(Purpose.EDUCATION)) {
+                    if (Math.abs(differenceAverageDistance) > maxDifference) {
+                        maxDifference = differenceAverageDistance;
+                    }
                 }
 
             }
@@ -117,13 +132,8 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
             destinationChoiceModel.updateCalibrationFactorsMain(calibrationFactors);
             destinationChoiceModel.updateMainDestinationProbability();
 
-
             List<Household> simulatedHouseholds = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
-            simulatedHouseholds.parallelStream().forEach(household -> {
-                household.getPersons().stream().forEach(person -> {
-                    person.getPlan().getTours().forEach((tourIndex, tour) -> destinationChoiceModel.selectMainActivityDestination(person, tour.getMainActivity()));
-                });
-            });
+            simulatedHouseholds.parallelStream().forEach(household -> household.getPersons().forEach(person -> person.getPlan().getTours().forEach((tourIndex, tour) -> destinationChoiceModel.selectMainActivityDestination(person, tour.getMainActivity()))));
 
             summarizeSimulatedResult();
 
@@ -210,21 +220,41 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
         objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(10, 0.0118);
 
         //todo add objective average distance
-        objectiveMainDestinationAverageDistance_km.put(Purpose.WORK, 8.897677833773502);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.EDUCATION, 2.855736174991821);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.ACCOMPANY, 3.5863636756778674);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.SHOPPING, 4.044722851784755);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.OTHER, 5.161144996256215);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.RECREATION, 5.354831916607652);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.WORK, 17.0369);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.EDUCATION, 11.1591);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.ACCOMPANY, 7.9266);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.SHOPPING, 5.4520);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.OTHER, 9.4005);
+        objectiveMainDestinationAverageDistance_km.put(Purpose.RECREATION, 10.5703);
 
     }
 
     private void summarizeSimulatedResult() {
+
+        for (Purpose purpose : Purpose.getAllPurposes()) {
+            simulatedMainDestinationAverageDistance_km.put(purpose, 0.);
+            numberOfAct.put(purpose, 0);
+            for (int i = 1; i <= NUMBER_OF_BINS; i++) {
+                simulatedMainDestinationDistanceCount.get(purpose).put(i, 0);
+                simulatedMainDestinationDistanceShare.get(purpose).put(i, 0.);
+            }
+        }
+
+
+
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
                     for (Tour tour : person.getPlan().getTours().values()){
                         Purpose mainPurpose = tour.getMainActivity().getPurpose();
+
+                        if (person.getOccupation().equals(Occupation.EMPLOYED) && tour.getMainActivity().getPurpose().equals(Purpose.WORK)){
+                            break;
+                        }
+                        if (person.getOccupation().equals(Occupation.STUDENT) && tour.getMainActivity().getPurpose().equals(Purpose.EDUCATION)){
+                            break;
+                        }
+
                         double distanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(household.getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, 0.);
                         double distanceInKm = distanceInMeters / 1000;
                         int indexOfBin = 0;

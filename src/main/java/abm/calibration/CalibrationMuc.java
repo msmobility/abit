@@ -2,11 +2,11 @@ package abm.calibration;
 
 import abm.data.DataSet;
 
-import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.properties.AbitResources;
 
 import org.apache.log4j.Logger;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +24,8 @@ public class CalibrationMuc {
     boolean calibrateMandatoryActDurationTime;
     boolean calibrateMainDestinationChoice;
     boolean calibrateStopDestinationChoice;
+    boolean calibrateMainMcLogsumDestinationChoice;
+    boolean calibrateStopMcLogsumDestinationChoice;
     boolean calibrateDiscretionaryActGeneration;
     boolean calibrateDiscretionaryActSplitByType;
     boolean calibrateDiscretionaryActDayOfWeekAssignment;
@@ -45,8 +47,11 @@ public class CalibrationMuc {
     private DayOfWeekDiscretionaryAssignmentCalibration dayOfWeekDiscretionaryAssignmentCalibration;
     private TimeAssignmentCalibration timeAssignmentCalibration;
     private MainDestinationChoiceCalibration mainDestinationChoiceCalibration;
-
     private StopDestinationChoiceCalibration stopDestinationChoiceCalibration;
+
+    private StopMcLogsumDestinationChoiceCalibration stopMcLogsumDestinationChoiceCalibration;
+
+    private MainMcLogsumDestinationChoiceCalibration mainMcLogsumDestinationChoiceCalibration;
     private SplitByTypeCalibration splitByTypeCalibration;
     private SplitStopByTypeCalibration splitStopByTypeCalibration;
     private TourModeChoiceCalibration tourModeChoiceCalibration;
@@ -80,6 +85,12 @@ public class CalibrationMuc {
 
         calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.destination.calibration"));
         calibrationList.put("StopDestination", calibrateStopDestinationChoice);
+
+        calibrateMainMcLogsumDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.main.mcLogsum.destination.calibration"));
+        calibrationList.put("McLogsumMainActDestination", calibrateMainMcLogsumDestinationChoice);
+
+        calibrateStopMcLogsumDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.mcLogsum.destination.calibration"));
+        calibrationList.put("McLogsumStopActDestination", calibrateStopMcLogsumDestinationChoice);
 
         calibrateDiscretionaryActGeneration = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
         calibrationList.put("DiscActGeneration", calibrateDiscretionaryActGeneration);
@@ -120,7 +131,7 @@ public class CalibrationMuc {
     }
 
 
-    public void runCalibration() {
+    public void runCalibration() throws FileNotFoundException {
 
         //checkCalibrationProcess();
 
@@ -195,6 +206,20 @@ public class CalibrationMuc {
             stopDestinationChoiceCalibration.run();
         }
 
+        if (calibrateMainMcLogsumDestinationChoice){
+            mainMcLogsumDestinationChoiceCalibration = new MainMcLogsumDestinationChoiceCalibration(dataSet);
+            mainMcLogsumDestinationChoiceCalibration.setup();
+            mainMcLogsumDestinationChoiceCalibration.load();
+            mainMcLogsumDestinationChoiceCalibration.run();
+        }
+
+        if (calibrateStopMcLogsumDestinationChoice){
+            stopMcLogsumDestinationChoiceCalibration = new StopMcLogsumDestinationChoiceCalibration(dataSet);
+            stopMcLogsumDestinationChoiceCalibration.setup();
+            stopMcLogsumDestinationChoiceCalibration.load();
+            stopMcLogsumDestinationChoiceCalibration.run();
+        }
+
         if (calibrateTourModeChoice){
             tourModeChoiceCalibration = new TourModeChoiceCalibration(dataSet);
             tourModeChoiceCalibration.setup();
@@ -203,28 +228,28 @@ public class CalibrationMuc {
         }
 
         if (calibrateSubTourGeneration){
-            subTourGenerationCalibration = new SubTourGenerationCalibration();
+            subTourGenerationCalibration = new SubTourGenerationCalibration(dataSet);
             subTourGenerationCalibration.setup();
             subTourGenerationCalibration.load();
             subTourGenerationCalibration.run();
         }
 
-        if (calibrateSubTourStartTime || calibrateSubTourDuration){
-            subTourTimeAssignmentCalibration = new SubTourTimeAssignmentCalibration();
-            subTourTimeAssignmentCalibration.setup();
-            subTourTimeAssignmentCalibration.load();
-            subTourTimeAssignmentCalibration.run();
-        }
+//        if (calibrateSubTourStartTime || calibrateSubTourDuration){
+//            subTourTimeAssignmentCalibration = new SubTourTimeAssignmentCalibration();
+//            subTourTimeAssignmentCalibration.setup();
+//            subTourTimeAssignmentCalibration.load();
+//            subTourTimeAssignmentCalibration.run();
+//        }
 
         if (calibrateSubTourDestinationChoice){
-            subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration();
+            subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration(dataSet);
             subTourDestinationChoiceCalibration.setup();
             subTourDestinationChoiceCalibration.load();
             subTourDestinationChoiceCalibration.run();
         }
 
         if (calibrateSubTourModeChoice){
-            subTourModeChoiceCalibration = new SubTourModeChoiceCalibration();
+            subTourModeChoiceCalibration = new SubTourModeChoiceCalibration(dataSet);
             subTourModeChoiceCalibration.setup();
             subTourModeChoiceCalibration.load();
             subTourModeChoiceCalibration.run();

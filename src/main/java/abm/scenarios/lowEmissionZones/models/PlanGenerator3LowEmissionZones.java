@@ -1,24 +1,29 @@
-package abm.models;
+package abm.scenarios.lowEmissionZones.models;
 
 import abm.data.DataSet;
 import abm.data.geo.Location;
 import abm.data.plans.*;
-import abm.data.pop.*;
+import abm.data.pop.Household;
+import abm.data.pop.Person;
 import abm.io.input.BikeOwnershipReader;
+import abm.models.ModelSetup;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitStopType;
-import abm.models.activityGeneration.time.*;
+import abm.models.activityGeneration.time.DayOfWeekDiscretionaryAssignment;
+import abm.models.activityGeneration.time.DayOfWeekMandatoryAssignment;
+import abm.models.activityGeneration.time.SubtourTimeAssignment;
+import abm.models.activityGeneration.time.TimeAssignment;
 import abm.models.destinationChoice.DestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
-import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -26,9 +31,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class PlanGenerator3 implements Callable {
+public class PlanGenerator3LowEmissionZones implements Callable {
 
-    private static Logger logger = Logger.getLogger(PlanGenerator3.class);
+    private static Logger logger = Logger.getLogger(PlanGenerator3LowEmissionZones.class);
 
     private BikeOwnershipReader bikeOwnershipModel;
     private HabitualModeChoice habitualModeChoice;
@@ -60,7 +65,7 @@ public class PlanGenerator3 implements Callable {
     private final int TRIALS_RESCHEDULING = -1;
 
 
-    public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
+    public PlanGenerator3LowEmissionZones(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
         this.planTools = new PlanTools(dataSet.getTravelTimes());
         this.thread = thread;
@@ -81,7 +86,8 @@ public class PlanGenerator3 implements Callable {
         this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
-        this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
+        //this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
+        this.bikeOwnershipModel = modelSetup.getBikeOwnershipReader();
 
     }
 

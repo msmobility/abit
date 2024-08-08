@@ -1,4 +1,4 @@
-package abm.models.modeChoice;
+package abm.scenarios.lowEmissionZones.models.modeChoice;
 
 import abm.data.DataSet;
 import abm.data.geo.RegioStaR2;
@@ -7,10 +7,12 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
+import abm.data.vehicle.CarType;
 import abm.data.vehicle.Vehicle;
-import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.io.input.CoefficientsReader;
+import abm.models.modeChoice.TourModeChoice;
 import abm.properties.AbitResources;
+import abm.scenarios.lowEmissionZones.io.LowEmissionZoneReader;
 import abm.utils.AbitUtils;
 import abm.utils.LogitTools;
 import de.tum.bgu.msm.data.person.Disability;
@@ -28,15 +30,15 @@ import java.util.stream.Collectors;
 import static abm.io.input.CalibrationZoneToRegionTypeReader.getRegionForZone;
 
 
-public class NestedLogitTourModeChoiceModel implements TourModeChoice {
+public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeChoice {
 
-    private final static Logger logger = LogManager.getLogger(NestedLogitTourModeChoiceModel.class);
+    private final static Logger logger = LogManager.getLogger(NestedLogitTourModeChoiceModelLowEmissionZones.class);
     private final DataSet dataSet;
     private boolean runCalibration = false;
     private Map<Purpose, Map<Mode, Map<String, Double>>> purposeModeCoefficients;
 
-    private static final LogitTools<abm.data.plans.Mode> logitTools = new LogitTools<>(abm.data.plans.Mode.class);
-    private Map<Purpose, List<Tuple<EnumSet<abm.data.plans.Mode>, Double>>> nests = null;
+    private static final LogitTools<Mode> logitTools = new LogitTools<>(Mode.class);
+    private Map<Purpose, List<Tuple<EnumSet<Mode>, Double>>> nests = null;
 
     Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> updatedCalibrationFactors = new HashMap<>();
 
@@ -46,16 +48,19 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
     private static final double SPEED_WALK_KMH = 4.;
     private static final double SPEED_BICYCLE_KMH = 10.;
 
-    public NestedLogitTourModeChoiceModel(DataSet dataSet) {
+    private static final boolean scenarioLowEmissionZone = Boolean.parseBoolean(AbitResources.instance.getString("scenario.lowEmissionZone"));
+    private static Map<Integer, Boolean> evForbiddenZones = new HashMap<>();
+
+    public NestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet) {
         this.dataSet = dataSet;
         this.purposeModeCoefficients = new HashMap<>();
 
         //the following loop will read the coefficient file Mode.getModes().size() times, which is acceptable?
 
-        Map<Purpose, List<Tuple<EnumSet<abm.data.plans.Mode>, Double>>> nests = new HashMap<>();
+        Map<Purpose, List<Tuple<EnumSet<Mode>, Double>>> nests = new HashMap<>();
         for (Purpose purpose : Purpose.getAllPurposes()) {
             Map<Mode, Map<String, Double>> modeCoefficients = new HashMap<>();
-            List<Tuple<EnumSet<abm.data.plans.Mode>, Double>> nestsByPurpose = new ArrayList<>();
+            List<Tuple<EnumSet<Mode>, Double>> nestsByPurpose = new ArrayList<>();
             Path pathToFilePurpose;
             if (purpose == Purpose.EDUCATION || purpose == Purpose.WORK) {
                 pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "mandatoryMode_nestedLogit.csv");
@@ -77,12 +82,15 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
             purposeModeCoefficients.put(purpose, modeCoefficients);
             nests.put(purpose, nestsByPurpose);
         }
-        this.purposeModeCoefficients = purposeModeCoefficients;
         this.nests = nests;
+
+        if (scenarioLowEmissionZone) {
+            evForbiddenZones = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
+        }
 
     }
 
-    public NestedLogitTourModeChoiceModel(DataSet dataSet, boolean runCalibration) {
+    public NestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet, boolean runCalibration) {
         this(dataSet);
         List<String> regions = new ArrayList<>();
         regions.add("muc");
@@ -122,14 +130,39 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         int carUseStartTime_min = tour.getLegs().get(tour.getLegs().firstKey()).getNextActivity().getStartTime_min() - tour.getLegs().get(tour.getLegs().firstKey()).getTravelTime_min();
         int carUseEndTime_min = tour.getLegs().get(tour.getLegs().lastKey()).getPreviousActivity().getEndTime_min() + tour.getLegs().get(tour.getLegs().lastKey()).getTravelTime_min();
 
+        boolean travelIntoEvForbiddenZone = false;
+
+        for(Activity act:tour.getActivities().values()){
+            if(scenarioLowEmissionZone && !act.getPurpose().equals(Purpose.HOME) && evForbiddenZones.get(act.getLocation().getZoneId())){
+                travelIntoEvForbiddenZone = true;
+                break;
+            }
+        }
+
         for (Vehicle vehicle : household.getVehicles()) {
             if (vehicle instanceof Car) {
-                carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
-                if (carAvailable) {
-                    selectedVehicle = vehicle;
-                    break;
+                if (scenarioLowEmissionZone && travelIntoEvForbiddenZone && !evForbiddenZones.get(household.getLocation().getZoneId())) {
+                //if (scenarioLowEmissionZone && evForbiddenZones.containsKey(tour.getMainActivity().getLocation().getZoneId())) {
+                    carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min); //Todo change this logic
+                    boolean isEV = ((Car) vehicle).getEngineType().equals(CarType.ELECTRIC);
+                    if (carAvailable && isEV) {
+                        selectedVehicle = vehicle;
+                        break;
+                    }
+                } else {
+                    carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
+                    if (carAvailable) {
+                        selectedVehicle = vehicle;
+                        break;
+                    }
                 }
             }
+        }
+
+        if (selectedVehicle != null) {
+            carAvailable = true;
+        }else{
+            carAvailable = false;
         }
 
         Mode selectedMode = chooseMode(person, tour, purpose, carAvailable);
@@ -143,8 +176,24 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
     public Mode chooseMode(Person person, Tour tour, Purpose purpose, Boolean carAvailable) {
         Household household = person.getHousehold();
         EnumMap<Mode, Double> utilities = new EnumMap<Mode, Double>(Mode.class);
+
+        boolean hasEVInHousehold = household.getVehicles().stream().anyMatch(vehicle -> vehicle instanceof Car && ((Car) vehicle).getEngineType().equals(CarType.ELECTRIC));
+
+        boolean travelIntoEvForbiddenZone = false;
+
+        for(Activity act:tour.getActivities().values()){
+            if(scenarioLowEmissionZone && !act.getPurpose().equals(Purpose.HOME) && evForbiddenZones.get(act.getLocation().getZoneId())){
+                travelIntoEvForbiddenZone = true;
+                break;
+            }
+        }
+
+
         for (Mode mode : Mode.getModes()) {
             if (mode == Mode.CAR_DRIVER && !carAvailable) {
+                utilities.put(mode, Double.NEGATIVE_INFINITY);
+            } else if (scenarioLowEmissionZone && !hasEVInHousehold && travelIntoEvForbiddenZone && !evForbiddenZones.get(person.getHousehold().getLocation().getZoneId()) && mode == Mode.CAR_PASSENGER) {
+            //} else if (scenarioLowEmissionZone && !hasEVInHousehold && evForbiddenZones.containsKey(tour.getMainActivity().getLocation().getZoneId()) && mode == Mode.CAR_PASSENGER) {
                 utilities.put(mode, Double.NEGATIVE_INFINITY);
             } else {
                 utilities.put(mode, calculateUtilityForThisMode(person, tour, purpose, mode, household));
@@ -306,9 +355,13 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
                     tour.getMainActivity().getDayOfWeek().toString().toLowerCase() + "_" + region.toLowerCase());
 
         } else {
+            try {
+                utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + tour.getMainActivity().getDayOfWeek().toString().toLowerCase() +
+                        "_" + region.toLowerCase());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-            utility += purposeModeCoefficients.get(purpose).get(mode).get("calibration_" + tour.getMainActivity().getDayOfWeek().toString().toLowerCase() +
-                     "_" + region.toLowerCase());
         }
 
 
@@ -319,10 +372,10 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         return utility;
     }
 
-    public double calculateModeChoiceLogsumForThisODPairForBase(Person person, Tour tour, Purpose purpose, Map<String, Double> attributes){
+    public double calculateModeChoiceLogsumForThisODPairForBase(Person person, Tour tour, Purpose purpose, Map<String, Double> attributes) {
         Map<Mode, Double> utilityMap = new HashMap<>();
 
-        for (Mode mode : Mode.getModes()){
+        for (Mode mode : Mode.getModes()) {
             utilityMap.put(mode, this.calculateModeChoiceLogsumForThisMode(person, tour, purpose, mode, attributes));
         }
 
@@ -330,21 +383,21 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         final Double nestingCoefficientPtModes = purposeModeCoefficients.get(purpose).get(Mode.BUS).get("nestingCoefficient");
         final Double nestingCoefficientActiveModes = purposeModeCoefficients.get(purpose).get(Mode.WALK).get("nestingCoefficient");
 
-        double expSumAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityMap.get(Mode.CAR_DRIVER)/nestingCoefficientAutoModes) + Math.exp(utilityMap.get(Mode.CAR_PASSENGER)/nestingCoefficientAutoModes)));
-        double expSumPt = Math.exp(nestingCoefficientPtModes * Math.log(Math.exp(utilityMap.get(Mode.BUS)/nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAM_METRO)/nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAIN)/nestingCoefficientPtModes)));
-        double expSumActive = Math.exp(nestingCoefficientActiveModes * Math.log(Math.exp(utilityMap.get(Mode.BIKE)/nestingCoefficientActiveModes) + Math.exp(utilityMap.get(Mode.WALK)/nestingCoefficientActiveModes)));
+        double expSumAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityMap.get(Mode.CAR_DRIVER) / nestingCoefficientAutoModes) + Math.exp(utilityMap.get(Mode.CAR_PASSENGER) / nestingCoefficientAutoModes)));
+        double expSumPt = Math.exp(nestingCoefficientPtModes * Math.log(Math.exp(utilityMap.get(Mode.BUS) / nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAM_METRO) / nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAIN) / nestingCoefficientPtModes)));
+        double expSumActive = Math.exp(nestingCoefficientActiveModes * Math.log(Math.exp(utilityMap.get(Mode.BIKE) / nestingCoefficientActiveModes) + Math.exp(utilityMap.get(Mode.WALK) / nestingCoefficientActiveModes)));
         return Math.log(expSumAuto + expSumPt + expSumActive);
     }
 
-    public double calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(Person person, Tour tour, Purpose purpose, Map<String, Double> attributes, boolean isLowEmissionZoneRestriction){
+    public double calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(Person person, Tour tour, Purpose purpose, Map<String, Double> attributes, boolean hasLowEmissionZoneRestriction) {
 
         Map<Mode, Double> utilityMap = new HashMap<>();
 
-        for (Mode mode : Mode.getModes()){
+        for (Mode mode : Mode.getModes()) {
             utilityMap.put(mode, this.calculateModeChoiceLogsumForThisMode(person, tour, purpose, mode, attributes));
         }
 
-        if (isLowEmissionZoneRestriction){
+        if (hasLowEmissionZoneRestriction) {
             utilityMap.put(Mode.CAR_DRIVER, Double.NEGATIVE_INFINITY);
             utilityMap.put(Mode.CAR_PASSENGER, Double.NEGATIVE_INFINITY);
         }
@@ -353,9 +406,9 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         final Double nestingCoefficientPtModes = purposeModeCoefficients.get(purpose).get(Mode.BUS).get("nestingCoefficient");
         final Double nestingCoefficientActiveModes = purposeModeCoefficients.get(purpose).get(Mode.WALK).get("nestingCoefficient");
 
-        double expSumAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityMap.get(Mode.CAR_DRIVER)/nestingCoefficientAutoModes) + Math.exp(utilityMap.get(Mode.CAR_PASSENGER)/nestingCoefficientAutoModes)));
-        double expSumPt = Math.exp(nestingCoefficientPtModes * Math.log(Math.exp(utilityMap.get(Mode.BUS)/nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAM_METRO)/nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAIN)/nestingCoefficientPtModes)));
-        double expSumActive = Math.exp(nestingCoefficientActiveModes * Math.log(Math.exp(utilityMap.get(Mode.BIKE)/nestingCoefficientActiveModes) + Math.exp(utilityMap.get(Mode.WALK)/nestingCoefficientActiveModes)));
+        double expSumAuto = Math.exp(nestingCoefficientAutoModes * Math.log(Math.exp(utilityMap.get(Mode.CAR_DRIVER) / nestingCoefficientAutoModes) + Math.exp(utilityMap.get(Mode.CAR_PASSENGER) / nestingCoefficientAutoModes)));
+        double expSumPt = Math.exp(nestingCoefficientPtModes * Math.log(Math.exp(utilityMap.get(Mode.BUS) / nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAM_METRO) / nestingCoefficientPtModes) + Math.exp(utilityMap.get(Mode.TRAIN) / nestingCoefficientPtModes)));
+        double expSumActive = Math.exp(nestingCoefficientActiveModes * Math.log(Math.exp(utilityMap.get(Mode.BIKE) / nestingCoefficientActiveModes) + Math.exp(utilityMap.get(Mode.WALK) / nestingCoefficientActiveModes)));
         return Math.log(expSumAuto + expSumPt + expSumActive);
     }
 
@@ -365,7 +418,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
         // Sex
         utility += attributes.get("female") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.female", 0.);
         // Age
-        utility += attributes.get("age_0_18")  * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.age_gr_1", 0.);
+        utility += attributes.get("age_0_18") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.age_gr_1", 0.);
         utility += attributes.get("age_19_29") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.age_gr_2", 0.);
         utility += attributes.get("age_30_49") * 0;
         utility += (attributes.get("age_50_59") + attributes.get("age_60_69")) * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("p.age_gr_45", 0.);
@@ -448,7 +501,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
     //calculates generalized costs
     private EnumMap<Mode, Double> calculateGeneralizedCosts(Purpose purpose, Household household,
-                                                           Tour tour) {
+                                                            Tour tour) {
 
         double travelDistanceAuto = 0;
 
@@ -637,7 +690,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
                         double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode);
                         double updatedCalibrationFactor = newCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode) + calibrationFactorFromLastIteration;
                         this.updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).replace(mode, updatedCalibrationFactor);
-                        if (dayOfWeek.equals(DayOfWeek.MONDAY) || dayOfWeek.equals(DayOfWeek.SATURDAY)){
+                        if (dayOfWeek.equals(DayOfWeek.MONDAY) || dayOfWeek.equals(DayOfWeek.SATURDAY)) {
                             logger.info("Calibration factor for " + purpose + "\t" + dayOfWeek + "\t" + region + "\t" + "and " + mode + "\t" + ": " + updatedCalibrationFactor);
                         }
 
@@ -670,10 +723,10 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
                         updatedCalibrationFactor = updatedCalibrationFactors.get(region).get(purpose).get(dayOfWeek).get(mode);
                         latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
                         if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase()+
+                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + purpose.toString().toLowerCase() + "_" + dayOfWeek.toString().toLowerCase() +
                                     "_" + region.toLowerCase(), latestCalibrationFactor);
                         } else {
-                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + dayOfWeek.toString().toLowerCase()+ "_" +
+                            purposeModeCoefficients.get(purpose).get(mode).replace("calibration_" + dayOfWeek.toString().toLowerCase() + "_" +
                                     region.toLowerCase(), latestCalibrationFactor);
                         }
                     }

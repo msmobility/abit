@@ -1,24 +1,28 @@
-package abm.models;
+package abm.scenarios.lowEmissionZones;
 
 import abm.data.DataSet;
 import abm.data.plans.Purpose;
 import abm.io.input.BikeOwnershipReader;
-import abm.models.activityGeneration.frequency.*;
+import abm.models.ModelSetup;
+import abm.models.activityGeneration.frequency.FrequencyGenerator;
+import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
+import abm.models.activityGeneration.frequency.SubtourGenerator;
+import abm.models.activityGeneration.frequency.SubtourGeneratorModel;
 import abm.models.activityGeneration.splitByType.SplitByType;
 import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.models.activityGeneration.splitByType.SplitStopByTypeModel;
 import abm.models.activityGeneration.splitByType.SplitStopType;
 import abm.models.activityGeneration.time.*;
-import abm.models.destinationChoice.DestinationChoice;
-import abm.models.destinationChoice.DestinationChoiceModel;
-import abm.models.destinationChoice.SubtourDestinationChoice;
-import abm.models.destinationChoice.SubtourDestinationChoiceModel;
+import abm.models.destinationChoice.*;
 import abm.models.modeChoice.*;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
 import org.apache.commons.collections.map.HashedMap;
 
+import java.io.FileNotFoundException;
 import java.util.Map;
 
-public class ModelSetupMuc implements ModelSetup{
+public class ModelSetupMucLowEmissionZone implements ModelSetup {
 
     private final Map<Purpose, FrequencyGenerator> frequencyGenerators;
     private final HabitualModeChoice habitualModeChoice;
@@ -36,11 +40,11 @@ public class ModelSetupMuc implements ModelSetup{
     private final BikeOwnershipReader bikeOwnershipReader;
 
 
-    public ModelSetupMuc(DataSet dataSet) {
+    public ModelSetupMucLowEmissionZone(DataSet dataSet) throws FileNotFoundException {
 
         bikeOwnershipReader = new BikeOwnershipReader(dataSet);
         dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
-        tourModeChoice = new NestedLogitTourModeChoiceModel(dataSet);
+        tourModeChoice = new NestedLogitTourModeChoiceModelLowEmissionZones(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
 
@@ -50,7 +54,7 @@ public class ModelSetupMuc implements ModelSetup{
         }
         stopSplitType = new SplitStopByTypeModel();
         splitByType = new SplitByTypeModel(dataSet);
-        destinationChoice = new DestinationChoiceModel(dataSet);
+        destinationChoice = new McLogsumBasedDestinationChoiceModel(dataSet);
         timeAssignment = new TimeAssignmentModel(dataSet);
 
         subtourGenerator = new SubtourGeneratorModel(dataSet);
@@ -124,6 +128,7 @@ public class ModelSetupMuc implements ModelSetup{
     public SubtourModeChoice getSubtourModeChoice() {
         return subtourModeChoice;
     }
+
     public BikeOwnershipReader getBikeOwnershipReader() {
         return bikeOwnershipReader;
     }
