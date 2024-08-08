@@ -13,6 +13,7 @@ import abm.models.ModelSetup;
 import abm.models.PlanGenerator3;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
+import abm.scenarios.lowEmissionZones.models.PlanGenerator3LowEmissionZones;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
@@ -79,7 +80,7 @@ public class RunAbitLowEmissionZones {
         }
 
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator3(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator3LowEmissionZones(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
         }
 
         executor.execute();

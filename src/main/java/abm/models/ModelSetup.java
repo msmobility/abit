@@ -1,6 +1,7 @@
 package abm.models;
 
 import abm.data.plans.Purpose;
+import abm.io.input.BikeOwnershipReader;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -45,4 +46,6 @@ public interface ModelSetup {
     SubtourDestinationChoice getSubtourDestinationChoice();
 
     SubtourModeChoice getSubtourModeChoice();
+
+    BikeOwnershipReader getBikeOwnershipReader();
 }

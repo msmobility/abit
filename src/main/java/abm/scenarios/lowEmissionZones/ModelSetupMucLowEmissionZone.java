@@ -37,11 +37,6 @@ public class ModelSetupMucLowEmissionZone implements ModelSetup {
     private final SubtourTimeAssignment subtourTimeAssignment;
     private final SubtourDestinationChoice subtourDestinationChoice;
     private final SubtourModeChoice subtourModeChoice;
-
-    public BikeOwnershipReader getBikeOwnershipReader() {
-        return bikeOwnershipReader;
-    }
-
     private final BikeOwnershipReader bikeOwnershipReader;
 
 
@@ -132,6 +127,10 @@ public class ModelSetupMucLowEmissionZone implements ModelSetup {
     @Override
     public SubtourModeChoice getSubtourModeChoice() {
         return subtourModeChoice;
+    }
+
+    public BikeOwnershipReader getBikeOwnershipReader() {
+        return bikeOwnershipReader;
     }
 
 }

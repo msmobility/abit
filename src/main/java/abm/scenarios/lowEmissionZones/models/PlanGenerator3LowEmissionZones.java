@@ -87,7 +87,7 @@ public class PlanGenerator3LowEmissionZones implements Callable {
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
         //this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
-        this.bikeOwnershipModel = ((ModelSetupMucLowEmissionZone)modelSetup).getBikeOwnershipReader();
+        this.bikeOwnershipModel = modelSetup.getBikeOwnershipReader();
 
     }
 
