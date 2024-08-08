@@ -8,6 +8,7 @@ import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.model.McLogsumBasedDestinationChoiceModel;
 import org.apache.log4j.Logger;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -132,7 +133,7 @@ public class CalibrationMuc {
     }
 
 
-    public void runCalibration() {
+    public void runCalibration() throws FileNotFoundException {
 
         //checkCalibrationProcess();
 
