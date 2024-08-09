@@ -42,7 +42,7 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
     private Map<Purpose, Map<String, Double>> updatedCalibrationFactorsStop = new HashMap<>();
     private final String[] roles = {"evOwner", "nonEvOwner"};
     private static final boolean scenarioLowEmissionZone = Boolean.parseBoolean(AbitResources.instance.getString("scenario.lowEmissionZone"));
-    private static Map<Integer, Boolean> evForbiddenZones = new HashMap<>();
+    private static Map<Integer, Boolean> lowEmissionZones = new HashMap<>();
 
     public McLogsumBasedDestinationChoiceModel(DataSet dataSet) throws FileNotFoundException {
         this.dataSet = dataSet;
@@ -62,7 +62,7 @@ public class McLogsumBasedDestinationChoiceModel implements DestinationChoice {
         expUtilityMatricesStopDestinationByPurposeByRole = calculateProbabilityStopDestination();
 
         if (scenarioLowEmissionZone) {
-            evForbiddenZones = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
+            lowEmissionZones = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
         }
     }
 

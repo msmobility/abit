@@ -20,20 +20,20 @@ public class LowEmissionZoneReader {
     }
 
     public Map<Integer, Boolean> readLowEmissionZones() {
-        Map<Integer, Boolean> evForbidden = new HashMap<>();
+        Map<Integer, Boolean> lowEmissionZones = new HashMap<>();
         for (Zone zoneId : dataSet.getZones().values()) {
-            evForbidden.put(zoneId.getId(), false);
+            lowEmissionZones.put(zoneId.getId(), false);
         }
 
         try {
             final Map<String, Integer> indexes = new HashMap<>();
             BufferedReader br = new BufferedReader(new FileReader(LOW_EMISSION_ZONES_PATH));
             processHeader(br, indexes);
-            processRecords(br, indexes, evForbidden);
+            processRecords(br, indexes, lowEmissionZones);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return evForbidden;
+        return lowEmissionZones;
     }
 
     private void processHeader(BufferedReader br, Map<String, Integer> indexes) throws IOException {
@@ -50,5 +50,4 @@ public class LowEmissionZoneReader {
 
         }
     }
-
 }
