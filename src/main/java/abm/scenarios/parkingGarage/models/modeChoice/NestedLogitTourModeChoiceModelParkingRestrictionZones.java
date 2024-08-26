@@ -53,7 +53,7 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
     private static final boolean scenarioExtraCost = Boolean.parseBoolean(AbitResources.instance.getString("scenario.extraCost"));
     private static final double scenarioParkingFeesPerHour = Double.parseDouble(AbitResources.instance.getString("scenario.parkingFeesPerHour"));
     private static final boolean scenarioCostSubsidy = Boolean.parseBoolean(AbitResources.instance.getString("scenario.costSubsidy"));
-    private static final double scenarioSubsidyPercentage = Double.parseDouble(AbitResources.instance.getString("scenario.subsidyAmount"));
+    private static final double scenarioSubsidyPercentage = Double.parseDouble(AbitResources.instance.getString("scenario.subsidyPercentage"));
     private static Map<Integer, Boolean> parkingRestrictionZones = new HashMap<>();
 
     public NestedLogitTourModeChoiceModelParkingRestrictionZones(DataSet dataSet) {
@@ -168,7 +168,6 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
 
         if (utilities == null) return null;
         EnumMap<Mode, Double> probabilities = logitTools.getProbabilities(utilities, nests.get(purpose));
-
 
         final Mode selected = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
 
@@ -531,42 +530,42 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
             gcTramMetro = tourTravelTimes.get(Mode.TRAM_METRO) + (travelDistanceAuto * transitFareEurosPerKm) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_greater_10");
         }
 
-        //Todo add extra time and cost for parking restriction zones
+
 
 
         if (scenarioParkingRestrictionZones) {
 
             int residentialZoneId = household.getLocation().getZoneId();
-            boolean isResidents = parkingRestrictionZones.get(residentialZoneId) != null;
+            boolean isResidents = parkingRestrictionZones.get(residentialZoneId);
             boolean hasMoreThanOneVehicleInHousehold = household.getVehicles().size() > 1;
 
             //Parking time and costs if driving cars -> need to add to car mode
-            double parkingTimeLength_asVisitor_min = 0;
-            double parkingFrequencies_asVisitor = 0;
-            double totalExtraParkingTime_asVisitor = 0;
+            double inGarageParkingTime_asVisitor_min = 0;
+            double garageAccessFrequencies_asVisitor = 0;
+            double garageAccessAndEgressTime_min = 0;
 
             int previousParkigZoneId = residentialZoneId;
             for (Activity activity : tour.getActivities().values()) {
                 if (parkingRestrictionZones.get(activity.getLocation().getZoneId()) != null && !activity.getPurpose().equals(Purpose.HOME)) {
-                    parkingTimeLength_asVisitor_min += activity.getDuration();
+                    //Todo Math.abs() temporal fix for act end time < act start time
+                    inGarageParkingTime_asVisitor_min += Math.abs(activity.getDuration());
                     if (previousParkigZoneId != activity.getLocation().getZoneId()) {
-                        parkingFrequencies_asVisitor++;
+                        garageAccessFrequencies_asVisitor++;
                     }
                 }
                 previousParkigZoneId = activity.getLocation().getZoneId();
             }
-            totalExtraParkingTime_asVisitor = parkingTimeLength_asVisitor_min + parkingFrequencies_asVisitor * 2 * scenarioMaximumExtraTime * AbitUtils.getRandomObject().nextDouble();
+            garageAccessAndEgressTime_min = garageAccessFrequencies_asVisitor * 2 * scenarioMaximumExtraTime;// * AbitUtils.getRandomObject().nextDouble();
 
             //Parking time and costs if car standstill -> need to add to non-car modes
-            double parkingTimeLength_letCarStandstill_min = 0;
-            double totalExtraParkingTime_letCarStandstill_min = 0;
+            double inGarageTime_carsStandstill_min = 0;
 
             if (isResidents && hasMoreThanOneVehicleInHousehold) {
 
                 int numberOfCarsStandstill = 0;
 
-                int tourStartTime = tour.getActivities().get(tour.getActivities().firstKey()).getEndTime_min();
-                int tourEndTime = tour.getActivities().get(tour.getActivities().lastKey()).getStartTime_min();
+                int tourStartTime = tour.getActivities().get(tour.getActivities().firstKey()).getStartTime_min();
+                int tourEndTime = tour.getActivities().get(tour.getActivities().lastKey()).getEndTime_min();
 
                 for (Vehicle veh:household.getVehicles()){
                     if (veh instanceof Car){
@@ -577,52 +576,50 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
                 }
 
                 if (numberOfCarsStandstill > 1){
-                    parkingTimeLength_letCarStandstill_min = tourEndTime - tourStartTime;
+                    inGarageTime_carsStandstill_min = tourEndTime - tourStartTime;
                 }
             }
-            totalExtraParkingTime_letCarStandstill_min = parkingTimeLength_letCarStandstill_min;
 
-            if (scenarioVisitorsExtraTime) {
-                gcAutoD = gcAutoD + totalExtraParkingTime_asVisitor;
+            if (scenarioVisitorsExtraTime && !isResidents) {
+                gcAutoD = gcAutoD + garageAccessAndEgressTime_min;
             }
 
-            if (scenarioResidentsExtraTime) {
-                gcAutoD = gcAutoD + totalExtraParkingTime_asVisitor;
+            if (scenarioResidentsExtraTime && isResidents) {
+                gcAutoD = gcAutoD + garageAccessAndEgressTime_min;
             }
 
             if (scenarioExtraCost) {
                 if (monthlyIncome_EUR <= 1500) {
-                    gcAutoD = gcAutoD + ((parkingTimeLength_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
-                    gcAutoP = gcAutoP + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
-                    gcBus = gcBus + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
-                    gcTrain = gcTrain + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
-                    gcTramMetro = gcTramMetro + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
+                    gcAutoD = gcAutoD + ((inGarageParkingTime_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
+                    gcAutoP = gcAutoP + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
+                    gcBus = gcBus + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
+                    gcTrain = gcTrain + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
+                    gcTramMetro = gcTramMetro + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
                 } else if (monthlyIncome_EUR <= 5000) {
-                    gcAutoD = gcAutoD + ((parkingTimeLength_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_5_to_10");
-                    gcAutoP = gcAutoP + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_5_to_10");
-                    gcBus = gcBus + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_5_to_10");
-                    gcTrain = gcTrain + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_5_to_10");
-                    gcTramMetro = gcTramMetro + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_5_to_10");
+                    gcAutoD = gcAutoD + ((inGarageParkingTime_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_5_to_10");
+                    gcAutoP = gcAutoP + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_5_to_10");
+                    gcBus = gcBus + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_5_to_10");
+                    gcTrain = gcTrain + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_5_to_10");
+                    gcTramMetro = gcTramMetro + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_5_to_10");
                 } else {
-                    gcAutoD = gcAutoD + ((parkingTimeLength_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_greater_10");
-                    gcAutoP = gcAutoP + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_greater_10");
-                    gcBus = gcBus + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_greater_10");
-                    gcTrain = gcTrain + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_greater_10");
-                    gcTramMetro = gcTramMetro + ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_greater_10");
+                    gcAutoD = gcAutoD + ((inGarageParkingTime_asVisitor_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_income_greater_10");
+                    gcAutoP = gcAutoP + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_income_greater_10");
+                    gcBus = gcBus + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_income_greater_10");
+                    gcTrain = gcTrain + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_income_greater_10");
+                    gcTramMetro = gcTramMetro + ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_income_greater_10");
                 }
             }
 
             if (scenarioExtraCost && scenarioCostSubsidy) {
                 if(monthlyIncome_EUR <= 995){
-                    gcAutoD = gcAutoD - ((parkingTimeLength_asVisitor_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
-                    gcAutoP = gcAutoP - ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
-                    gcBus = gcBus - ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
-                    gcTrain = gcTrain - ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
-                    gcTramMetro = gcTramMetro - ((totalExtraParkingTime_letCarStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
+                    gcAutoD = gcAutoD - ((inGarageParkingTime_asVisitor_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.CAR_DRIVER).get("vot_less_or_equal_income_4");
+                    gcAutoP = gcAutoP - ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.CAR_PASSENGER).get("vot_less_or_equal_income_4");
+                    gcBus = gcBus - ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.BUS).get("vot_less_or_equal_income_4");
+                    gcTrain = gcTrain - ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.TRAIN).get("vot_less_or_equal_income_4");
+                    gcTramMetro = gcTramMetro - ((inGarageTime_carsStandstill_min / 60) * scenarioParkingFeesPerHour * scenarioSubsidyPercentage) / purposeModeCoefficients.get(purpose).get(Mode.TRAM_METRO).get("vot_less_or_equal_income_4");
                 }
             }
         }
-
 
         EnumMap<Mode, Double> generalizedCosts = new EnumMap<Mode, Double>(Mode.class);
 
@@ -643,6 +640,7 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
             generalizedCosts.put(Mode.TRAM_METRO, gcTramMetro);
             generalizedCosts.put(Mode.WALK, tourTravelTimes.get(Mode.WALK));
         }
+
         return generalizedCosts;
     }
 

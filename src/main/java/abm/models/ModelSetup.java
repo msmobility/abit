@@ -47,5 +47,5 @@ public interface ModelSetup {
 
     SubtourModeChoice getSubtourModeChoice();
 
-    BikeOwnershipReader getBikeOwnershipReader();
+    //BikeOwnershipReader getBikeOwnershipReader();
 }

@@ -46,7 +46,7 @@ public class ParkingRestrictionZoneReader {
         while ((line = br.readLine()) != null) {
             String[] splitLine = line.split(",");
             int id = Integer.parseInt(splitLine[indexes.get("id")]);
-            parkingRestrictionZones.put(id, true);
+            parkingRestrictionZones.replace(id, true);
 
         }
     }

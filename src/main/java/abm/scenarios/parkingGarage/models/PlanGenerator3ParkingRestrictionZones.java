@@ -1,4 +1,4 @@
-package abm.scenarios.lowEmissionZones.models;
+package abm.scenarios.parkingGarage.models;
 
 import abm.data.DataSet;
 import abm.data.geo.Location;
@@ -21,6 +21,7 @@ import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
 import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
+import abm.scenarios.parkingGarage.ModelSetupMucParkingRestrictionZone;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
@@ -31,9 +32,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class PlanGenerator3LowEmissionZones implements Callable {
+public class PlanGenerator3ParkingRestrictionZones implements Callable {
 
-    private static Logger logger = Logger.getLogger(PlanGenerator3LowEmissionZones.class);
+    private static Logger logger = Logger.getLogger(PlanGenerator3ParkingRestrictionZones.class);
 
     private BikeOwnershipReader bikeOwnershipModel;
     private HabitualModeChoice habitualModeChoice;
@@ -65,7 +66,7 @@ public class PlanGenerator3LowEmissionZones implements Callable {
     private final int TRIALS_RESCHEDULING = -1;
 
 
-    public PlanGenerator3LowEmissionZones(DataSet dataSet, ModelSetup modelSetup, int thread) {
+    public PlanGenerator3ParkingRestrictionZones(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
         this.planTools = new PlanTools(dataSet.getTravelTimes());
         this.thread = thread;
@@ -86,7 +87,7 @@ public class PlanGenerator3LowEmissionZones implements Callable {
         this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
-        this.bikeOwnershipModel = ((ModelSetupMucLowEmissionZone)modelSetup).getBikeOwnershipReader();
+        this.bikeOwnershipModel = ((ModelSetupMucParkingRestrictionZone)modelSetup).getBikeOwnershipReader();
 
     }
 

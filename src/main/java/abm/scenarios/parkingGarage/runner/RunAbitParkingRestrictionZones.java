@@ -13,6 +13,7 @@ import abm.models.ModelSetup;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.models.PlanGenerator3LowEmissionZones;
 import abm.scenarios.parkingGarage.ModelSetupMucParkingRestrictionZone;
+import abm.scenarios.parkingGarage.models.PlanGenerator3ParkingRestrictionZones;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.concurrent.ConcurrentExecutor;
@@ -78,7 +79,7 @@ public class RunAbitParkingRestrictionZones {
         }
 
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator3LowEmissionZones(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
+            executor.addTaskToQueue(new PlanGenerator3ParkingRestrictionZones(dataSet, modelSetup, i).setHouseholds(householdsByThread.get(i)));
         }
 
         executor.execute();
