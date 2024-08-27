@@ -49,7 +49,7 @@ public class SpaceTimePrismCalculator {
 
         logger.info("Initializing space-time prism calculator");
         generateSyntheticPopulation(); //Todo replace later by reading the plan from ABIT output
-        if (ACTIVITY_DURATION_MIN > CLOSE_MIN - OPEN_MIN) {
+        if (ACTIVITY_DURATION_MIN > CLOSE_MIN - OPEN_MIN) { //Todo this condition should be replaced later
             logger.error("Activity duration is too short");
             System.exit(1);
         }
@@ -58,28 +58,58 @@ public class SpaceTimePrismCalculator {
         calculateSpaceTimePrism();
 
         logger.info("Printing activity list");
-        printActivityList();
+        printActivityList(); //Todo can be removed later
 
         //Todo 8. write out space-time prism list
         logger.info("Printing space-time prism");
-        printSpaceTimePrismList();
+        printSpaceTimePrismList(); //Todo move to an independent writer class
+        printAggregateSpaceTimePrism(); //Todo move to an independent writer class
 
+    }
+
+    private static void printAggregateSpaceTimePrism() throws FileNotFoundException {
+        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//spaceTimePrism_aggregated.csv");
+
+        pw.println(SpaceTimePrism.getHeaderForAggregatedAnalysis());
+
+        for (Person person : dataSet.getPersons().values()) {
+            for (SpaceTimePrism stp : spaceTimePrismList.get(person.getId())) {
+
+                int numAccssibleZones = 0;
+                double numAttraction = 0.0; //Todo, ignore for now, later need to be updated after reading SP
+                double areaSize = 0.0;
+
+                for (Zone accessibleZone : stp.getAccessibleZones()) {
+
+                    numAccssibleZones += 1;
+                    //numAttraction = numAttraction + dataSet.getZones().get(accessibleZone.getId()).getAttributes().getAttribute("jj.retail");
+                    areaSize = areaSize + dataSet.getZones().get(accessibleZone.getId()).getAreaKm2();
+
+
+                }
+                pw.println(stp + "," + numAccssibleZones + "," + numAttraction + "," + areaSize);
+            }
+        }
+
+        pw.close();
     }
 
     private static void printSpaceTimePrismList() throws FileNotFoundException {
 
-        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//spaceTimePrism.csv");
-//Todo modify the following
-//        pw.println("personId, spaceTimePrismId, departureTimeFromHome, arrivalTimeAtHome, possibleTravelTime, accessibleZones");
-//
-//        for (Person person : dataSet.getPersons().values()) {
-//            for (SpaceTimePrism stp : spaceTimePrismList.get(person.getId())) {
-//                pw.println(person.getId() + "," + stp.getId() + "," + stp.getDepartureTimeFromHome() + "," +
-//                        stp.getArrivalTimeAtHome() + "," + stp.getPossibleTravelTime() + "," + stp.getAccessibleZones());
-//            }
-//        }
+        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//spaceTimePrism_accessibleZoneList.csv");
+
+        pw.println(SpaceTimePrism.getHeader());
+
+        for (Person person : dataSet.getPersons().values()) {
+            for (SpaceTimePrism stp : spaceTimePrismList.get(person.getId())) {
+                for (Zone accessibleZone : stp.getAccessibleZones()) {
+                    pw.println(stp + "," + accessibleZone.getId());
+                }
+            }
+        }
 
         pw.close();
+
     }
 
     private static void printActivityList() throws FileNotFoundException {
@@ -366,7 +396,7 @@ public class SpaceTimePrismCalculator {
                     activityList.get(person.getId()).add(pickUpKid5);
 
                     Activity homeActivity2_5 = new Activity(person, Purpose.HOME);
-                    int arrivalTimeAtHome2_5 = departTimeAtAccompany5 + dataSet.getTravelTimes().getTravelTimeInMinutes(kittaZone, homeZone, Mode.CAR_DRIVER, departTimeAtAccompany5);
+                    int arrivalTimeAtHome2_5 = departTimeAtAccompany5 + dataSet.getTravelTimes().getTravelTimeInMinutes(kittaZone, homeZone, Mode.BUS, departTimeAtAccompany5);
                     int departTimeAtHome2_5 = 24 * 60;
                     homeActivity2_5.setStartTime_min(arrivalTimeAtHome2_5);
                     homeActivity2_5.setEndTime_min(departTimeAtHome2_5);
@@ -382,7 +412,7 @@ public class SpaceTimePrismCalculator {
                     activityList.get(person.getId()).add(homeActivity6_1);
 
                     Activity dropOffKid6 = new Activity(person, Purpose.ACCOMPANY);
-                    int arrivalTimeAtAccompany6 = 8 * 60 + dataSet.getTravelTimes().getTravelTimeInMinutes(homeZone, kittaZone, Mode.TRAM_METRO, 8 * 60);
+                    int arrivalTimeAtAccompany6 = 8 * 60 + dataSet.getTravelTimes().getTravelTimeInMinutes(homeZone, kittaZone, Mode.BUS, 8 * 60);
                     int departTimeAtAccompany6 = arrivalTimeAtAccompany6 + 10;
                     dropOffKid6.setStartTime_min(arrivalTimeAtAccompany6);
                     dropOffKid6.setEndTime_min(departTimeAtAccompany6);
@@ -390,7 +420,7 @@ public class SpaceTimePrismCalculator {
                     activityList.get(person.getId()).add(dropOffKid6);
 
                     Activity homeActivity6_2 = new Activity(person, Purpose.HOME);
-                    int arrivalTimeAtHome6_2 = departTimeAtAccompany6 + dataSet.getTravelTimes().getTravelTimeInMinutes(kittaZone, homeZone, Mode.TRAM_METRO, departTimeAtAccompany6);
+                    int arrivalTimeAtHome6_2 = departTimeAtAccompany6 + dataSet.getTravelTimes().getTravelTimeInMinutes(kittaZone, homeZone, Mode.BUS, departTimeAtAccompany6);
                     int departTimeAtHome6_2 = 11 * 60;
                     homeActivity6_2.setStartTime_min(arrivalTimeAtHome6_2);
                     homeActivity6_2.setEndTime_min(departTimeAtHome6_2);

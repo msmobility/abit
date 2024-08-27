@@ -54,11 +54,15 @@ public class SpaceTimePrism {
 
     @Override
     public String toString() {
-        return id + "," + personId + "," + startTime_min + "," + endTime_min + "," + timeBudget_min + "," + Arrays.toString(accessibleZones.toArray());
+        return personId + "," + id + "," + startTime_min + "," + endTime_min + "," + timeBudget_min;
     }
 
     public static String getHeader() {
-        return "id,personId,startTime_min,endTime_min,timeBudget_min,accessibleZones";
+        return "personId,id,startTime_min,endTime_min,timeBudget_min,accessibleZones";
+    }
+
+    public static String getHeaderForAggregatedAnalysis() {
+        return "personId,id,startTime_min,endTime_min,timeBudget_min,numAccessibleZones,numaAttraction,areaSize";
     }
 
 
