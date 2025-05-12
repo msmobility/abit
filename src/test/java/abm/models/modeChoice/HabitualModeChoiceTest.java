@@ -20,6 +20,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import junitx.framework.Assert;
 import org.junit.Test;
 
+
 import java.util.Map;
 
 public class HabitualModeChoiceTest {
@@ -27,7 +28,7 @@ public class HabitualModeChoiceTest {
     @Test
     public void test() {
 
-        AbitResources.initializeResources("C:/models/abit/abit.properties");
+        AbitResources.initializeResources("C:/data/abit_data/abit_wei.properties");
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
         DataSet dataSet = new DataSet();

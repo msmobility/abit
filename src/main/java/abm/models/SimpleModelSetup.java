@@ -2,6 +2,7 @@ package abm.models;
 
 import abm.data.DataSet;
 import abm.data.plans.Purpose;
+import abm.io.input.BikeOwnershipReader;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleFrequencyGenerator;
 import abm.models.activityGeneration.frequency.SimpleSubtourGenerator;
@@ -111,5 +112,10 @@ public class SimpleModelSetup implements ModelSetup {
     @Override
     public SubtourModeChoice getSubtourModeChoice() {
         return subtourModeChoice;
+    }
+
+    @Override
+    public BikeOwnershipReader getBikeOwnershipReader() {
+        return null;
     }
 }

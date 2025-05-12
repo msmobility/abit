@@ -50,8 +50,8 @@ public class VehicleReader implements Reader {
     private void processHeader(BufferedReader br, Map<String, Integer> indexes) throws IOException {
         String[] header = br.readLine().split(REGEX);
 
-        indexes.put("hhId", MitoUtil.findPositionInArray("id", header));
-        //indexes.put("hhId", MitoUtil.findPositionInArray("hh", header));
+        //indexes.put("hhId", MitoUtil.findPositionInArray("id", header));
+        indexes.put("hhId", MitoUtil.findPositionInArray("hh", header));
         indexes.put("numAutos", MitoUtil.findPositionInArray("autos", header));
         indexes.put("index", MitoUtil.findPositionInArray("index", header));
         indexes.put("vehId", MitoUtil.findPositionInArray("vehId", header));

@@ -58,12 +58,30 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     @Override
     public void chooseHabitualMode(Person person) {
 
+        EnumMap<HabitualMode, Double> probabilities = calculateProbabilities(person);
+        if (probabilities == null) return;
+
+        double sum = 0;
+        for (double probability : probabilities.values()) {
+            sum += probability;
+        }
+
+        if (sum > 0) {
+            final HabitualMode select = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
+            person.setHabitualMode(select);
+        } else {
+            logger.error("Negative probabilities for person " + person.getId() + "'s habitual mode");
+            person.setHabitualMode(HabitualMode.UNKNOWN);
+        }
+    }
+
+    public EnumMap<HabitualMode, Double> calculateProbabilities(Person person) {
         Map<HabitualMode, Double> utilities = new HashMap<>();
 
         if (person.getOccupation() != Occupation.STUDENT && person.getOccupation() != Occupation.EMPLOYED) {
             person.setHabitualMode(HabitualMode.UNKNOWN);
 
-            return;
+            return null;
         }
         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
             utilities.put(habitualMode, calculateUtilityForThisMode(habitualMode, person));
@@ -112,19 +130,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         //found Nan when there is no transit!!
         probabilities.replaceAll((mode, probability) ->
                 probability.isNaN() ? 0 : probability);
-
-        double sum = 0;
-        for (double probability : probabilities.values()) {
-            sum += probability;
-        }
-
-        if (sum > 0) {
-            final HabitualMode select = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
-            person.setHabitualMode(select);
-        } else {
-            logger.error("Negative probabilities for person " + person.getId() + "'s habitual mode");
-            person.setHabitualMode(HabitualMode.UNKNOWN);
-        }
+        return probabilities;
     }
 
     private double calculateUtilityForThisMode(HabitualMode habitualMode, Person person) {
@@ -374,5 +380,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         return generalizedCost;
     }
+
 
 }
