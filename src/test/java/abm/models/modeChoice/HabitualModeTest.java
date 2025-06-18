@@ -32,7 +32,7 @@ public class HabitualModeTest {
 
         DataSet dataset = new TestDataReaderManager().readData();
         nestedLogitHabitualModeChoiceModel = new NestedLogitHabitualModeChoiceModel(dataset);
-    };
+    }
 
     @Test
     public void testHabitualMode() {

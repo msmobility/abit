@@ -31,7 +31,6 @@ public class ProbabilityTest {
         School school = new School(1, "1", 238, 238, zone3, 0, 0);
         Person person_test_1 = new Person(1, new Household(1, zone1, 1), 30, Gender.MALE, Relationship.married, Occupation.EMPLOYED, true, job, 28800, 465, 1059, 4511, school, Disability.WITHOUT);
         EnumMap<HabitualMode, Double> probabilities = nestedLogitHabitualModeChoiceModel.calculateProbabilities(person_test_1);
-        Double utility_car_driver = nestedLogitHabitualModeChoiceModel.calculateUtilityForThisMode(HabitualMode.PT, person_test_1);
 
         for (Map.Entry<HabitualMode, Double> entry : probabilities.entrySet()) {
             System.out.println(entry.getKey() + " => " + entry.getValue());
