@@ -35,7 +35,6 @@ public class ProbabilityTest {
         for (Map.Entry<HabitualMode, Double> entry : probabilities.entrySet()) {
             System.out.println(entry.getKey() + " => " + entry.getValue());
         }
-        System.out.println(utility_car_driver);
 
     }
 }
