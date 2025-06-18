@@ -295,3 +295,17 @@ java.nio.file.NoSuchFileException: input\models\modeChoice\habitualMode_nestedLo
 12-May-2025 18:09:07, INFO, Detected windows OS.
 12-May-2025 18:09:07, INFO, Hdf5 library successfully located.
 12-May-2025 18:09:07, INFO, will try to read from C:\Users\Muyang\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+26-May-2025 15:45:23, INFO, Trying to set up native hdf5 lib
+26-May-2025 15:45:23, INFO, Detected windows OS.
+26-May-2025 15:45:24, INFO, Hdf5 library successfully located.
+26-May-2025 15:47:50, INFO, Trying to set up native hdf5 lib
+26-May-2025 15:47:50, INFO, Detected windows OS.
+26-May-2025 15:47:50, INFO, Hdf5 library successfully located.
+26-May-2025 15:48:55, INFO, Trying to set up native hdf5 lib
+26-May-2025 15:48:55, INFO, Detected windows OS.
+26-May-2025 15:48:55, INFO, Hdf5 library successfully located.
+26-May-2025 15:48:55, INFO, will try to read from C:\Users\Muyang\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+26-May-2025 15:49:24, INFO, Trying to set up native hdf5 lib
+26-May-2025 15:49:24, INFO, Detected windows OS.
+26-May-2025 15:49:24, INFO, Hdf5 library successfully located.
+26-May-2025 15:49:24, INFO, will try to read from C:\Users\Muyang\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp

@@ -44,11 +44,11 @@ public class HabitualModeTest {
         Person person_test_1 = new Person(1, new Household(1, zone1, 1), 30, Gender.MALE, Relationship.married, Occupation.EMPLOYED, true, job, 28800, 465, 1059, 4511, school, Disability.WITHOUT);
         EnumMap<HabitualMode, Double> actualProbabilities = nestedLogitHabitualModeChoiceModel.calculateProbabilities(person_test_1);
         EnumMap<HabitualMode, Double> expectProbabilities = new EnumMap<>(HabitualMode.class);
-        expectProbabilities.put(HabitualMode.CAR_DRIVER, 0.508);
-        expectProbabilities.put(HabitualMode.CAR_PASSENGER, 0.015);
-        expectProbabilities.put(HabitualMode.PT, 0.206);
-        expectProbabilities.put(HabitualMode.BIKE, 0.062);
-        expectProbabilities.put(HabitualMode.WALK,0.209);
+        expectProbabilities.put(HabitualMode.CAR_DRIVER, 0.259);
+        expectProbabilities.put(HabitualMode.CAR_PASSENGER, 0.009);
+        expectProbabilities.put(HabitualMode.PT, 0.046);
+        expectProbabilities.put(HabitualMode.BIKE, 0.063);
+        expectProbabilities.put(HabitualMode.WALK,0.622);
         assertEnumMapEquals(actualProbabilities, expectProbabilities, 0.001);
     }
 

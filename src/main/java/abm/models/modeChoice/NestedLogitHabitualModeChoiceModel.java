@@ -1,6 +1,7 @@
 package abm.models.modeChoice;
 
 import abm.data.DataSet;
+import abm.data.geo.Location;
 import abm.data.geo.RegioStaR2;
 import abm.data.plans.*;
 import abm.data.pop.Household;
@@ -227,14 +228,19 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         switch (person.getOccupation()) {
             case EMPLOYED:
                 utility += coefficients.get(habitualMode).get("calibration_employed");
+                break;
             case STUDENT:
                 utility += coefficients.get(habitualMode).get("calibration_student");
+                break;
             case TODDLER:
                 utility += coefficients.get(habitualMode).get("calibration_toddler");
+                break;
             case RETIREE:
                 utility += coefficients.get(habitualMode).get("calibration_retiree");
+                break;
             case UNEMPLOYED:
                 utility += coefficients.get(habitualMode).get("calibration_unemployed");
+                break;
         }
 
         //Todo add updated calibration factor to the utility calculation, starting from 0
