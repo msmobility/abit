@@ -10,20 +10,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class TestDataReaderManager implements DataReaderManager {
+public class FrequencyTestDataReaderManager implements DataReaderManager {
     @Override
     public DataSet readData() {
         DataSet dataSet = new DataSet();
         new ZoneReader(dataSet).read();
-        new MitoTravelTimeAndDistanceReader(dataSet).read();
+//        new MitoTravelTimeAndDistanceReader(dataSet).read();
 //
 //        new HouseholdReader(dataSet).read();
 //        new VehicleReader(dataSet).read();
 //        new JobReader(dataSet).read();
-//        new SchoolReader(dataSet).read();
+//       new SchoolReader(dataSet).read();
 //        new PersonReader(dataSet).read();
-//        populateZones(dataSet);
-//        new EconomicStatusReader(dataSet).read();
+//       populateZones(dataSet);
+       new EconomicStatusReader(dataSet).read();
 //        new CalibrationZoneToRegionTypeReader(dataSet).read();
 
         return dataSet;}

@@ -6,8 +6,8 @@ import abm.data.DataSet;
 import abm.data.geo.Zone;
 import abm.data.plans.HabitualMode;
 import abm.data.pop.*;
-import abm.io.input.DefaultDataReaderManager;
-import abm.io.input.TestDataReaderManager;
+import abm.io.input.FrequencyTestDataReaderManager;
+import abm.io.input.HabitualModeChoiceDataReaderManager;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Disability;
@@ -30,7 +30,7 @@ public class HabitualModeTest {
         AbitUtils.loadHdf5Lib();
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
-        DataSet dataset = new TestDataReaderManager().readData();
+        DataSet dataset = new HabitualModeChoiceDataReaderManager().readData();
         nestedLogitHabitualModeChoiceModel = new NestedLogitHabitualModeChoiceModel(dataset);
     }
 
@@ -49,7 +49,7 @@ public class HabitualModeTest {
         expectProbabilities.put(HabitualMode.PT, 0.046);
         expectProbabilities.put(HabitualMode.BIKE, 0.063);
         expectProbabilities.put(HabitualMode.WALK,0.622);
-        assertEnumMapEquals(actualProbabilities, expectProbabilities, 0.001);
+        assertEnumMapEquals(expectProbabilities, actualProbabilities, 0.001);
     }
 
     public static void assertEnumMapEquals(EnumMap<HabitualMode, Double> expected, EnumMap<HabitualMode, Double> actual, double delta) {

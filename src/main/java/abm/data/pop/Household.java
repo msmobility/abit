@@ -49,6 +49,7 @@ public class Household {
         return persons;
     }
 
+
     public Location getLocation() {
         return location;
     }

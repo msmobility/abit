@@ -5,7 +5,6 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
-import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -18,7 +17,6 @@ import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
-import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -130,8 +128,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-    private int polrEstimateTrips(Person pp) {
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+    public double[] polrEstimateProb(Person pp) {
+
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
             binaryUtility += updatedCalibrationFactors.get(0);
@@ -156,25 +154,44 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             intercepts[5] += updatedCalibrationFactors.get(6);
         }
 
+        double[] probability = new double[7];
+
+        for (int t = 0; t <= 5; t++){
+            probability[t] = 1 / (1 + Math.exp(mu - intercepts[t]));
+        }
+
+        probability[6] = phi;
+
+        return probability;
+
+    }
+
+
+    private int polrEstimateTrips(Person pp){
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double[] probability = polrEstimateProb(pp);
         int i = 0;
         double cumProb = 0;
+        double phi = probability[6];
         double prob = 1 - phi;
+
         cumProb += prob;
 
         while (cumProb < randomNumber) {
             i++;
             if (i < 7) {
-                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
+                prob = probability[i - 1];
             } else {
                 prob = 1;
             }
             if (i > 1) {
-                prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
+                prob -= probability[i - 2];
             }
             cumProb += phi * prob;
         }
         return i;
     }
+
 
     /**
      * Binary + negative binomial
@@ -182,8 +199,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-    private int hurdleEstimateTrips(Person pp) {
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+
+    public double[] hurdleEstimateParam(Person pp){
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
             binaryUtility += updatedCalibrationFactors.get(0);
@@ -198,13 +215,28 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         }
 
         double theta = countCoef.get("theta") ;
+        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+        double p0_zero = Math.log(phi);
+
+
+        double[] para = new double[3];
+        para[0] = theta;
+        para[1] = p0_zero;
+        para[2] = mu;
+
+        return para;
+    }
+    private int hurdleEstimateTrips(Person pp) {
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double[] para = hurdleEstimateParam(pp);
+
+        double theta = para[0];
+        double p0_zero = para[1];
+        double mu = para[2];
 
         NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
-
-        double p0_zero = Math.log(phi);
         double p0_count = Math.log(1 - nb.cdf(0));
         double logphi = p0_zero - p0_count;
-
         int i = 0;
         double cumProb = 0;
         double prob = 1 - Math.exp(p0_zero);
@@ -224,8 +256,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-    private int nbEstimateTrips(Person pp) {
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+
+    public double[] nbEstimateParam(Person pp){
         double mu;
         if (runCalibration){
             mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(0));
@@ -233,6 +265,18 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
             mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
         }
         double theta = countCoef.get("theta") + countCoef.get("calibration");
+
+        double[] param = new double[2];
+        param[0] = mu;
+        param[1] = theta;
+
+        return param;
+    }
+    private int nbEstimateTrips(Person pp) {
+        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double[] param = nbEstimateParam(pp);
+        double mu = param[0];
+        double theta = param[1];
 
         NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
 

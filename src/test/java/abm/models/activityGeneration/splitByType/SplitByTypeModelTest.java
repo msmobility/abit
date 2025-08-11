@@ -1,4 +1,4 @@
-package abm.models.actitivyGeneration.splitByType;
+package abm.models.activityGeneration.splitByType;
 
 import abm.data.DataSet;
 import abm.data.geo.Zone;
@@ -6,7 +6,6 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
-import abm.models.activityGeneration.splitByType.SplitByTypeModel;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;

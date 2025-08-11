@@ -4,8 +4,8 @@ import abm.data.DataSet;
 import abm.data.geo.Zone;
 import abm.data.plans.HabitualMode;
 import abm.data.pop.*;
-import abm.io.input.DefaultDataReaderManager;
-import abm.io.input.TestDataReaderManager;
+import abm.io.input.FrequencyTestDataReaderManager;
+import abm.io.input.HabitualModeChoiceDataReaderManager;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Disability;
@@ -19,7 +19,7 @@ public class calculateGC {
         AbitUtils.loadHdf5Lib();
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
-        DataSet dataset = new TestDataReaderManager().readData();
+        DataSet dataset = new HabitualModeChoiceDataReaderManager().readData();
         NestedLogitHabitualModeChoiceModel nestedLogitHabitualModeChoiceModel = new NestedLogitHabitualModeChoiceModel(dataset);
 
         Zone zone1 = new Zone(3635);
