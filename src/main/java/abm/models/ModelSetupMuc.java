@@ -14,6 +14,8 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
+import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
+import abm.scenarios.lowEmissionZones.models.modeChoice.STNestedLogitTourModeChoiceModelLowEmissionZones;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -40,7 +42,7 @@ public class ModelSetupMuc implements ModelSetup{
 
         bikeOwnershipReader = new BikeOwnershipReader(dataSet);
         dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
-        tourModeChoice = new NestedLogitTourModeChoiceModel(dataSet);
+        tourModeChoice = new STNestedLogitTourModeChoiceModelLowEmissionZones(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
 

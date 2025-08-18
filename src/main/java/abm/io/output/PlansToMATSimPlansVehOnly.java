@@ -5,11 +5,10 @@ import abm.data.geo.MicroLocation;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
+import abm.data.vehicle.STCar;
 import abm.data.vehicle.Vehicle;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
-import org.apache.commons.lang.ObjectUtils;
 import org.locationtech.jts.geom.Coordinate;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
@@ -20,7 +19,6 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 
 import java.time.DayOfWeek;
-import java.util.HashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -75,7 +73,7 @@ public class PlansToMATSimPlansVehOnly {
 
                             hasPlan = true;
                             //tours with the first act starting this day of week, independently of when they end, are converted to MATSim,
-                            String carType = ((Car) (tour.getCar())).getEngineType().toString();
+                            String carType = ((STCar) (tour.getCar())).getEngineType().toString();
 
                             final int tourStartTime_min = tour.getLegs().get(tour.getLegs().firstKey()).getNextActivity().getStartTime_min();
                             if (tourStartTime_min > midnight_min && tourStartTime_min < midnight_min + 24 * 60) {
@@ -155,7 +153,7 @@ public class PlansToMATSimPlansVehOnly {
                 for (int timeStep : activitySortedMap.keySet()){
 
                     matsimPlan.addActivity(activitySortedMap.get(timeStep));
-                    matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + ((Car)vehicle).getEngineType().toString()));
+                    matsimPlan.addLeg(PopulationUtils.createLeg("Car" + "_" + ((STCar)vehicle).getEngineType().toString()));
                 }
 
 

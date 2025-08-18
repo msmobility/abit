@@ -5,14 +5,8 @@ import abm.data.geo.MicroscopicLocation;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.timeOfDay.CarAvailableTimeOfWeek;
-import abm.data.vehicle.Car;
-import cern.colt.map.tint.OpenIntIntHashMap;
 
-import java.lang.reflect.Array;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 

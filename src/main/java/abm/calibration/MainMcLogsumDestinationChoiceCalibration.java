@@ -8,6 +8,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.STMcLogsumBasedDestinationChoiceModel;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 import java.io.FileNotFoundException;
@@ -25,6 +26,7 @@ public class MainMcLogsumDestinationChoiceCalibration implements ModelComponent 
     private static final double TERMINATION_THRESHOLD_0_2_KM = 0.05;
 
     String inputFolder = AbitResources.instance.getString("destination.choice.main.act.logsum.output");
+    //the file defined in the properties does not exist
     DataSet dataSet;
     Map<Purpose, Double> objectiveMainDestinationAverageDistance_km = new HashMap<>();
     Map<Purpose, Double> simulatedMainDestinationAverageDistance_km = new HashMap<>();
@@ -32,7 +34,7 @@ public class MainMcLogsumDestinationChoiceCalibration implements ModelComponent 
     Map<Purpose, Map<Integer, Double>> simulatedMainDestinationDistBins = new HashMap<>();
     Map<Purpose, Integer> numberOfAct = new HashMap<>();
     Map<Purpose, Map<String, Double>> calibrationFactors = new HashMap<>();
-    private McLogsumBasedDestinationChoiceModel destinationChoiceModel;
+    private STMcLogsumBasedDestinationChoiceModel destinationChoiceModel;
 
     public MainMcLogsumDestinationChoiceCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -43,7 +45,8 @@ public class MainMcLogsumDestinationChoiceCalibration implements ModelComponent 
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
         boolean calibrateMainDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.main.mcLogsum.destination.calibration"));
         boolean calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.mcLogsum.destination.calibration"));
-        destinationChoiceModel = new McLogsumBasedDestinationChoiceModel(dataSet, calibrateMainDestinationChoice, calibrateStopDestinationChoice);
+        // before it was McLogsumBasedDestinationChoiceModel
+        destinationChoiceModel = new STMcLogsumBasedDestinationChoiceModel(dataSet, calibrateMainDestinationChoice, calibrateStopDestinationChoice);
         //Todo: initialize all the data containers that might be needed for calibration
         for (Purpose purpose : Purpose.getAllPurposes()) {
             calibrationFactors.putIfAbsent(purpose, new HashMap<>());
@@ -79,31 +82,31 @@ public class MainMcLogsumDestinationChoiceCalibration implements ModelComponent 
             double maxDifferenceDistanceBin = 0.0;
             logger.info("Iteration: " + iteration);
 
-            // Caliobrating beta
-//            for (Purpose purpose : Purpose.getAllPurposes()) {
-//                double differenceAverageDistance;
-//                double factor = (simulatedMainDestinationAverageDistance_km.get(purpose) / objectiveMainDestinationAverageDistance_km.get(purpose));
-//                factor = Math.max(factor, 0.85);
-//                factor = Math.min(factor, 1.25);
-//                differenceAverageDistance = Math.abs(simulatedMainDestinationAverageDistance_km.get(purpose) - objectiveMainDestinationAverageDistance_km.get(purpose));
-//                //todo calculate the difference between observed and simulated average distance
-//                if (purpose.equals(Purpose.EDUCATION)) {
-//                    calibrationFactors.get(purpose).replace("BETA_calibration", 1.0);
-//                } else {
-//                    calibrationFactors.get(purpose).replace("BETA_calibration", factor);
-//                }
-//                logger.info("Main destination choice for" + purpose + "\t" + "average distance: " + simulatedMainDestinationAverageDistance_km.get(purpose));
-//                if (!purpose.equals(Purpose.WORK) && !purpose.equals(Purpose.EDUCATION)) {
-//                    if (Math.abs(differenceAverageDistance) > maxDifference) {
-//                        maxDifference = differenceAverageDistance;
-//                    }
-//                }
-//            }
-//            if (maxDifference <= TERMINATION_THRESHOLD_AVG_DISTANCE) {
-//                break;
-//            }
-//            destinationChoiceModel.updateBetaCalibrationFactorsMain(calibrationFactors);
-//            destinationChoiceModel.updateMainDestinationProbability();
+            // Calibrating beta
+            for (Purpose purpose : Purpose.getAllPurposes()) {
+                double differenceAverageDistance;
+                double factor = (simulatedMainDestinationAverageDistance_km.get(purpose) / objectiveMainDestinationAverageDistance_km.get(purpose));
+                factor = Math.max(factor, 0.85);
+                factor = Math.min(factor, 1.25);
+                differenceAverageDistance = Math.abs(simulatedMainDestinationAverageDistance_km.get(purpose) - objectiveMainDestinationAverageDistance_km.get(purpose));
+                //todo calculate the difference between observed and simulated average distance
+                if (purpose.equals(Purpose.EDUCATION)) {
+                    calibrationFactors.get(purpose).replace("BETA_calibration", 1.0);
+                } else {
+                    calibrationFactors.get(purpose).replace("BETA_calibration", factor);
+                }
+                logger.info("Main destination choice for" + purpose + "\t" + "average distance: " + simulatedMainDestinationAverageDistance_km.get(purpose));
+                if (!purpose.equals(Purpose.WORK) && !purpose.equals(Purpose.EDUCATION)) {
+                    if (Math.abs(differenceAverageDistance) > maxDifference) {
+                        maxDifference = differenceAverageDistance;
+                    }
+                }
+            }
+            if (maxDifference <= TERMINATION_THRESHOLD_AVG_DISTANCE) {
+                break;
+            }
+            destinationChoiceModel.updateBetaCalibrationFactorsMain(calibrationFactors);
+            destinationChoiceModel.updateMainDestinationProbability();
 
             //Calibrate short distance < 2km
             for (Purpose purpose : Purpose.getAllPurposes()) {

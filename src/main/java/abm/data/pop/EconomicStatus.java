@@ -3,6 +3,7 @@ package abm.data.pop;
 public enum EconomicStatus {
 
     //Todo: It seems like MOP doesn't have the definition of economic status. I checked the read.MOP.r, the economic status is classified into 4 levels: 1 for hh.incomeEUR/hh.sizeAdj <= 800, 2 for hh.incomeEUR/hh.sizeAdj <= 1600, 3 for hh.incomeEUR/hh.sizeAdj <= 2400, 4 for hh.incomeEUR/hh.sizeAdj > 2400. The economic status is changed based on the R script. Please make any change if needed
+    //Todo: I have different economic household levels based on MiD which are already present in my input data file - probably only getter and setter needed
 
     from0to800,
     from801to1600,

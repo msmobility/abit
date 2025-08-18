@@ -1,9 +1,10 @@
 package abm.io.input;
 
 import abm.data.DataSet;
-import abm.data.pop.*;
-import abm.data.vehicle.Car;
+import abm.data.pop.Household;
+import abm.data.vehicle.STCar;
 import abm.data.vehicle.CarType;
+import abm.data.vehicle.EmissionClass;
 import abm.data.vehicle.VehicleUtil;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -15,7 +16,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class VehicleReader implements Reader {
+public class STVehicleReader implements Reader {
 
     private final DataSet dataSet;
     private final Map<String, Integer> indexes;
@@ -23,9 +24,9 @@ public class VehicleReader implements Reader {
     private BufferedReader br;
 
     final static String REGEX = ",";
-    private Logger logger = Logger.getLogger(VehicleReader.class);
+    private Logger logger = Logger.getLogger(STVehicleReader.class);
 
-    public VehicleReader(DataSet dataSet) {
+    public STVehicleReader(DataSet dataSet) {
         this.dataSet = dataSet;
         indexes = new HashMap<>();
         path = AbitResources.instance.getString("vehicles.file");
@@ -65,6 +66,7 @@ public class VehicleReader implements Reader {
         indexes.put("index", MitoUtil.findPositionInArray("index", header));
         indexes.put("vehId", MitoUtil.findPositionInArray("vehId", header));
         indexes.put("type", MitoUtil.findPositionInArray("type", header));
+        indexes.put("emissionclass", MitoUtil.findPositionInArray("emissionClass", header));
         indexes.put("age", MitoUtil.findPositionInArray("age", header));
     }
 
@@ -77,7 +79,8 @@ public class VehicleReader implements Reader {
             String[] splitLine = line.split(REGEX);
 
             int id = Integer.parseInt(splitLine[indexes.get("index")]);
-            int hhid = Integer.parseInt(splitLine[indexes.get("hhId")]);
+            int hhid = Integer.parseInt(splitLine[indexes.get("hhId")]); //originally "Id"
+
 
             Household hh = dataSet.getHouseholds().getOrDefault(hhid, null);
 
@@ -86,18 +89,35 @@ public class VehicleReader implements Reader {
             }
 
             int numAutos = Integer.parseInt(splitLine[indexes.get("numAutos")]);
-            String vehType = splitLine[indexes.get("type")].toUpperCase();
+            String vehType = splitLine[indexes.get("type")]; //.toUpperCase();
+            String emissionClass = splitLine[indexes.get("emissionclass")];
 
-
-            if (numAutos != hh.getNumberOfCars()) {
-                throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
-            } else {
-                if (vehType.equals("CONVENTIONAL")) {
-                    hh.getVehicles().add(new Car(id, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
-                } else if (vehType.equals("ELECTRIC")) {
-                    hh.getVehicles().add(new Car(id, CarType.ELECTRIC, VehicleUtil.getVehicleAgeInBaseYear()));
+            if (vehType.equals("DIESEL") && emissionClass.equals ("EURO_4")){
+                hh.getVehicles().add(new STCar(id, CarType.DIESEL, EmissionClass.EURO_4, VehicleUtil.getVehicleAgeInBaseYear()));
+            } else if (vehType.equals("DIESEL") && emissionClass.equals ("EURO_5")) {
+                hh.getVehicles().add(new STCar(id, CarType.DIESEL, EmissionClass.EURO_5, VehicleUtil.getVehicleAgeInBaseYear()));
+            } else if (vehType.equals("DIESEL") && emissionClass.equals ("EURO_6")) {
+                hh.getVehicles().add(new STCar(id, CarType.DIESEL, EmissionClass.EURO_6, VehicleUtil.getVehicleAgeInBaseYear()));
+            } else if (vehType.equals("nonDIESEL") && emissionClass.equals ("EUROx")) {
+                hh.getVehicles().add(new STCar(id, CarType.nonDIESEL, EmissionClass.EUROx,VehicleUtil.getVehicleAgeInBaseYear()));
                 }
-            }
+
+
+//            if (numAutos != hh.getNumberOfCars()) {
+//                throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
+//            } else {
+//                if (vehType.equals("CONVENTIONAL")) {
+//                    hh.getVehicles().add(new Car(id, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
+//                } else if (vehType.equals("ELECTRIC")) {
+//                    hh.getVehicles().add(new Car(id, CarType.ELECTRIC, VehicleUtil.getVehicleAgeInBaseYear()));
+//                }
+//            }
+
+//            if (numAutos != hh.getNumberOfCars()) {
+//                throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
+//            } else {
+
+//            }
         }
     }
 }

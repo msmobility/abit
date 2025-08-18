@@ -18,14 +18,14 @@ public class SpaceTimePrismDataReaderManager implements DataReaderManager {
         new ZoneReader(dataSet).read();
         new MitoTravelTimeAndDistanceReader(dataSet).read();
 
-        //new HouseholdReader(dataSet).read();
-        //new VehicleReader(dataSet).read();
-        //new JobReader(dataSet).read();
-        //new SchoolReader(dataSet).read();
-        //new PersonReader(dataSet).read();
-        //populateZones(dataSet);
-        //new EconomicStatusReader(dataSet).read();
-        //new CalibrationZoneToRegionTypeReader(dataSet).read();
+        new HouseholdReader(dataSet).read();
+        new VehicleReader(dataSet).read();
+        new JobReader(dataSet).read();
+        new SchoolReader(dataSet).read();
+        new PersonReader(dataSet).read();
+        populateZones(dataSet);
+        new EconomicStatusReader(dataSet).read();
+        new CalibrationZoneToRegionTypeReader(dataSet).read();
 
         return dataSet;
     }

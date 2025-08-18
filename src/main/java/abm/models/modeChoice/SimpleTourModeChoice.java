@@ -10,6 +10,9 @@ import abm.data.pop.Person;
 import abm.properties.InternalProperties;
 import abm.utils.AbitUtils;
 
+import java.time.DayOfWeek;
+import java.util.Map;
+
 public class SimpleTourModeChoice implements TourModeChoice {
 
     private final DataSet dataSet;
@@ -31,6 +34,16 @@ public class SimpleTourModeChoice implements TourModeChoice {
     @Override
     public void checkCarAvailabilityAndChooseMode(Household household, Person person, Tour tour, Purpose purpose) {
 
+    }
+
+    @Override
+    public void updateCalibrationFactor(Map<String, Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> calibrationFactors) {
+
+    }
+
+    @Override
+    public Map<Purpose, Map<Mode, Map<String, Double>>> obtainCoefficientsTable() {
+        return Map.of();
     }
 
     @Override

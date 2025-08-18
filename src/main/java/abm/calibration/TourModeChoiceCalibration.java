@@ -6,9 +6,12 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
-import abm.io.input.CalibrationZoneToRegionTypeReader;
+import abm.data.vehicle.STCar;
 import abm.models.modeChoice.NestedLogitTourModeChoiceModel;
+import abm.models.modeChoice.TourModeChoice;
 import abm.properties.AbitResources;
+import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
+import abm.scenarios.lowEmissionZones.models.modeChoice.STNestedLogitTourModeChoiceModelLowEmissionZones;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
@@ -33,7 +36,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
     Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Integer>>>> simulatedTourModeCount = new HashMap<>();
     Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> simulatedTourModeShare = new HashMap<>();
     Map<String,Map<Purpose, Map<DayOfWeek, Map<Mode, Double>>>> calibrationFactors = new HashMap<>();
-    private NestedLogitTourModeChoiceModel tourModeChoiceModelCalibration;
+    private TourModeChoice tourModeChoiceModelCalibration;
     //private CalibrationZoneToRegionTypeReader zoneToRegionMap;
 
     List<String> regions = new ArrayList<>();
@@ -50,7 +53,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
     public void setup() {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
         boolean calibrateTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("tour.mode.calibration"));
-        tourModeChoiceModelCalibration = new NestedLogitTourModeChoiceModel(dataSet, calibrateTourModeChoice);
+        tourModeChoiceModelCalibration = new STNestedLogitTourModeChoiceModelLowEmissionZones(dataSet, calibrateTourModeChoice);
 
         //Todo: initialize all the data containers that might be needed for calibration
         //tourmodechoice
@@ -143,7 +146,7 @@ public class TourModeChoiceCalibration implements ModelComponent {
 
             simulatedHouseholds.parallelStream().forEach(household -> {
                 household.getVehicles().parallelStream().forEach(vehicle -> {
-                    ((Car) vehicle).getBlockedTimeOfWeek().resetCarBlockedTimeOfWeekLinkedList();
+                    ((STCar) vehicle).getBlockedTimeOfWeek().resetCarBlockedTimeOfWeekLinkedList();
                 });
             });
 

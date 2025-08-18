@@ -9,6 +9,7 @@ import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
+import abm.data.vehicle.STCar;
 import abm.data.vehicle.Vehicle;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -21,7 +22,6 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 
-import java.time.DayOfWeek;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -43,7 +43,8 @@ public class PlansToMATSimPlansVehOnlyWeekLong {
             for (Vehicle vehicle : hh.getVehicles()) {
 
                 boolean hasPlan = false;
-                String carType = ((Car) (vehicle)).getEngineType().toString();
+                // in original evScenario it was Car
+                String carType = ((STCar) (vehicle)).getEngineType().toString();
 
                 int vehId = vehicle.getId();
                 Id<org.matsim.api.core.v01.population.Person> idVehicle = Id.createPersonId("veh_" + vehicle.getId());

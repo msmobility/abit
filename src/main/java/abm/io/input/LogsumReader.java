@@ -10,10 +10,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import de.tum.bgu.msm.util.matrices.IndexedDoubleMatrix2D;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -101,14 +98,25 @@ public class LogsumReader implements Reader{
 
         this.readMatrix(matrix);
         return matrix;
+//    }
+//       private void initializeReader(String filePath, String delimiter) {
+//        try {
+//            GZIPInputStream in = new GZIPInputStream(new FileInputStream(filePath));
+//            reader = new BufferedReader(new InputStreamReader(in));
+//            processHeader(reader.readLine().split(delimiter));
+//        } catch (IOException e) {
+//            logger.error("Error initializing csv.gz reader: " + e.getMessage(), e);
+//        }
+
+
     }
     private void initializeReader(String filePath, String delimiter) {
         try {
-            GZIPInputStream in = new GZIPInputStream(new FileInputStream(filePath));
-            reader = new BufferedReader(new InputStreamReader(in));
+            System.out.println("Loading logsum file from: " + filePath);
+            reader = new BufferedReader(new FileReader(filePath));
             processHeader(reader.readLine().split(delimiter));
         } catch (IOException e) {
-            logger.error("Error initializing csv.gz reader: " + e.getMessage(), e);
+            logger.error("Error initializing csv reader: " + e.getMessage(), e);
         }
     }
 

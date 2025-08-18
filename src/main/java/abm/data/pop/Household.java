@@ -1,10 +1,7 @@
 package abm.data.pop;
 
 import abm.data.geo.Location;
-import abm.data.vehicle.Car;
-import abm.data.vehicle.CarType;
 import abm.data.vehicle.Vehicle;
-import abm.data.vehicle.VehicleUtil;
 
 
 import java.util.ArrayList;

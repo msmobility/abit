@@ -171,3 +171,37 @@ java.nio.file.NoSuchFileException: input\models\activityGeneration\frequency\Coe
 05-Oct-2023 15:12:43, INFO, Hdf5 library successfully located.
 05-Oct-2023 15:12:43, INFO, Reading data
 05-Oct-2023 15:12:43, INFO, will try to read from C:\Models\abit\input\geo\zoneShapefile\zones.shp
+16-July-2025 11:40:42, INFO, Trying to set up native hdf5 lib
+16-July-2025 11:40:42, INFO, Detected windows OS.
+16-July-2025 11:45:03, INFO, Trying to set up native hdf5 lib
+16-July-2025 11:45:03, INFO, Detected windows OS.
+16-July-2025 11:45:03, INFO, Hdf5 library successfully located.
+16-July-2025 11:45:03, INFO, Reading data
+16-July-2025 11:45:03, INFO, will try to read from C:\Users\Sonja\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-July-2025 17:44:48, INFO, Trying to set up native hdf5 lib
+23-July-2025 17:44:48, INFO, Detected windows OS.
+23-July-2025 17:44:48, INFO, Hdf5 library successfully located.
+23-July-2025 17:44:48, INFO, Reading data
+23-July-2025 17:44:48, INFO, will try to read from C:\Users\Sonja\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-July-2025 17:48:44, INFO, Trying to set up native hdf5 lib
+23-July-2025 17:48:44, INFO, Detected windows OS.
+23-July-2025 17:48:44, INFO, Hdf5 library successfully located.
+23-July-2025 17:48:44, INFO, Reading data
+23-July-2025 17:48:44, INFO, will try to read from C:\Users\Sonja\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-July-2025 17:56:35, INFO, Trying to set up native hdf5 lib
+23-July-2025 17:56:35, INFO, Detected windows OS.
+23-July-2025 17:56:35, INFO, Hdf5 library successfully located.
+23-July-2025 17:56:35, INFO, Reading data
+23-July-2025 17:56:35, INFO, will try to read from C:\Users\Sonja\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231117.shp
+23-July-2025 17:59:52, INFO, Trying to set up native hdf5 lib
+23-July-2025 17:59:52, INFO, Detected windows OS.
+23-July-2025 17:59:52, INFO, Hdf5 library successfully located.
+23-July-2025 17:59:52, INFO, Reading data
+31-July-2025 09:31:11, INFO, Trying to set up native hdf5 lib
+31-July-2025 09:31:11, INFO, Detected windows OS.
+31-July-2025 09:31:11, INFO, Hdf5 library successfully located.
+31-July-2025 09:31:11, INFO, Reading data
+31-July-2025 09:37:17, INFO, Trying to set up native hdf5 lib
+31-July-2025 09:37:17, INFO, Detected windows OS.
+31-July-2025 09:37:17, INFO, Hdf5 library successfully located.
+31-July-2025 09:37:17, INFO, Reading data

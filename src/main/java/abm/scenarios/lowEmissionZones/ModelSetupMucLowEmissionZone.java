@@ -16,7 +16,9 @@ import abm.models.activityGeneration.time.*;
 import abm.models.destinationChoice.*;
 import abm.models.modeChoice.*;
 import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.STMcLogsumBasedDestinationChoiceModel;
 import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
+import abm.scenarios.lowEmissionZones.models.modeChoice.STNestedLogitTourModeChoiceModelLowEmissionZones;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.io.FileNotFoundException;
@@ -44,7 +46,7 @@ public class ModelSetupMucLowEmissionZone implements ModelSetup {
 
         bikeOwnershipReader = new BikeOwnershipReader(dataSet);
         dayOfWeekMandatoryAssignment = new DayOfWeekMandatoryAssignmentModel(dataSet);
-        tourModeChoice = new NestedLogitTourModeChoiceModelLowEmissionZones(dataSet);
+        tourModeChoice = new STNestedLogitTourModeChoiceModelLowEmissionZones(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
 
@@ -54,7 +56,10 @@ public class ModelSetupMucLowEmissionZone implements ModelSetup {
         }
         stopSplitType = new SplitStopByTypeModel();
         splitByType = new SplitByTypeModel(dataSet);
-        destinationChoice = new McLogsumBasedDestinationChoiceModel(dataSet);
+        //for McLogsumBasedDestinationChoiceModel(dataSet) no boolean is needed!
+        destinationChoice = new STMcLogsumBasedDestinationChoiceModel(dataSet);
+        //destinationChoice = new DestinationChoiceModel(dataSet, true, true);
+        //todo switch to logsum ? check later
         timeAssignment = new TimeAssignmentModel(dataSet);
 
         subtourGenerator = new SubtourGeneratorModel(dataSet);

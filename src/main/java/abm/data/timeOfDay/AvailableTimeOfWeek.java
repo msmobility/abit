@@ -1,6 +1,5 @@
 package abm.data.timeOfDay;
 
-import abm.data.vehicle.Car;
 import abm.properties.InternalProperties;
 
 import java.time.DayOfWeek;

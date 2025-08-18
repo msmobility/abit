@@ -8,7 +8,6 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.vehicle.Car;
 import abm.data.vehicle.Vehicle;
-import abm.io.input.CalibrationZoneToRegionTypeReader;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -58,9 +57,9 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
             List<Tuple<EnumSet<abm.data.plans.Mode>, Double>> nestsByPurpose = new ArrayList<>();
             Path pathToFilePurpose;
             if (purpose == Purpose.EDUCATION || purpose == Purpose.WORK) {
-                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "mandatoryMode_nestedLogit.csv");
+                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + "mandatoryMode_nestedLogit_calibrated.csv");
             } else {
-                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + purpose.toString().toLowerCase() + "Mode_nestedLogit.csv");
+                pathToFilePurpose = Path.of(AbitResources.instance.getString("tour.mode.coef") + purpose.toString().toLowerCase() + "Mode_nestedLogit_calibrated.csv");
             }
             for (Mode mode : Mode.getModes()) {
                 String columnName = mode.toString(); //todo review this

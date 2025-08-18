@@ -9,7 +9,9 @@ import abm.models.ModelSetup;
 import abm.models.ModelSetupMuc;
 import abm.models.modeChoice.NestedLogitTourModeChoiceModel;
 import abm.properties.AbitResources;
+import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
 import abm.scenarios.lowEmissionZones.io.LowEmissionZoneReader;
+import abm.scenarios.lowEmissionZones.models.modeChoice.NestedLogitTourModeChoiceModelLowEmissionZones;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Disability;
@@ -37,37 +39,39 @@ public class LogsumAnalysis {
     private static Map<Integer, Boolean> evForbidden = new HashMap<>();
     private static DataSet dataSet;
 
-    public static void main(String[] args) {
+//    public static void main(String[] args) throws FileNotFoundException {
+//
+//        AbitResources.initializeResources(args[0]);
+//        AbitUtils.loadHdf5Lib();
+//
+//        MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
+//
+//        logger.info("Reading data");
+//        dataSet = new DefaultDataReaderManager().readData();
+//
+//        logger.info("Creating the sub-models");
+//        ModelSetup modelSetup = new ModelSetupMuc(dataSet);
+//        //ModelSetup modelSetup = new ModelSetupMucLowEmissionZone(dataSet);
+//        //NestedLogitTourModeChoiceModel modeChoiceModel = (NestedLogitTourModeChoiceModel) modelSetup.getTourModeChoice();
+//        NestedLogitTourModeChoiceModelLowEmissionZones modeChoiceModel = (NestedLogitTourModeChoiceModelLowEmissionZones) modelSetup.getTourModeChoice();
+//
+//        logger.info("Initializing logsum calculator");
+//        generateSyntheticPopulation();
+//        evForbidden = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
+//
+//        for (Purpose purpose: Purpose.getAllPurposes()) {
+//            logger.info("Initializing logsum table for " + purpose + " purpose");
+//            initializeLogsumTable(purpose);
+//
+//            logger.info("Calculating logsums for " + purpose + " purpose");
+//            personArrayList.stream().parallel().forEach(person -> calculateLogsums(person, modeChoiceModel, purpose));
+//
+//            logger.info("Printing logsums for  " + purpose + " purpose");
+//            printLogsums(purpose);
+//        }
+//    }
 
-        AbitResources.initializeResources(args[0]);
-        AbitUtils.loadHdf5Lib();
-
-        MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
-
-        logger.info("Reading data");
-        dataSet = new DefaultDataReaderManager().readData();
-
-        logger.info("Creating the sub-models");
-        ModelSetup modelSetup = new ModelSetupMuc(dataSet);
-        NestedLogitTourModeChoiceModel modeChoiceModel = (NestedLogitTourModeChoiceModel) modelSetup.getTourModeChoice();
-
-        logger.info("Initializing logsum calculator");
-        generateSyntheticPopulation();
-        evForbidden = new LowEmissionZoneReader(dataSet).readLowEmissionZones();
-
-        for (Purpose purpose: Purpose.getAllPurposes()) {
-            logger.info("Initializing logsum table for " + purpose + " purpose");
-            initializeLogsumTable(purpose);
-
-            logger.info("Calculating logsums for " + purpose + " purpose");
-            personArrayList.stream().parallel().forEach(person -> calculateLogsums(person, modeChoiceModel, purpose));
-
-            logger.info("Printing logsums for  " + purpose + " purpose");
-            printLogsums(purpose);
-        }
-    }
-
-    private static void calculateLogsums(Person person, NestedLogitTourModeChoiceModel modeChoiceModel, Purpose purpose) {
+    private static void calculateLogsums(Person person, NestedLogitTourModeChoiceModelLowEmissionZones modeChoiceModel, Purpose purpose) {
 
         for (Zone destinationZone : dataSet.getZones().values()){
 
@@ -103,11 +107,11 @@ public class LogsumAnalysis {
             fakeActivity.setTour(fakeTour);
 
             logsumTableByPurpose_base.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
-            //logsumTableByPurpose_base.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner));
+            logsumTableByPurpose_base.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner));
 
             boolean isLowEmissionZone = evForbidden.get(destinationZone.getId()) && !evForbidden.get(person.getHousehold().getLocation().getZoneId());
-            //logsumTableByPurpose_lowEmissionRestriction.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
-            //logsumTableByPurpose_lowEmissionRestriction.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner, isLowEmissionZone));
+            logsumTableByPurpose_lowEmissionRestriction.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
+            logsumTableByPurpose_lowEmissionRestriction.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner, isLowEmissionZone));
 
         }
     }
@@ -116,7 +120,7 @@ public class LogsumAnalysis {
         PrintWriter pw_base_evOwner;
         try {
             String role = "evOwner";
-            pw_base_evOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
+            pw_base_evOwner = new PrintWriter("C:/Users/Sonja/Documents/data/abit_standalone/input/policyScenarios/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
             pw_base_evOwner.println("origin,destination,logsum");
             for (Zone origin : dataSet.getZones().values()) {
                 for (Zone destination : dataSet.getZones().values()) {
@@ -128,54 +132,54 @@ public class LogsumAnalysis {
             throw new RuntimeException(e);
         }
 
-//        PrintWriter pw_base_nonEvOwner;
-//        try {
-//            String role = "nonEvOwner";
-//            pw_base_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
-//            pw_base_nonEvOwner.println("origin,destination,logsum");
-//            for (Zone origin : dataSet.getZones().values()) {
-//                for (Zone destination : dataSet.getZones().values()) {
-//                    pw_base_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_base.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-//                }
-//            }
-//            pw_base_nonEvOwner.close();
-//        } catch (FileNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
-        
-//        PrintWriter pw_lowEmission_evOwner;
-//        try {
-//            String role = "evOwner";
-//            pw_lowEmission_evOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction_AltStadtRing.csv");
-//            pw_lowEmission_evOwner.println("origin,destination,logsum");
-//            for (Zone origin : dataSet.getZones().values()) {
-//                for (Zone destination : dataSet.getZones().values()) {
-//                    pw_lowEmission_evOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-//                }
-//            }
-//            pw_lowEmission_evOwner.close();
-//            pw_lowEmission_evOwner.close();
-//
-//        } catch (FileNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
+        PrintWriter pw_base_nonEvOwner;
+        try {
+            String role = "nonEvOwner";
+            pw_base_nonEvOwner = new PrintWriter("C:/Users/Sonja/Documents/data/abit_standalone/input/policyScenarios/logsums/logsumTable_"+ purpose + "_" + role + "_base.csv");
+            pw_base_nonEvOwner.println("origin,destination,logsum");
+            for (Zone origin : dataSet.getZones().values()) {
+                for (Zone destination : dataSet.getZones().values()) {
+                    pw_base_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_base.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+                       }
+           }
+            pw_base_nonEvOwner.close();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
-//        PrintWriter pw_lowEmission_nonEvOwner;
-//        try {
-//            String role = "nonEvOwner";
-//            pw_lowEmission_nonEvOwner = new PrintWriter("D:/data/abm_temp/paper/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction_MittelerRing.csv");
-//            pw_lowEmission_nonEvOwner.println("origin,destination,logsum");
-//            for (Zone origin : dataSet.getZones().values()) {
-//                for (Zone destination : dataSet.getZones().values()) {
-//                    pw_lowEmission_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
-//                }
-//            }
-//            pw_lowEmission_nonEvOwner.close();
-//            pw_lowEmission_nonEvOwner.close();
-//
-//        } catch (FileNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
+        PrintWriter pw_lowEmission_evOwner;
+        try {
+            String role = "evOwner";
+            pw_lowEmission_evOwner = new PrintWriter("C:/Users/Sonja/Documents/data/abit_standalone/input/policyScenarios/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction.csv");
+            pw_lowEmission_evOwner.println("origin,destination,logsum");
+            for (Zone origin : dataSet.getZones().values()) {
+                for (Zone destination : dataSet.getZones().values()) {
+                    pw_lowEmission_evOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+                }
+            }
+            pw_lowEmission_evOwner.close();
+            pw_lowEmission_evOwner.close();
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        PrintWriter pw_lowEmission_nonEvOwner;
+        try {
+            String role = "nonEvOwner";
+            pw_lowEmission_nonEvOwner = new PrintWriter("C:/Users/Sonja/Documents/data/abit_standalone/input/policyScenarios/logsums/logsumTable_"+ purpose + "_" + role + "_lowEmissionZoneRestriction.csv");
+            pw_lowEmission_nonEvOwner.println("origin,destination,logsum");
+            for (Zone origin : dataSet.getZones().values()) {
+                for (Zone destination : dataSet.getZones().values()) {
+                    pw_lowEmission_nonEvOwner.println(origin.getId() + "," + destination.getId() + "," + logsumTableByPurpose_lowEmissionRestriction.get(role).get(purpose).get(origin.getId()).get(destination.getId()));
+                }
+            }
+            pw_lowEmission_nonEvOwner.close();
+            pw_lowEmission_nonEvOwner.close();
+
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static void initializeLogsumTable(Purpose purpose) {

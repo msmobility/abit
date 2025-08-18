@@ -5,10 +5,7 @@ import abm.data.geo.Location;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
-import abm.data.vehicle.CarType;
-import abm.data.vehicle.Vehicle;
-import abm.data.vehicle.VehicleUtil;
+import abm.data.vehicle.*;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.SubtourGenerator;
 import abm.models.activityGeneration.splitByType.SplitByType;
@@ -101,9 +98,14 @@ public class PlanGenerator4 implements Callable {
         }
 
         //Todo check
+//        List<Vehicle> vehicles = new ArrayList<>();
+//        for (int i = 1; i <= household.getNumberOfCars(); i++) {
+//            vehicles.add(new Car(i, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
+//        }
+
         List<Vehicle> vehicles = new ArrayList<>();
         for (int i = 1; i <= household.getNumberOfCars(); i++) {
-            vehicles.add(new Car(i, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
+            vehicles.add(new STCar(i, CarType.DIESEL, EmissionClass.EURO_4, VehicleUtil.getVehicleAgeInBaseYear()));
         }
 
         //Start: Vehicle assignment and mode choice

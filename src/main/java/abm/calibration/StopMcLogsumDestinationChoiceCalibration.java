@@ -9,6 +9,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.models.destinationChoice.McLogsumBasedDestinationChoiceModel;
+import abm.scenarios.lowEmissionZones.models.destinationChoice.STMcLogsumBasedDestinationChoiceModel;
 import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
@@ -32,7 +33,7 @@ public class StopMcLogsumDestinationChoiceCalibration implements ModelComponent 
     Map<Purpose, Map<Integer, Double>> simulatedStopDestinationDistBins = new HashMap<>();
     Map<Purpose, Integer> numberOfAct = new HashMap<>();
     Map<Purpose, Map<String, Double>> calibrationFactors = new HashMap<>();
-    private McLogsumBasedDestinationChoiceModel destinationChoiceModel;
+    private STMcLogsumBasedDestinationChoiceModel destinationChoiceModel;
 
     public StopMcLogsumDestinationChoiceCalibration(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -43,7 +44,8 @@ public class StopMcLogsumDestinationChoiceCalibration implements ModelComponent 
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
         boolean calibrateMainDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.main.mcLogsum.destination.calibration"));
         boolean calibrateStopDestinationChoice = Boolean.parseBoolean(AbitResources.instance.getString("act.stop.mcLogsum.destination.calibration"));
-        destinationChoiceModel = new McLogsumBasedDestinationChoiceModel(dataSet, calibrateMainDestinationChoice, calibrateStopDestinationChoice);
+        //before McLogsumBasedDestinationChoiceModel
+        destinationChoiceModel = new STMcLogsumBasedDestinationChoiceModel(dataSet, calibrateMainDestinationChoice, calibrateStopDestinationChoice);
         //Todo: initialize all the data containers that might be needed for calibration
         for (Purpose purpose : Purpose.getAllPurposes()) {
             calibrationFactors.putIfAbsent(purpose, new HashMap<>());

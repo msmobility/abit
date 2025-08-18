@@ -6,7 +6,7 @@ import abm.data.geo.RegioStaR7;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
+import abm.data.vehicle.STCar;
 import abm.data.vehicle.Vehicle;
 import abm.io.input.CoefficientsReader;
 import abm.models.modeChoice.TourModeChoice;
@@ -137,8 +137,8 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
         int carUseEndTime_min = tour.getLegs().get(tour.getLegs().lastKey()).getPreviousActivity().getEndTime_min() + tour.getLegs().get(tour.getLegs().lastKey()).getTravelTime_min();
 
         for (Vehicle vehicle : household.getVehicles()) {
-            if (vehicle instanceof Car) {
-                carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
+            if (vehicle instanceof STCar) {
+                carAvailable = ((STCar) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
                 if (carAvailable) {
                     selectedVehicle = vehicle;
                     break;
@@ -148,7 +148,7 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
 
         Mode selectedMode = chooseMode(person, tour, purpose, carAvailable);
         if (selectedVehicle != null & selectedMode.equals(Mode.CAR_DRIVER)) {
-            ((Car) selectedVehicle).getBlockedTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
+            ((STCar) selectedVehicle).getBlockedTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
             tour.setCar(selectedVehicle);
         }
     }
@@ -568,8 +568,8 @@ public class NestedLogitTourModeChoiceModelParkingRestrictionZones implements To
                 int tourEndTime = tour.getActivities().get(tour.getActivities().lastKey()).getEndTime_min();
 
                 for (Vehicle veh:household.getVehicles()){
-                    if (veh instanceof Car){
-                        if(((Car) veh).getBlockedTimeOfWeek().isAvailable(tourStartTime, tourEndTime)){
+                    if (veh instanceof STCar){
+                        if(((STCar) veh).getBlockedTimeOfWeek().isAvailable(tourStartTime, tourEndTime)){
                             numberOfCarsStandstill++;
                         }
                     }

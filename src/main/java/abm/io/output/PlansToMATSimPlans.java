@@ -5,7 +5,7 @@ import abm.data.geo.MicroLocation;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
+import abm.data.vehicle.STCar;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import org.locationtech.jts.geom.Coordinate;
@@ -57,7 +57,7 @@ public class PlansToMATSimPlans {
                     Mode tourMode = tour.getTourMode();
                     String carType = null;
                     if (tourMode.equals(Mode.CAR_DRIVER)) {
-                        carType = ((Car) (tour.getCar())).getEngineType().toString();
+                        carType = ((STCar) (tour.getCar())).getEngineType().toString();
                     }
 
                     //tours with the first act starting this day of week, independently of when they end, are converted to MATSim,

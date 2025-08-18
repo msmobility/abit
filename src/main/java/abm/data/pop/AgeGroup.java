@@ -1,5 +1,8 @@
 package abm.data.pop;
 
+//Todo: maybe new enum based on MiD hhtyp2 needed
+
+
 public enum AgeGroup {
 
     from0to18, from19to29, from30to49, from50to59, from60to69, from70;

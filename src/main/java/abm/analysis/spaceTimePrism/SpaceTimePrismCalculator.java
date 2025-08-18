@@ -38,7 +38,6 @@ public class SpaceTimePrismCalculator {
 
     public static void main(String[] args) throws FileNotFoundException {
 
-
         AbitResources.initializeResources(args[0]);
         AbitUtils.loadHdf5Lib();
 
@@ -68,7 +67,7 @@ public class SpaceTimePrismCalculator {
     }
 
     private static void printAggregateSpaceTimePrism() throws FileNotFoundException {
-        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//spaceTimePrism_aggregated.csv");
+        PrintWriter pw = new PrintWriter("C://Users//Sonja//Documents//spaceTimePrism//spaceTimePrism_aggregated.csv");
 
         pw.println(SpaceTimePrism.getHeaderForAggregatedAnalysis());
 
@@ -96,7 +95,7 @@ public class SpaceTimePrismCalculator {
 
     private static void printSpaceTimePrismList() throws FileNotFoundException {
 
-        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//spaceTimePrism_accessibleZoneList.csv");
+        PrintWriter pw = new PrintWriter("C://Users//Sonja//Documents//spaceTimePrism//spaceTimePrism_accessibleZoneList.csv");
 
         pw.println(SpaceTimePrism.getHeader());
 
@@ -114,7 +113,7 @@ public class SpaceTimePrismCalculator {
 
     private static void printActivityList() throws FileNotFoundException {
 
-        PrintWriter pw = new PrintWriter("////nas.ads.mwn.de//tubv//mob//indiv//wei//spaceTimePrism//activities.csv");
+        PrintWriter pw = new PrintWriter("C://Users//Sonja//Documents//spaceTimePrism//activities.csv");
 
         pw.println("personId, activityPurpose, location, startTime, endTime, habitualMode");
 

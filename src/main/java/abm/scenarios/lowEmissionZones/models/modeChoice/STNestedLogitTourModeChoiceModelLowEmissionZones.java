@@ -6,9 +6,7 @@ import abm.data.geo.RegioStaR7;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.vehicle.Car;
-import abm.data.vehicle.CarType;
-import abm.data.vehicle.Vehicle;
+import abm.data.vehicle.*;
 import abm.io.input.CoefficientsReader;
 import abm.models.modeChoice.TourModeChoice;
 import abm.properties.AbitResources;
@@ -30,9 +28,9 @@ import java.util.stream.Collectors;
 import static abm.io.input.CalibrationZoneToRegionTypeReader.getRegionForZone;
 
 
-public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeChoice {
+public class STNestedLogitTourModeChoiceModelLowEmissionZones implements TourModeChoice {
 
-    private final static Logger logger = LogManager.getLogger(NestedLogitTourModeChoiceModelLowEmissionZones.class);
+    private final static Logger logger = LogManager.getLogger(STNestedLogitTourModeChoiceModelLowEmissionZones.class);
     private final DataSet dataSet;
     // keep it false despite calibration purpose
     private boolean runCalibration = false;
@@ -53,7 +51,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
     private static final boolean scenarioLowEmissionZone = Boolean.parseBoolean(AbitResources.instance.getString("scenario.lowEmissionZone"));
     private static Map<Integer, Boolean> lowEmissionZones = new HashMap<>();
 
-    public NestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet) {
+    public STNestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet) {
         this.dataSet = dataSet;
         this.purposeModeCoefficients = new HashMap<>();
 
@@ -92,7 +90,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
 
     }
 
-    public NestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet, boolean runCalibration) {
+    public STNestedLogitTourModeChoiceModelLowEmissionZones(DataSet dataSet, boolean runCalibration) {
         this(dataSet);
         List<String> regions = new ArrayList<>();
         regions.add("muc");
@@ -142,17 +140,17 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         }
 
         for (Vehicle vehicle : household.getVehicles()) {
-            if (vehicle instanceof Car) {
+            if (vehicle instanceof STCar) {
                 if (scenarioLowEmissionZone && travelIntoEvForbiddenZone && !lowEmissionZones.get(household.getLocation().getZoneId())) {
                 //if (scenarioLowEmissionZone && evForbiddenZones.containsKey(tour.getMainActivity().getLocation().getZoneId())) {
-                    carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min); //Todo change this logic
-                    boolean isEV = ((Car) vehicle).getEngineType().equals(CarType.ELECTRIC);
-                    if (carAvailable && isEV) {
+                    carAvailable = ((STCar) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min); //Todo change this logic
+                    boolean isCompliantCar = ((STCar) vehicle).getEmissionClass().equals(EmissionClass.EUROx) || ((STCar) vehicle).getEmissionClass().equals(EmissionClass.EURO_5) || ((STCar) vehicle).getEmissionClass().equals(EmissionClass.EURO_6);
+                    if (carAvailable && isCompliantCar) {
                         selectedVehicle = vehicle;
                         break;
                     }
                 } else {
-                    carAvailable = ((Car) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
+                    carAvailable = ((STCar) vehicle).getBlockedTimeOfWeek().isAvailable(carUseStartTime_min, carUseEndTime_min);
                     if (carAvailable) {
                         selectedVehicle = vehicle;
                         break;
@@ -169,7 +167,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
 
         Mode selectedMode = chooseMode(person, tour, purpose, carAvailable);
         if (selectedVehicle != null & selectedMode.equals(Mode.CAR_DRIVER)) {
-            ((Car) selectedVehicle).getBlockedTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
+            ((STCar) selectedVehicle).getBlockedTimeOfWeek().blockTime(carUseStartTime_min, carUseEndTime_min);
             tour.setCar(selectedVehicle);
         }
     }
@@ -179,7 +177,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         Household household = person.getHousehold();
         EnumMap<Mode, Double> utilities = new EnumMap<Mode, Double>(Mode.class);
 
-        boolean hasEVInHousehold = household.getVehicles().stream().anyMatch(vehicle -> vehicle instanceof Car && ((Car) vehicle).getEngineType().equals(CarType.ELECTRIC));
+        boolean hasCompCarInHousehold = household.getVehicles().stream().anyMatch(vehicle -> vehicle instanceof STCar && (((STCar) vehicle).getEmissionClass().equals(EmissionClass.EUROx))|| ((STCar) vehicle).getEmissionClass().equals(EmissionClass.EURO_5) || ((STCar) vehicle).getEmissionClass().equals(EmissionClass.EURO_6));
 
         boolean travelIntoEvForbiddenZone = false;
 
@@ -194,7 +192,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         for (Mode mode : Mode.getModes()) {
             if (mode == Mode.CAR_DRIVER && !carAvailable) {
                 utilities.put(mode, Double.NEGATIVE_INFINITY);
-            } else if (scenarioLowEmissionZone && !hasEVInHousehold && travelIntoEvForbiddenZone && !lowEmissionZones.get(person.getHousehold().getLocation().getZoneId()) && mode == Mode.CAR_PASSENGER) {
+            } else if (scenarioLowEmissionZone && !hasCompCarInHousehold && travelIntoEvForbiddenZone && !lowEmissionZones.get(person.getHousehold().getLocation().getZoneId()) && mode == Mode.CAR_PASSENGER) {
             //} else if (scenarioLowEmissionZone && !hasEVInHousehold && evForbiddenZones.containsKey(tour.getMainActivity().getLocation().getZoneId()) && mode == Mode.CAR_PASSENGER) {
                 utilities.put(mode, Double.NEGATIVE_INFINITY);
             } else {
@@ -391,7 +389,9 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         return Math.log(expSumAuto + expSumPt + expSumActive);
     }
 
+    //todo adapt attributes
     public double calculateModeChoiceLogsumForThisODPairForLowEmissionZoneRestriction(Person person, Tour tour, Purpose purpose, Map<String, Double> attributes, boolean hasLowEmissionZoneRestriction) {
+
 
         Map<Mode, Double> utilityMap = new HashMap<>();
 
@@ -414,6 +414,7 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         return Math.log(expSumAuto + expSumPt + expSumActive);
     }
 
+    //todo adapt attributes
     private double calculateModeChoiceLogsumForThisMode(Person person, Tour tour, Purpose purpose, Mode mode, Map<String, Double> attributes) {
         // Intercept
         double utility = purposeModeCoefficients.get(purpose).get(mode).get("INTERCEPT");
