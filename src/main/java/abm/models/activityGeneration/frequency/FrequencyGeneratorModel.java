@@ -156,11 +156,11 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         double[] probability = new double[7];
 
-        for (int t = 0; t <= 5; t++){
-            probability[t] = 1 / (1 + Math.exp(mu - intercepts[t]));
+        for (int t = 1; t <= 6; t++){
+            probability[t] = 1 / (1 + Math.exp(mu - intercepts[t - 1]));
         }
 
-        probability[6] = phi;
+        probability[0] = phi;
 
         return probability;
 
@@ -180,12 +180,12 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         while (cumProb < randomNumber) {
             i++;
             if (i < 7) {
-                prob = probability[i - 1];
+                prob = probability[i];
             } else {
                 prob = 1;
             }
             if (i > 1) {
-                prob -= probability[i - 2];
+                prob -= probability[i - 1];
             }
             cumProb += phi * prob;
         }
@@ -588,28 +588,9 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         int numDaysEducation = 0;
 
         if (Purpose.getDiscretionaryPurposes().contains(purpose)) {
-
-            final List<Tour> tourList = pp.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
-
-            int[] daysOfWork = new int[]{0, 0, 0, 0, 0, 0, 0};
-            int[] daysOfEducation = new int[]{0, 0, 0, 0, 0, 0, 0};
-
-            for (Tour tour : tourList) {
-                if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
-                    int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
-                    if (daysOfWork[dayOfWeek - 1] == 0) {
-                        daysOfWork[dayOfWeek - 1] = 1;
-                    }
-                } else {
-                    int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
-                    if (daysOfEducation[dayOfWeek - 1] == 0) {
-                        daysOfEducation[dayOfWeek - 1] = 1;
-                    }
-                }
-            }
-
-            numDaysWork = Arrays.stream(daysOfWork).sum();
-            numDaysEducation = Arrays.stream(daysOfEducation).sum();
+             int[] dayCount = getDayCount(pp);
+             numDaysWork = dayCount[0];
+             numDaysEducation = dayCount[1];
         }
 
         predictor += numDaysWork * coefficients.get("num_days_edu");
@@ -617,6 +598,37 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         //predictor += coefficients.get("calibration");
 
         return predictor;
+    }
+
+    public int[] getDayCount(Person pp){
+        int numDaysWork ;
+        int numDaysEducation;
+        final List<Tour> tourList = pp.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+        int[] dayCount = new int[2];
+        int[] daysOfWork = new int[]{0, 0, 0, 0, 0, 0, 0};
+        int[] daysOfEducation = new int[]{0, 0, 0, 0, 0, 0, 0};
+
+        for (Tour tour : tourList) {
+            if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
+                int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
+                if (daysOfWork[dayOfWeek - 1] == 0) {
+                    daysOfWork[dayOfWeek - 1] = 1;
+                }
+            } else {
+                int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
+                if (daysOfEducation[dayOfWeek - 1] == 0) {
+                    daysOfEducation[dayOfWeek - 1] = 1;
+                }
+            }
+        }
+
+        numDaysWork = Arrays.stream(daysOfWork).sum();
+        numDaysEducation = Arrays.stream(daysOfEducation).sum();
+
+        dayCount[0] = numDaysWork;
+        dayCount[1] = numDaysEducation;
+
+        return dayCount;
     }
 
     public void updateCalibrationFactor(Map<Integer, Double> newCalibrationFactors) {

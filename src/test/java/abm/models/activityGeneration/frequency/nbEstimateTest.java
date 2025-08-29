@@ -36,7 +36,7 @@ public class nbEstimateTest {
 
         dataset = new FrequencyTestDataReaderManager().readData();
 
-        frequencyGeneratorModel = new FrequencyGeneratorModel(dataset, Purpose.ACCOMPANY);
+        frequencyGeneratorModel = new FrequencyGeneratorModel(dataset, Purpose.SHOPPING);
     }
 
 
@@ -67,8 +67,8 @@ public class nbEstimateTest {
 
         //Set up reference values, e.g. probabilities
         double[] expectParam = new double[]{
-                1.067,
-                0.816,
+                3.363,//mu
+                3.886,//theta
         };
 
 

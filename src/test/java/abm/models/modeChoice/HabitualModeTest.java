@@ -39,10 +39,13 @@ public class HabitualModeTest {
         Zone zone1 = new Zone(3635);
         Zone zone2 = new Zone(3631);
         Zone zone3 = new Zone(3629);
+
         Job job = new Job(1, -1, "Mnft", zone2, 445, 480);
         School school = new School(1, "1", 238, 238, zone3, 0, 0);
         Person person_test_1 = new Person(1, new Household(1, zone1, 1), 30, Gender.MALE, Relationship.married, Occupation.EMPLOYED, true, job, 28800, 465, 1059, 4511, school, Disability.WITHOUT);
+
         EnumMap<HabitualMode, Double> actualProbabilities = nestedLogitHabitualModeChoiceModel.calculateProbabilities(person_test_1);
+
         EnumMap<HabitualMode, Double> expectProbabilities = new EnumMap<>(HabitualMode.class);
         expectProbabilities.put(HabitualMode.CAR_DRIVER, 0.259);
         expectProbabilities.put(HabitualMode.CAR_PASSENGER, 0.009);

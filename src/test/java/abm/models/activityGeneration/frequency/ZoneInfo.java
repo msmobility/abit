@@ -20,6 +20,8 @@ import de.tum.bgu.msm.util.MitoUtil;
 
 import java.util.Arrays;
 
+import static abm.data.plans.Plan.initializePlan;
+
 public class ZoneInfo {
 
 
@@ -54,8 +56,9 @@ public class ZoneInfo {
         person_test_2.setHabitualMode(HabitualMode.WALK);
         person_test_2.setEmploymentStatus(EmploymentStatus.FULLTIME_EMPLOYED);
         nestedLogitHabitualModeChoiceModel.chooseHabitualMode(person_test_2);
+        initializePlan(person_test_2);
         double[] probability = frequencyGeneratorModel.polrEstimateProb(person_test_2);
-
+        int[] dayCount = frequencyGeneratorModel.getDayCount(person_test_2);
 
         HabitualMode habitualMode = person_test_2.getHabitualMode();
         for (Person person : person_test_2.getHousehold().getPersons()) {
@@ -69,5 +72,7 @@ public class ZoneInfo {
         System.out.println("HabitualMode : " + habitualMode);
         System.out.println("Number of unemployed : " + numUnemployedInHh);
         System.out.println(Arrays.toString(probability));
+        System.out.println(Arrays.toString(dayCount));
+
     }
 }

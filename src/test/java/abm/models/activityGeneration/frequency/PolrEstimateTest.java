@@ -59,7 +59,7 @@ public class PolrEstimateTest {
         Household household = new Household(1, zone1, 1);
         household.setEconomicStatus(EconomicStatus.from2401);
 
-        Person person_test_2 = new Person(1, household, 30, Gender.MALE, Relationship.married, Occupation.EMPLOYED, true,job , 28800, 465, 1059, 4511, school, Disability.WITHOUT);
+        Person person_test_2 = new Person(1, household, 30, Gender.MALE, Relationship.single, Occupation.EMPLOYED, true, job , 28800, 465, 1059, 4511, school, Disability.WITHOUT);
         person_test_2.setHabitualMode(HabitualMode.WALK);
         person_test_2.setEmploymentStatus(EmploymentStatus.FULLTIME_EMPLOYED);
 
@@ -68,15 +68,16 @@ public class PolrEstimateTest {
         double[] probability = frequencyGeneratorModel.polrEstimateProb(person_test_2);
 
 
-        //Set up reference values, e.g. probabilities
+        //Set up reference values,
         double[] expectProbability = new double[]{
-                0.016,
+                0.978,//phi
+                0.016,//probabilities
                 0.045,
                 0.103,
                 0.268,
                 0.914,
                 0.985,
-                0.978
+
         };
 
 

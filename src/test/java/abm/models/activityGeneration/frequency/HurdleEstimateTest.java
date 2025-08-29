@@ -67,9 +67,9 @@ public class HurdleEstimateTest {
 
         //Set up reference values, e.g. probabilities
         double[] expectParam = new double[]{
-                1.357,
-                -0.906,
-                1.068,
+                1.357,//theta
+                -0.906,//p_0
+                1.068,//mu
         };
 
 

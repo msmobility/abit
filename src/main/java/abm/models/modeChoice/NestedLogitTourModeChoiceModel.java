@@ -164,7 +164,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
 
     }
 
-    private double calculateUtilityForThisMode(Person person, Tour tour, Purpose purpose, Mode mode,
+    public double calculateUtilityForThisMode(Person person, Tour tour, Purpose purpose, Mode mode,
                                                Household household) {
         // Intercept
         double utility = purposeModeCoefficients.get(purpose).get(mode).get("INTERCEPT");
