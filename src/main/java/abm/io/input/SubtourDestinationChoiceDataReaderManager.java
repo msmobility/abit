@@ -1,32 +1,24 @@
 package abm.io.input;
+
 import abm.data.DataSet;
-import abm.data.geo.Zone;
-import abm.data.pop.Household;
-import abm.data.pop.Job;
-import abm.data.pop.Person;
-import de.tum.bgu.msm.data.person.Occupation;
 
-import java.util.HashMap;
-import java.util.Map;
+public class SubtourDestinationChoiceDataReaderManager implements DataReaderManager {
 
-
-public class HabitualModeChoiceDataReaderManager implements DataReaderManager {
     @Override
     public DataSet readData() {
         DataSet dataSet = new DataSet();
         new ZoneReader(dataSet).read();
-       new MitoTravelTimeAndDistanceReader(dataSet).read();
+//       new MitoTravelTimeAndDistanceReader(dataSet).read();
 //
-//        new HouseholdReader(dataSet).read();
+        new HouseholdReader(dataSet).read();
 //        new VehicleReader(dataSet).read();
 //        new JobReader(dataSet).read();
 //       new SchoolReader(dataSet).read();
-//        new PersonReader(dataSet).read();
+        new PersonReader(dataSet).read();
 //       populateZones(dataSet);
 //        new EconomicStatusReader(dataSet).read();
 //        new CalibrationZoneToRegionTypeReader(dataSet).read();
 
         return dataSet;
     }
-
 }

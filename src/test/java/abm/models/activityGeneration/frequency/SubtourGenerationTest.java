@@ -1,10 +1,14 @@
-package abm.models.modeChoice;
+package abm.models.activityGeneration.frequency;
 
 import abm.data.DataSet;
-import abm.data.geo.*;
+import abm.data.geo.RegioStaR2;
+import abm.data.geo.RegioStaR7;
+import abm.data.geo.RegioStaRGem5;
+import abm.data.geo.Zone;
 import abm.data.plans.*;
 import abm.data.pop.*;
 import abm.io.input.HabitualModeChoiceDataReaderManager;
+import abm.models.modeChoice.NestedLogitTourModeChoiceModel;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Disability;
@@ -18,19 +22,19 @@ import java.time.DayOfWeek;
 import java.util.EnumMap;
 
 import static abm.data.plans.Plan.initializePlan;
-import static junit.framework.Assert.assertEquals;
+import static junitx.framework.Assert.assertEquals;
 
-public class TourModeChoiceTest {
-    public NestedLogitTourModeChoiceModel nestedLogitTourModeChoiceModel;
+public class SubtourGenerationTest {
 
+    public SubtourGeneratorModel subtourGeneratorModel;
     @Before
-    public void setup(){
+    public void setup() {
         AbitResources.initializeResources("abit_wei.properties");
         AbitUtils.loadHdf5Lib();
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
 
         DataSet dataset = new HabitualModeChoiceDataReaderManager().readData();
-        nestedLogitTourModeChoiceModel = new NestedLogitTourModeChoiceModel(dataset);
+        subtourGeneratorModel = new SubtourGeneratorModel(dataset);
     }
 
     @Test
@@ -48,36 +52,35 @@ public class TourModeChoiceTest {
         Job job = new Job(1, -1, "Mnft", zone2, 445, 480);
         School school = new School(1, "1", 238, 238, zone3, 0, 0);
 
-        Person person_test_1 = new Person(1, new Household(1, zone1, 1), 30, Gender.MALE,
-                Relationship.married, Occupation.EMPLOYED, true, job, 28800, 465,
-                1059, 4511, school, Disability.WITHOUT);
+        Person person_test_1 = new Person(1, new Household(1, zone1, 1), 30, Gender.MALE, Relationship.married,
+                Occupation.EMPLOYED, true, job, 28800, 465, 1059,
+                4511, school, Disability.WITHOUT);
+        person_test_1.setEmploymentStatus(EmploymentStatus.FULLTIME_EMPLOYED);
         Activity activity = new Activity(person_test_1, Purpose.WORK);
         activity.setLocation(zone2);
         activity.setDayOfWeek(DayOfWeek.MONDAY);
+        activity.setStartTime_min(480);
+        activity.setEndTime_min(1050);
         Tour tour = new Tour(activity, 1);
         person_test_1.setHabitualMode(HabitualMode.WALK);
 
         initializePlan(person_test_1);
 
-        for (Mode mode : Mode.getModes()){
-            Double utility = nestedLogitTourModeChoiceModel.calculateUtilityForThisMode(person_test_1, tour, Purpose.WORK, mode, household);
-            actualmodeutility.put(mode, utility);
-        }
+        double utility = subtourGeneratorModel.calculateUtility(Purpose.WORK, person_test_1,tour);
 
-        expectmodeutility.put(Mode.BUS, -1.757);
-        expectmodeutility.put(Mode.CAR_DRIVER, 0.0);
-        expectmodeutility.put(Mode.WALK, 7.203);
-        expectmodeutility.put(Mode.TRAIN, 1.722);
-        expectmodeutility.put(Mode.BIKE, 0.460);
-        expectmodeutility.put(Mode.TRAM_METRO, 0.242);
-        expectmodeutility.put(Mode.CAR_PASSENGER,-3.792);
+        assertEquals(-3.042, utility, 0.001);
 
-        assertEnumMapEquals(expectmodeutility, actualmodeutility, 0.001);
     }
-    public static void assertEnumMapEquals(EnumMap<Mode, Double> expected, EnumMap<Mode, Double> actual, double delta) {
-        assertEquals("Map sizes differ", expected.size(), actual.size());
-        for (Mode key : expected.keySet()) {
-            assertEquals("Mismatch for key: " + key, expected.get(key), actual.get(key), delta);
+
+    public static void assertEquals(double expected, double actual, double delta) {
+        if (Double.isNaN(expected) && Double.isNaN(actual)) {
+            return; // both NaN, consider equal
+        }
+        if (Math.abs(expected - actual) > delta) {
+            throw new AssertionError("Expected " + expected + " but got " + actual
+                    + " (tolerance " + delta + ")");
         }
     }
+
+
 }

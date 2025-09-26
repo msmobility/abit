@@ -65,7 +65,7 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
         subtourActivity.setLocation(microDestination);
     }
 
-    private IndexedDoubleMatrix2D loadUtilities() {
+    public IndexedDoubleMatrix2D loadUtilities() {
 
         IndexedDoubleMatrix2D utilityMatrix = new IndexedDoubleMatrix2D(dataSet.getZones().values(), dataSet.getZones().values());
         for (Zone origin : dataSet.getZones().values()) {
@@ -80,7 +80,7 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
         return utilityMatrix;
     }
 
-    private Map<Zone, Double> loadBasicAttraction() {
+    public Map<Zone, Double> loadBasicAttraction() {
 
         Map<Zone, Double> zoneAttractors = new HashMap<>();
         for (Zone z : dataSet.getZones().values()) {

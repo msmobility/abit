@@ -18,6 +18,7 @@ public class Activity implements Comparable<Activity> {
     private int endTime_min;
     private DiscretionaryActivityType discretionaryActivityType;
     private Location location;
+    private Subtour subtour;
 
     public Subtour getSubtour() {
         return subtour;
@@ -26,8 +27,6 @@ public class Activity implements Comparable<Activity> {
     public void setSubtour(Subtour subtour) {
         this.subtour = subtour;
     }
-
-    private Subtour subtour;
 
     public Activity(Person person, Purpose purpose) {
         this.purpose = purpose;

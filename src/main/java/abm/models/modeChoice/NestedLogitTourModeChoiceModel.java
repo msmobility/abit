@@ -447,7 +447,7 @@ public class NestedLogitTourModeChoiceModel implements TourModeChoice {
     }
 
     //calculates generalized costs
-    private EnumMap<Mode, Double> calculateGeneralizedCosts(Purpose purpose, Household household,
+    public EnumMap<Mode, Double> calculateGeneralizedCosts(Purpose purpose, Household household,
                                                            Tour tour) {
 
         double travelDistanceAuto = 0;

@@ -56,7 +56,7 @@ public class SubtourModeChoiceModel implements SubtourModeChoice {
 
     }
 
-    private double calculateUtility(Tour tour) {
+    public double calculateUtility(Tour tour) {
         double utility = 0.;
         double distance = tour.getMainActivity().getSubtour().getOutboundLeg().getDistance();
 

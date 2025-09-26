@@ -78,7 +78,7 @@ public class SubtourGeneratorModel implements SubtourGenerator {
 
     }
 
-    private double calculateUtility(Purpose purpose, Person person, Tour mandatoryTour) {
+    public double calculateUtility(Purpose purpose, Person person, Tour mandatoryTour) {
 
         double utility = 0.;
         Activity mandatoryActivity = mandatoryTour.getMainActivity();
