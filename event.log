@@ -171,3 +171,131 @@ java.nio.file.NoSuchFileException: input\models\activityGeneration\frequency\Coe
 05-Oct-2023 15:12:43, INFO, Hdf5 library successfully located.
 05-Oct-2023 15:12:43, INFO, Reading data
 05-Oct-2023 15:12:43, INFO, will try to read from C:\Models\abit\input\geo\zoneShapefile\zones.shp
+09-Mar-2026 12:12:51, ERROR, Error initializing csv reader: input\models\activityGeneration\frequency\CoefficientsNegBinZero.csv
+java.nio.file.NoSuchFileException: input\models\activityGeneration\frequency\CoefficientsNegBinZero.csv
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:103)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:108)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.newByteChannel(WindowsFileSystemProvider.java:234)
+	at java.base/java.nio.file.Files.newByteChannel(Files.java:380)
+	at java.base/java.nio.file.Files.newByteChannel(Files.java:432)
+	at java.base/java.nio.file.spi.FileSystemProvider.newInputStream(FileSystemProvider.java:420)
+	at java.base/java.nio.file.Files.newInputStream(Files.java:160)
+	at java.base/java.nio.file.Files.newBufferedReader(Files.java:2921)
+	at abm.io.input.AbstractCsvReader.initializeReader(AbstractCsvReader.java:55)
+	at abm.io.input.AbstractCsvReader.read(AbstractCsvReader.java:33)
+	at abm.io.input.CoefficientsReader.read(CoefficientsReader.java:53)
+	at abm.io.input.CoefficientsReader.<init>(CoefficientsReader.java:33)
+	at abm.models.activityGeneration.frequency.FrequencyGeneratorModel.<init>(FrequencyGeneratorModel.java:50)
+	at abm.models.actitivyGeneration.frequency.FrequencyGeneratorModelTest.test(FrequencyGeneratorModelTest.java:69)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.apache.maven.surefire.junit.PojoTestSet.executeTestMethod(PojoTestSet.java:146)
+	at org.apache.maven.surefire.junit.PojoTestSet.executeTestMethods(PojoTestSet.java:92)
+	at org.apache.maven.surefire.junit.PojoTestSet.execute(PojoTestSet.java:77)
+	at org.apache.maven.surefire.junit.JUnit3Provider.executeTestSet(JUnit3Provider.java:141)
+	at org.apache.maven.surefire.junit.JUnit3Provider.invoke(JUnit3Provider.java:114)
+	at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:428)
+	at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:162)
+	at org.apache.maven.surefire.booter.ForkedBooter.run(ForkedBooter.java:562)
+	at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:548)
+09-Mar-2026 12:28:05, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:28:05, INFO, Detected windows OS.
+09-Mar-2026 12:28:05, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:28:05, INFO, Reading data
+09-Mar-2026 12:28:05, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 12:30:08, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:30:08, INFO, Detected windows OS.
+09-Mar-2026 12:30:08, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:30:08, INFO, Reading data
+09-Mar-2026 12:30:08, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 12:30:31, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:30:32, INFO, Detected windows OS.
+09-Mar-2026 12:30:32, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:30:32, INFO, Reading data
+09-Mar-2026 12:30:32, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 12:35:26, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:35:26, INFO, Detected windows OS.
+09-Mar-2026 12:35:26, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:35:26, INFO, Reading data
+09-Mar-2026 12:35:26, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231117.shp
+09-Mar-2026 12:47:31, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:47:31, INFO, Detected windows OS.
+09-Mar-2026 12:47:31, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:47:31, INFO, Reading data
+09-Mar-2026 12:47:31, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 12:47:57, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:47:57, INFO, Detected windows OS.
+09-Mar-2026 12:47:57, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:47:57, INFO, Reading data
+09-Mar-2026 12:47:57, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 12:49:03, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:49:03, INFO, Detected windows OS.
+09-Mar-2026 12:49:03, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:49:03, INFO, Reading data
+09-Mar-2026 12:49:03, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones.shp
+09-Mar-2026 12:51:42, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:51:42, INFO, Detected windows OS.
+09-Mar-2026 12:51:42, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:51:42, INFO, Reading data
+09-Mar-2026 12:51:42, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones.shp
+09-Mar-2026 12:56:35, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 12:56:35, INFO, Detected windows OS.
+09-Mar-2026 12:56:35, INFO, Hdf5 library successfully located.
+09-Mar-2026 12:56:35, INFO, Reading data
+09-Mar-2026 12:56:35, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones.shp
+09-Mar-2026 13:00:25, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 13:00:25, INFO, Detected windows OS.
+09-Mar-2026 13:00:25, INFO, Hdf5 library successfully located.
+09-Mar-2026 13:00:25, INFO, Reading data
+09-Mar-2026 13:00:25, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit_standalone\input\geo\zoneShapefile\zones_20231212.shp
+09-Mar-2026 13:00:26, INFO, Loaded 4953 zones.
+09-Mar-2026 13:00:26, INFO, Reading CAR_DRIVER skim
+09-Mar-2026 13:04:29, INFO, Trying to set up native hdf5 lib
+09-Mar-2026 13:04:29, INFO, Detected windows OS.
+09-Mar-2026 13:04:29, INFO, Hdf5 library successfully located.
+09-Mar-2026 13:04:29, INFO, Reading data
+09-Mar-2026 13:04:29, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones.shp
+23-Mar-2026 15:16:04, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:16:04, INFO, Detected windows OS.
+23-Mar-2026 15:16:04, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:16:04, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-Mar-2026 15:20:00, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:20:00, INFO, Detected windows OS.
+23-Mar-2026 15:20:00, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:20:00, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-Mar-2026 15:21:52, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:21:52, INFO, Detected windows OS.
+23-Mar-2026 15:21:52, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:21:52, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-Mar-2026 15:25:02, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:25:02, INFO, Detected windows OS.
+23-Mar-2026 15:25:02, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:25:02, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-Mar-2026 15:42:49, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:42:49, INFO, Detected windows OS.
+23-Mar-2026 15:42:49, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:42:49, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+23-Mar-2026 15:44:47, INFO, Trying to set up native hdf5 lib
+23-Mar-2026 15:44:47, INFO, Detected windows OS.
+23-Mar-2026 15:44:48, INFO, Hdf5 library successfully located.
+23-Mar-2026 15:44:48, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+24-Mar-2026 13:00:04, INFO, Trying to set up native hdf5 lib
+24-Mar-2026 13:00:04, INFO, Detected windows OS.
+24-Mar-2026 13:00:04, INFO, Hdf5 library successfully located.
+24-Mar-2026 13:00:04, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+24-Mar-2026 13:02:04, INFO, Trying to set up native hdf5 lib
+24-Mar-2026 13:02:04, INFO, Detected windows OS.
+24-Mar-2026 13:02:04, INFO, Hdf5 library successfully located.
+24-Mar-2026 13:02:04, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+24-Mar-2026 13:02:17, INFO, Trying to set up native hdf5 lib
+24-Mar-2026 13:02:17, INFO, Detected windows OS.
+24-Mar-2026 13:02:17, INFO, Hdf5 library successfully located.
+24-Mar-2026 13:03:13, INFO, Trying to set up native hdf5 lib
+24-Mar-2026 13:03:13, INFO, Detected windows OS.
+24-Mar-2026 13:03:13, INFO, Hdf5 library successfully located.
+24-Mar-2026 13:03:13, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp
+24-Mar-2026 15:55:44, INFO, Trying to set up native hdf5 lib
+24-Mar-2026 15:55:44, INFO, Detected windows OS.
+24-Mar-2026 15:55:44, INFO, Hdf5 library successfully located.
+24-Mar-2026 15:55:44, INFO, will try to read from C:\Users\Nawidullah\IdeaProjects\abit\input\geo\zoneShapefile\zones_20231212.shp

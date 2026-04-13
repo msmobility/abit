@@ -8,9 +8,10 @@
     <artifactId>abm</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>23</maven.compiler.source>
+        <maven.compiler.target>23</maven.compiler.target>
     </properties>
 
     <repositories>
@@ -60,6 +61,14 @@
             <artifactId>matsim</artifactId>
             <version>14.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -76,10 +85,7 @@
                 <version>1.0</version>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
+                        <phase>none</phase>
                     </execution>
                 </executions>
                 <configuration>
@@ -94,9 +100,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <release>11</release>
-                    <source>11</source>
-                    <target>11</target>
+                    <release>23</release>
+                    <source>23</source>
+                    <target>23</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -113,7 +119,7 @@
                     <forkMode>always</forkMode>
 
                     <!-- avoid out of memory errors: -->
-                    <argLine>-Xmx2000m -Djava.awt.headless=true
+                    <argLine>-Xmx96g -Djava.awt.headless=true
                         -Dmatsim.preferLocalDtds=true</argLine>
                 </configuration>
             </plugin>

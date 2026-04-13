@@ -2,12 +2,9 @@ package abm.data;
 
 import abm.data.geo.Zone;
 import abm.data.plans.Purpose;
-import abm.data.pop.Job;
-import abm.data.pop.School;
+import abm.data.pop.*;
 import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
-import abm.data.pop.Household;
-import abm.data.pop.Person;
 import de.tum.bgu.msm.util.matrices.IndexedDoubleMatrix2D;
 
 import java.util.HashMap;
