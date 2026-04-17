@@ -15,6 +15,7 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
@@ -209,9 +210,15 @@ public class PlanGenerator3 implements Callable {
                 timeAssignment.assignDurationAndThenStartTime(activity);
                 if (purpose.equals(Purpose.WORK)){
                     if (person.getJob()!=null){
-                        activity.setLocation(person.getJob().getLocation());
+                        if ((person.getJob().getType().equals("Finc")|person.getJob().getType().equals("Admn")|person.getJob().getType().equals("Serv")) && AbitUtils.getRandomObject().nextDouble() < 0.00){
+                            continue;
+                        } else{
+                            activity.setLocation(person.getJob().getLocation());
+                        }
+
                     }else{
-                        destinationChoice.selectMainActivityDestination(person, activity);
+                        //destinationChoice.selectMainActivityDestination(person, activity);
+                        continue;
                     }
 
                 }else{
@@ -228,11 +235,11 @@ public class PlanGenerator3 implements Callable {
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignDurationAndThenStartTime(activity);
                     if (purpose.equals(Purpose.WORK)){
-                        if (person.getJob()!=null){
-                            activity.setLocation(person.getJob().getLocation());
-                        }else{
-                            destinationChoice.selectMainActivityDestination(person, activity);
-                        }
+                    //    if (person.getJob()!=null){
+                    //        activity.setLocation(person.getJob().getLocation());
+                    //    }else{
+                    //        destinationChoice.selectMainActivityDestination(person, activity);
+                    //    }
 
                     }else{
                         if (person.getSchool()!=null){
