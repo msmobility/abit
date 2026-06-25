@@ -2,6 +2,7 @@ package abm.utils;
 
 import abm.data.plans.*;
 import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
+import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
 import abm.properties.InternalProperties;
 
@@ -15,8 +16,9 @@ public class PlanTools {
 
     private final TravelTimes travelTimes;
 
-    public PlanTools(TravelTimes travelTimes) {
+    public PlanTools(TravelTimes travelTimes, TravelDistances travelDistances) {
         this.travelTimes = travelTimes;
+        this.travelDistances = travelDistances;
     }
 
     public static int endOfTheWeek() {
@@ -27,6 +29,7 @@ public class PlanTools {
         return 0;
     }
 
+    private final TravelDistances travelDistances;
 
     /**
      * Adds a main activity tour. Cuts the home activity into two pieces, one before the tour and another after the tour
@@ -57,8 +60,10 @@ public class PlanTools {
     private void addOtherToursOfTheDay(Plan plan, Activity mainTourActivity, int startTimeOfTheDay_min, int endTimeOfTheDay_min) {
 
         int travelTimeToMainActivity_min = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
+        double travelDistanceToMainAct_m = travelDistances.getTravelDistanceInMeters(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeLeavingHome_min = mainTourActivity.getStartTime_min() - travelTimeToMainActivity_min;
         int travelTimeBackFromMainActivity_min = travelTimes.getTravelTimeInMinutes(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
+        double travelDistanceBackFromMainActivity_m = travelDistances.getTravelDistanceInMeters(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeArrivingHome_min = mainTourActivity.getEndTime_min() + travelTimeBackFromMainActivity_min;
 
 
@@ -90,6 +95,7 @@ public class PlanTools {
 
                     final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
                     firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
+                    firstLeg.setDistance(travelDistanceToMainAct_m);
 
                     Activity homeActAfterMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
                     homeActAfterMainAct.setStartTime_min(timeArrivingHome_min);
@@ -99,6 +105,7 @@ public class PlanTools {
 
                     final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
                     secondLeg.setTravelTime_min(travelTimeToMainActivity_min);
+                    secondLeg.setDistance(travelDistanceToMainAct_m);
 
                     //Todo modify home act on the selected tour
                     firstHomeAct.setStartTime_min(timeArrivingHome_min);
@@ -124,6 +131,7 @@ public class PlanTools {
 
                     final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
                     firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
+                    firstLeg.setDistance(travelDistanceToMainAct_m);
 
                     Activity homeActAfterMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
                     homeActAfterMainAct.setStartTime_min(timeArrivingHome_min);
@@ -133,6 +141,8 @@ public class PlanTools {
 
                     final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
                     secondLeg.setTravelTime_min(travelTimeToMainActivity_min);
+                    secondLeg.setDistance(travelDistanceToMainAct_m);
+
 
                     //Todo modify home act on the selected tour
                     secondHomeAct.setEndTime_min(timeLeavingHome_min);
@@ -156,6 +166,7 @@ public class PlanTools {
     private void addTheFirstTourOfTheDay(Plan plan, Activity mainTourActivity, int startTimeOfTheDay_min, int endTimeOfTheDay_min) {
 
         int travelTimeToMainActivity_min = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
+        double travelDistanceToMainActivity_m = travelDistances.getTravelDistanceInMeters(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeLeavingHome_min = mainTourActivity.getStartTime_min() - travelTimeToMainActivity_min;
 
         Activity homeActBeforeMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
@@ -166,6 +177,7 @@ public class PlanTools {
 
         final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
         firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
+        firstLeg.setDistance(travelDistanceToMainActivity_m);
 
         int travelTimeBackFromMainActivity_min = travelTimes.getTravelTimeInMinutes(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeArrivingHome_min = mainTourActivity.getEndTime_min() + travelTimeBackFromMainActivity_min;
@@ -178,6 +190,7 @@ public class PlanTools {
 
         final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
         secondLeg.setTravelTime_min(travelTimeToMainActivity_min);
+        secondLeg.setDistance(travelDistanceToMainActivity_m);
 
         if (plan.getBlockedTimeOfDay().isAvailable(timeLeavingHome_min, timeArrivingHome_min)) {
             Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
@@ -202,11 +215,14 @@ public class PlanTools {
         Activity mainActivity = tour.getMainActivity();
 
         int timeToSubTourActivity = travelTimes.getTravelTimeInMinutes(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
+        double travelDistanceToSubTourActivity = travelDistances.getTravelDistanceInMeters(mainActivity.getLocation(), subTourActivity.getLocation(), Mode.UNKNOWN, subTourActivity.getStartTime_min());
 
         final Subtour subtour = new Subtour(mainActivity, subTourActivity, timeToSubTourActivity);
         mainActivity.setSubtour(subtour);
         subtour.getOutboundLeg().setTravelTime_min(timeToSubTourActivity);
+        subtour.getOutboundLeg().setDistance(travelDistanceToSubTourActivity);
         subtour.getInboundLeg().setTravelTime_min(timeToSubTourActivity);
+        subtour.getInboundLeg().setDistance(travelDistanceToSubTourActivity);
 
 
 
@@ -258,7 +274,11 @@ public class PlanTools {
 
         int travelTimeForFirstLeg = travelTimes.getTravelTimeInMinutes(tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity().getLocation(),
                 stopBefore.getLocation(), Mode.UNKNOWN, timeLeavingFromHomeBeforeAddingStop_min);
+        double travelDistanceForFirstLeg = travelDistances.getTravelDistanceInMeters(tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity().getLocation(),
+                stopBefore.getLocation(), Mode.UNKNOWN, timeLeavingFromHomeBeforeAddingStop_min);
         int travelTimeForSecondLeg = travelTimes.getTravelTimeInMinutes(stopBefore.getLocation(), firstNonHomeActInExistingTour.getLocation(),
+                Mode.UNKNOWN, firstNonHomeActInExistingTour.getStartTime_min());
+        double travelDistanceForSecondLeg = travelDistances.getTravelDistanceInMeters(stopBefore.getLocation(), firstNonHomeActInExistingTour.getLocation(),
                 Mode.UNKNOWN, firstNonHomeActInExistingTour.getStartTime_min());
 
         final int duration = stopBefore.getDuration();
@@ -269,8 +289,10 @@ public class PlanTools {
         Leg firstLeg = new Leg(tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity(), stopBefore);
         tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity().setEndTime_min(stopBefore_StartTime_min - travelTimeForFirstLeg);
         firstLeg.setTravelTime_min(travelTimeForFirstLeg);
+        firstLeg.setDistance(travelDistanceForFirstLeg);
         Leg secondLeg = new Leg(stopBefore, firstNonHomeActInExistingTour);
         secondLeg.setTravelTime_min(travelTimeForSecondLeg);
+        secondLeg.setDistance(travelDistanceForSecondLeg);
 
         BlockedTimeOfWeekLinkedList tempBlockedTimeOfWeek = plan.getBlockedTimeOfDay();
         //tempBlockedTimeOfWeek.setAvailable(timeLeavingFromHomeBeforeAddingStop_min, firstNonHomeActInExistingTour.getStartTime_min());
@@ -303,7 +325,12 @@ public class PlanTools {
 
         int travelTimeForFirstLeg = travelTimes.getTravelTimeInMinutes(lastNonHomeActInExistingTour.getLocation(),
                 stopAfter.getLocation(), Mode.UNKNOWN, lastNonHomeActInExistingTour.getEndTime_min());
+        double travelDistanceForFirstLeg = travelDistances.getTravelDistanceInMeters(lastNonHomeActInExistingTour.getLocation(),
+                stopAfter.getLocation(), Mode.UNKNOWN, lastNonHomeActInExistingTour.getEndTime_min());
         int travelTimeForSecondLeg = travelTimes.getTravelTimeInMinutes(stopAfter.getLocation(),
+                tour.getLegs().get(timeLeavingToHomeBeforeAddingStop_min).getNextActivity().getLocation(),
+                Mode.UNKNOWN, stopAfter.getEndTime_min());
+        double travelDistanceForSecondLeg = travelDistances.getTravelDistanceInMeters(stopAfter.getLocation(),
                 tour.getLegs().get(timeLeavingToHomeBeforeAddingStop_min).getNextActivity().getLocation(),
                 Mode.UNKNOWN, stopAfter.getEndTime_min());
 
@@ -314,9 +341,11 @@ public class PlanTools {
 
         Leg firstLeg = new Leg(lastNonHomeActInExistingTour, stopAfter);
         firstLeg.setTravelTime_min(travelTimeForFirstLeg);
+        firstLeg.setDistance(travelDistanceForFirstLeg);
         Leg secondLeg = new Leg(stopAfter, tour.getLegs().get(timeLeavingToHomeBeforeAddingStop_min).getNextActivity());
         tour.getLegs().get(timeLeavingToHomeBeforeAddingStop_min).getNextActivity().setStartTime_min(stopAfter.getEndTime_min() + travelTimeForSecondLeg);
         secondLeg.setTravelTime_min(travelTimeForSecondLeg);
+        secondLeg.setDistance(travelDistanceForSecondLeg);
 
         BlockedTimeOfWeekLinkedList tempBlockedTimeOfWeek = plan.getBlockedTimeOfDay();
         //tempBlockedTimeOfWeek.setAvailable(lastNonHomeActInExistingTour.getEndTime_min(), timeLeavingToHomeBeforeAddingStop_min);

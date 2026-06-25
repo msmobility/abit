@@ -83,7 +83,7 @@ public class LogsumAnalysis {
             fakeActivity.setEndTime_min(960);
 
             PlanTools planTools;
-            planTools = new PlanTools(dataSet.getTravelTimes());
+            planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
             planTools.addMainTour(plan, fakeActivity);
 
             Leg leg1 = new Leg(homeAct, fakeActivity);
