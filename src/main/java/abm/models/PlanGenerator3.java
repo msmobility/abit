@@ -63,7 +63,7 @@ public class PlanGenerator3 implements Callable {
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
-        this.planTools = new PlanTools(dataSet.getTravelTimes());
+        this.planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
         this.thread = thread;
 
         counter = new AtomicInteger(0);
@@ -208,19 +208,18 @@ public class PlanGenerator3 implements Callable {
                 Activity activity = new Activity(person, purpose);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignDurationAndThenStartTime(activity);
+
                 if (purpose.equals(Purpose.WORK)){
                     if (person.getJob()!=null){
-                        if ((person.getJob().getType().equals("Finc")|person.getJob().getType().equals("Admn")|person.getJob().getType().equals("Serv")) && AbitUtils.getRandomObject().nextDouble() < 0.00){
-                            continue;
-                        } else{
                             activity.setLocation(person.getJob().getLocation());
-                        }
-
                     }else{
-                        //destinationChoice.selectMainActivityDestination(person, activity);
+                        destinationChoice.selectMainActivityDestination(person, activity);
                         continue;
                     }
-
+                    if ((person.getJob().getType().equals("Finc")|person.getJob().getType().equals("Admn")|person.getJob().getType().equals("Serv")) && person.getRandom().nextDouble() < 0.40){
+                        continue;
+                    } else{
+                    }
                 }else{
                     if (person.getSchool()!=null){
                         activity.setLocation(person.getSchool().getLocation());
@@ -230,26 +229,25 @@ public class PlanGenerator3 implements Callable {
                 }
 
 
-
-                int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    if (purpose.equals(Purpose.WORK)){
-                    //    if (person.getJob()!=null){
-                    //        activity.setLocation(person.getJob().getLocation());
-                    //    }else{
-                    //        destinationChoice.selectMainActivityDestination(person, activity);
-                    //    }
-
-                    }else{
-                        if (person.getSchool()!=null){
-                            activity.setLocation(person.getSchool().getLocation());
-                        }else{
-                            destinationChoice.selectMainActivityDestination(person, activity);
-                        }
-                    }
-                    maxTrial += 1;
-                }
+//                int maxTrial = 0;
+//                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
+//                    timeAssignment.assignDurationAndThenStartTime(activity);
+//                    if (purpose.equals(Purpose.WORK)){
+//                    //    if (person.getJob()!=null){
+//                    //        activity.setLocation(person.getJob().getLocation());
+//                    //    }else{
+//                    //        destinationChoice.selectMainActivityDestination(person, activity);
+//                    //    }
+//
+//                    }else{
+//                        if (person.getSchool()!=null){
+//                            activity.setLocation(person.getSchool().getLocation());
+//                        }else{
+//                            destinationChoice.selectMainActivityDestination(person, activity);
+//                        }
+//                    }
+//                    maxTrial += 1;
+//                }
 
                 planTools.addMainTour(plan, activity);
 
