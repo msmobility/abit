@@ -171,7 +171,7 @@ public class BikeOwnershipReader extends AbstractCsvReader {
         }
         final double exp = Math.exp(utility);
         double probability = exp / (1 + exp);
-        boolean hasBicycle = MitoUtil.getRandomObject().nextDouble() < probability ? true : false;
+        boolean hasBicycle = person.getRandom().nextDouble() < probability ? true : false;
         if (hasBicycle) {
 //                    bikesPerAgeBin.putIfAbsent(ageBin, 1);
 //                    bikesPerAgeBin.put(ageBin, bikesPerAgeBin.get(ageBin) + 1);

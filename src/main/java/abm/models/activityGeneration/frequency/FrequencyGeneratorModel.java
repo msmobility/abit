@@ -131,7 +131,8 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @return
      */
     private int polrEstimateTrips(Person pp) {
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        //double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double randomNumber = pp.getRandom().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
         if (runCalibration) {
             binaryUtility += updatedCalibrationFactors.get(0);

@@ -119,7 +119,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         }
 
         if (sum > 0) {
-            final HabitualMode select = MitoUtil.select(probabilities, AbitUtils.getRandomObject());
+            final HabitualMode select = MitoUtil.select(probabilities, person.getRandom());
             person.setHabitualMode(select);
         } else {
             logger.error("Negative probabilities for person " + person.getId() + "'s habitual mode");
