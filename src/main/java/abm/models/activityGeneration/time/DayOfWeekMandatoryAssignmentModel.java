@@ -71,7 +71,7 @@ public class DayOfWeekMandatoryAssignmentModel implements DayOfWeekMandatoryAssi
         DayOfWeek[] daysOfWeek = new DayOfWeek[numberOfDaysOfWeek];
 
         for (int i = 0; i < numberOfDaysOfWeek; i++) {
-            final DayOfWeek select = MitoUtil.select(dayProbabilities);
+            final DayOfWeek select = MitoUtil.select(dayProbabilities, person.getRandom());
             daysOfWeek[i] = select;
             dayProbabilities.remove(select);
         }

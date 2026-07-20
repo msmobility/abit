@@ -83,7 +83,7 @@ public class LogsumAnalysis {
             fakeActivity.setEndTime_min(960);
 
             PlanTools planTools;
-            planTools = new PlanTools(dataSet.getTravelTimes());
+            planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
             planTools.addMainTour(plan, fakeActivity);
 
             Leg leg1 = new Leg(homeAct, fakeActivity);
@@ -102,7 +102,7 @@ public class LogsumAnalysis {
             fakeTour.getActivities().put(fakeActivity.getEndTime_min(), homeAct);
             fakeActivity.setTour(fakeTour);
 
-            logsumTableByPurpose_base.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
+            //logsumTableByPurpose_base.get("evOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_evOwner));
             //logsumTableByPurpose_base.get("nonEvOwner").get(purpose).get(person.getHousehold().getLocation().getZoneId()).put(destinationZone.getId(), modeChoiceModel.calculateModeChoiceLogsumForThisODPairForBase(person, fakeTour, fakeActivity.getPurpose(), averageAgentAttributes_nonEvOwner));
 
             boolean isLowEmissionZone = evForbidden.get(destinationZone.getId()) && !evForbidden.get(person.getHousehold().getLocation().getZoneId());

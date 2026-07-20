@@ -71,7 +71,7 @@ public class PlanGenerator3 implements Callable {
 
     public PlanGenerator3(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
-        this.planTools = new PlanTools(dataSet.getTravelTimes());
+        this.planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
         this.thread = thread;
 
         counter = new AtomicInteger(0);
@@ -219,7 +219,7 @@ public class PlanGenerator3 implements Callable {
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
             for (DayOfWeek day : dayOfWeeks) {
-                
+
                 Activity activity = null;
                 if (purpose.equals(Purpose.WORK) &&  person.canTelework() && AbitUtils.getRandomObject().nextDouble() <= TELEWORK_PROPENSITY){
                 continue;    //todo, here should be continue instead of break, we can talk about the details next time
@@ -245,8 +245,8 @@ public class PlanGenerator3 implements Callable {
                         }
                     }
                 }
-                
-                
+
+
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignDurationAndThenStartTime(activity);

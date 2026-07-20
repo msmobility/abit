@@ -111,7 +111,7 @@ public class Leg {
         if (microscopicNextLocation != null && microscopicPreviousLocation != null) {
             double distance = Math.abs(microscopicNextLocation.getX() - microscopicPreviousLocation.getX()) +
                     Math.abs(microscopicNextLocation.getY() - microscopicPreviousLocation.getY());
-            builder.append(distance);
+            builder.append(this.distance);
         } else {
             builder.append(-1);
         }

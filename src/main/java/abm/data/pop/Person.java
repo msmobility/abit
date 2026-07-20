@@ -7,6 +7,7 @@ import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
 import java.util.Optional;
+import java.util.Random;
 
 public class Person {
 
@@ -17,6 +18,7 @@ public class Person {
     private double habitualModeGcCarD;
     private double habitualModeGcCarP;
     private double habitualModeGcPT;
+    private final Random random;
 
 
 
@@ -52,6 +54,10 @@ public class Person {
 
     private EmploymentStatus employmentStatus;
 
+    public Random getRandom() {
+        return random;
+    }
+
     //    public Person(int id, Household household) {
 //        this.id = id;
 //        this.household = household;
@@ -73,6 +79,7 @@ public class Person {
         this.monthlyIncome_eur = monthlyIncome_eur;
         this.school = school;
         this.disability = disability;
+        random = new Random(id);
     }
 
     public int getAge() {

@@ -7,6 +7,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -52,6 +53,14 @@ public class TimeOfWeekDistribution {
     public int selectTime() {
         if (MitoUtil.getSum(internalMap.values()) > 0){
             return MitoUtil.select(internalMap) + (int) ((AbitUtils.getRandomObject().nextDouble()-0.5) * InternalProperties.SEARCH_INTERVAL_MIN);
+        } else {
+            return -1;
+        }
+    }
+
+    public int selectTime(Random random) {
+        if (MitoUtil.getSum(internalMap.values()) > 0){
+            return MitoUtil.select(internalMap, random) + (int) ((AbitUtils.getRandomObject().nextDouble()-0.5) * InternalProperties.SEARCH_INTERVAL_MIN);
         } else {
             return -1;
         }

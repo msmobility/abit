@@ -36,6 +36,7 @@ public class DefaultModelSetup implements ModelSetup{
     private final SubtourTimeAssignment subtourTimeAssignment;
     private final SubtourDestinationChoice subtourDestinationChoice;
     private final SubtourModeChoice subtourModeChoice;
+    private final BikeOwnershipReader bikeOwnershipReader;
 
 
     public DefaultModelSetup(DataSet dataSet) {
@@ -59,6 +60,7 @@ public class DefaultModelSetup implements ModelSetup{
         subtourTimeAssignment = new SimpleSubtourTimeAssignment();
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SimpleSubtourModeChoice();
+        bikeOwnershipReader = new BikeOwnershipReader(dataSet);
 
 
 
@@ -132,6 +134,7 @@ public class DefaultModelSetup implements ModelSetup{
 
     @Override
     public BikeOwnershipReader getBikeOwnershipReader() {
-        return null;
+        return bikeOwnershipReader;
     }
+
 }

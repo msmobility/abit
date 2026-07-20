@@ -224,7 +224,7 @@ public class TimeAssignmentModel implements TimeAssignment {
         int initialDuration = typicalDuration.get(activity.getPurpose());
 
         //Select duration first
-        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval(8, activity.getPurpose())).selectTime();
+        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval(8, activity.getPurpose())).selectTime(activity.getPerson().getRandom());
         if (newDuration + travelTime > initialDuration) {
             //tour does not fit here! Make it shorter
             newDuration = initialDuration;
@@ -252,10 +252,10 @@ public class TimeAssignmentModel implements TimeAssignment {
             double startTimeProbability = timeOfWeekDistribution.probability(startTime);
 
             if (startTimeProbability == 0) {
-                startTime = timeOfWeekDistribution.selectTime();
+                startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
             }
         } else {
-            startTime = timeOfWeekDistribution.selectTime();
+            startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
         }
 
         // Setters

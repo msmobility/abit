@@ -5,6 +5,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 
 import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -50,6 +51,14 @@ public class DurationDistribution {
     public int selectTime() {
         if (MitoUtil.getSum(internalMap.values()) > 0){
             return MitoUtil.select(internalMap);
+        } else {
+            return -1;
+        }
+    }
+
+    public int selectTime(Random random) {
+        if (MitoUtil.getSum(internalMap.values()) > 0){
+            return MitoUtil.select(internalMap, random);
         } else {
             return -1;
         }

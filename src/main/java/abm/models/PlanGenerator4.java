@@ -61,7 +61,7 @@ public class PlanGenerator4 implements Callable {
 
     public PlanGenerator4(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
-        this.planTools = new PlanTools(dataSet.getTravelTimes());
+        this.planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
         this.thread = thread;
 
         counter = new AtomicInteger(0);
