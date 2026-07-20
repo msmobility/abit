@@ -13,7 +13,7 @@ TELE20_LEGS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scen
 TELE40_LEGS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-2-40-percent-telework\legs.csv"
 TELE80_LEGS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-3-80-percent-telework\legs.csv"
 
-OUTPUT_DIR = r"C:\Users\Nawidullah\IdeaProjects\abit\viz\departure_plots_compare_15min_pct_vs_base_all_legs"
+OUTPUT_DIR = r"/viz/departure_time_legs_20pct_sample"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # =========================

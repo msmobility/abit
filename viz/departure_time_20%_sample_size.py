@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 # =========================
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-BASE_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\base-scenario-0-percent-telework\tours.csv"
-TELE20_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-1-20-percent-telework\tours.csv"
-TELE40_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-2-40-percent-telework\tours.csv"
-TELE80_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-3-80-percent-telework\tours.csv"
+BASE_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\20pct-sample-size\base-scenario-0-00pct-telework-20pct-sample-size\tours.csv"
+TELE20_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\20pct-sample-size\scenario-1-20pct-telework-20pct-sample-size\tours.csv"
+TELE40_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\20pct-sample-size\scenario-2-40pct-telework-20pct-sample-size\tours.csv"
+TELE80_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\20pct-sample-size\scenario-3-80pct-telework-20pct-sample-size\tours.csv"
 
-OUTPUT_DIR = r"C:\Users\Nawidullah\IdeaProjects\abit\viz\departure_plots_compare_15min_pct_vs_base"
+OUTPUT_DIR = r"C:\Users\Nawidullah\IdeaProjects\abit\viz\departure_time_20pct_sample"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # =========================
@@ -327,7 +327,7 @@ for d in range(1, 8):
         OUTPUT_DIR,
         f"work_departure_share_vs_base_{BIN_MINUTES}min_{day_labels[d]}.png"
     )
-    plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    plt.savefig(output_file, dpi=600, bbox_inches="tight")
     print("Saved plot to:", output_file)
 
     plt.close()

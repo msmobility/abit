@@ -36,7 +36,7 @@ public class PlanGenerator3 implements Callable {
 
     private TeleworkAdaptionChoice teleworkAdaptionChoice;
     // todo remove this temporary assignment
-    private final double TELEWORK_PROPENSITY = 0.8;
+    private final double TELEWORK_PROPENSITY = 0;
 
 
     private BikeOwnershipReader bikeOwnershipModel;

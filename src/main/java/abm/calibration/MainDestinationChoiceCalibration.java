@@ -1,6 +1,7 @@
 package abm.calibration;
 
 import abm.data.DataSet;
+import abm.data.plans.HabitualMode;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
@@ -11,8 +12,12 @@ import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +32,8 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
 
     private final int NUMBER_OF_BINS = 10;
     String inputFolder = AbitResources.instance.getString("destination.choice.main.act.output");
+    String mainDestinationDistanceShareObjectivesPath = AbitResources.instance.getString("destination.choice.main.act.distance.share.calibration.objective");
+    String mainDestinationAverageDistanceObjectivesPath = AbitResources.instance.getString("destination.choice.main.act.average.distance.calibration.objectives");
     DataSet dataSet;
     Map<Purpose, Map<Integer, Double>> objectiveMainDestinationDistanceShare = new HashMap<>();
     Map<Purpose, Double> objectiveMainDestinationAverageDistance_km = new HashMap<>();
@@ -139,6 +146,23 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
 
         }
         logger.info("Finished the calibration of main destination choice.");
+
+
+        // make absolutely sure final shares are up-to-date
+        summarizeSimulatedResult();
+
+        // write final simulated values to csv
+        try {
+            Path outputPath = Path.of(mainDestinationAverageDistanceObjectivesPath)
+                    .getParent()
+                    .resolve("main_destination_average_distance_km_simulated.csv");
+
+            writeSimulatedValues(outputPath.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
         //Todo: obtain the updated coefficients + calibration factors
         Map<Purpose, Map<String, Double>> finalCoefficientsTableMain = destinationChoiceModel.obtainCoefficientsTableMain();
 
@@ -151,82 +175,126 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
 
     }
 
+//    private void readObjectiveValues() {
+//        // each bin is 2km wide, from 0 to 20 km, 10 bins in total.
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(1, 0.1649);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(2, 0.1692);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(3, 0.1334);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(4, 0.1196);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(5, 0.0819);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(6, 0.0645);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(7, 0.0575);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(8, 0.0366);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(9, 0.0307);
+//        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(10, 0.0256);
+//
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(1, 0.5319);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(2, 0.2327);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(3, 0.0862);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(4, 0.0427);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(5, 0.0237);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(6, 0.0136);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(7, 0.0129);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(8, 0.0068);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(9, 0.0041);
+//        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(10, 0.0014);
+//
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(1, 0.5047);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(2, 0.1964);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(3, 0.0989);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(4, 0.0530);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(5, 0.0315);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(6, 0.0186);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(7, 0.0129);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(8, 0.0100);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(9, 0.0036);
+//        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(10, 0.0050);
+//
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(1, 0.4166);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(2, 0.2542);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(3, 0.1113);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(4, 0.0612);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(5, 0.0389);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(6, 0.0261);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(7, 0.0159);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(8, 0.0153);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(9, 0.0051);
+//        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(10, 0.0057);
+//
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(1, 0.3664);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(2, 0.1880);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(3, 0.1094);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(4, 0.0950);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(5, 0.0560);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(6, 0.0273);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(7, 0.0226);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(8, 0.0185);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(9, 0.0116);
+//        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(10, 0.0137);
+//
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(1, 0.3704);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(2, 0.2040);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(3, 0.1107);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(4, 0.0742);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(5, 0.0467);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(6, 0.0309);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(7, 0.0354);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(8, 0.0275);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(9, 0.0124);
+//        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(10, 0.0118);
+//
+//        //todo add objective average distance
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.WORK, 17.0369);
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.EDUCATION, 11.1591);
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.ACCOMPANY, 7.9266);
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.SHOPPING, 5.4520);
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.OTHER, 9.4005);
+//        objectiveMainDestinationAverageDistance_km.put(Purpose.RECREATION, 10.5703);
+//
+//    }
+
     private void readObjectiveValues() {
-        // each bin is 2km wide, from 0 to 20 km, 10 bins in total.
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(1, 0.1649);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(2, 0.1692);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(3, 0.1334);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(4, 0.1196);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(5, 0.0819);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(6, 0.0645);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(7, 0.0575);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(8, 0.0366);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(9, 0.0307);
-        objectiveMainDestinationDistanceShare.get(Purpose.WORK).put(10, 0.0256);
 
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(1, 0.5319);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(2, 0.2327);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(3, 0.0862);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(4, 0.0427);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(5, 0.0237);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(6, 0.0136);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(7, 0.0129);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(8, 0.0068);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(9, 0.0041);
-        objectiveMainDestinationDistanceShare.get(Purpose.EDUCATION).put(10, 0.0014);
+        Path path = Path.of(mainDestinationDistanceShareObjectivesPath);
+        Path averagePath = Path.of(mainDestinationAverageDistanceObjectivesPath);
 
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(1, 0.5047);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(2, 0.1964);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(3, 0.0989);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(4, 0.0530);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(5, 0.0315);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(6, 0.0186);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(7, 0.0129);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(8, 0.0100);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(9, 0.0036);
-        objectiveMainDestinationDistanceShare.get(Purpose.ACCOMPANY).put(10, 0.0050);
+        try (BufferedReader reader = Files.newBufferedReader(path);
+             BufferedReader averageReader = Files.newBufferedReader(averagePath)
+        ) {
 
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(1, 0.4166);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(2, 0.2542);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(3, 0.1113);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(4, 0.0612);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(5, 0.0389);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(6, 0.0261);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(7, 0.0159);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(8, 0.0153);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(9, 0.0051);
-        objectiveMainDestinationDistanceShare.get(Purpose.SHOPPING).put(10, 0.0057);
+            reader.readLine();
+            averageReader.readLine();
 
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(1, 0.3664);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(2, 0.1880);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(3, 0.1094);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(4, 0.0950);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(5, 0.0560);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(6, 0.0273);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(7, 0.0226);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(8, 0.0185);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(9, 0.0116);
-        objectiveMainDestinationDistanceShare.get(Purpose.OTHER).put(10, 0.0137);
+            String line;
 
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(1, 0.3704);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(2, 0.2040);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(3, 0.1107);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(4, 0.0742);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(5, 0.0467);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(6, 0.0309);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(7, 0.0354);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(8, 0.0275);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(9, 0.0124);
-        objectiveMainDestinationDistanceShare.get(Purpose.RECREATION).put(10, 0.0118);
+            while ((line = reader.readLine()) != null) {
 
-        //todo add objective average distance
-        objectiveMainDestinationAverageDistance_km.put(Purpose.WORK, 17.0369);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.EDUCATION, 11.1591);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.ACCOMPANY, 7.9266);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.SHOPPING, 5.4520);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.OTHER, 9.4005);
-        objectiveMainDestinationAverageDistance_km.put(Purpose.RECREATION, 10.5703);
+                String[] record = line.split(",");
 
+                Purpose purpose = Purpose.valueOf(record[0].trim().toUpperCase());
+
+                int bin =  Integer.parseInt(record[1].trim());
+
+                double share = Double.parseDouble(record[2].trim());
+
+                objectiveMainDestinationDistanceShare.get(purpose).put(bin,share);
+
+            }
+            while ((line = averageReader.readLine()) != null){
+                String[] record = line.split(",");
+
+                Purpose purpose = Purpose.valueOf(record[0].trim().toUpperCase());
+
+                double distance = Double.parseDouble(record[1].trim());
+
+                objectiveMainDestinationAverageDistance_km.put(purpose,distance);
+            }
+
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Could not read distance objective file: " + path, e);
+        }
     }
 
     private void summarizeSimulatedResult() {
@@ -286,6 +354,24 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
 
 
     }
+
+    // temporary method--
+    private void writeSimulatedValues(String fileName)
+            throws FileNotFoundException {
+
+        PrintWriter pw = new PrintWriter(fileName);
+
+        pw.println("purpose,distance");
+
+        for (Purpose purpose : Purpose.values()) {
+            if (purpose != Purpose.HOME && purpose != Purpose.SUBTOUR){
+                pw.println(purpose + "," + simulatedMainDestinationAverageDistance_km.get(purpose));
+            }
+        }
+
+        pw.close();
+    }
+    // -- temporary method
 
     private void printFinalCoefficientsTable(Map<Purpose, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
         logger.info("Writing main destination choice coefficient + calibration factors: " + inputFolder);

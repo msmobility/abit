@@ -13,7 +13,7 @@ TELE20_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\sce
 TELE40_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-2-40-percent-telework\tours.csv"
 TELE80_TOURS_CSV = r"C:\Users\Nawidullah\IdeaProjects\abit_standalone\output\scenario-3-80-percent-telework\tours.csv"
 
-OUTPUT_DIR = r"C:\Users\Nawidullah\IdeaProjects\abit\viz\departure_plots_compare_15min_pct_vs_base_all_tours"
+OUTPUT_DIR = r"/viz/departure_time_tours_20pct_sample"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # =========================

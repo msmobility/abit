@@ -13,8 +13,13 @@ import org.apache.commons.collections.map.HashedMap;
 import org.apache.log4j.Logger;
 
 
+import javax.measure.quantity.Frequency;
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,8 +53,8 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     String zeroMandAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.mand-ac-rr.zero.output");
     String countMandCoefficientsPath = AbitResources.instance.getString("actgen.mand.count.output");
     String countAccompanyCoefficientsPath = AbitResources.instance.getString("actgen.ac-rr.count.output");
-
     String countShoppingRecreationOtherCoefficientsPath = AbitResources.instance.getString("actgen.sh-re-ot.count.output");
+    String frequencyObjectivesPath = AbitResources.instance.getString("actgen.frequency.calibration.objectives");
     boolean calibrateMandatoryActGen;
     boolean calibrateDiscretionaryActGen;
 
@@ -286,6 +291,20 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         }
         logger.info("Finished the calibration of activity frequency generation model.");
 
+        // make absolutely sure final shares are up-to-date
+        summarizeSimulatedResult();
+
+        // write final simulated values to csv
+        try {
+            Path outputPath = Path.of(frequencyObjectivesPath)
+                    .getParent()
+                    .resolve("frequency_generation_simulated.csv");
+
+            writeSimulatedValues(outputPath.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
 
         //Todo: obtain the updated coefficients + calibration factors
         for (Purpose purpose : Purpose.getAllPurposes()) {
@@ -310,84 +329,116 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
     }
 
+//    private void readObjectiveValues() {
+//        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.3738);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.0351);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.0456);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.0633);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.1218);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.3219);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.0319);
+//        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.0066);
+//
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.2085);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.0470);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.0674);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.0596);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.1520);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.4498);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.0141);
+//        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.0016);
+//
+//        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.6215);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.1743);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.0778);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.0396);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.0307);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.0407);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.0135);
+//        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.0019);
+//
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(0, 0.155);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(1, 0.190);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(2, 0.171);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(3, 0.150);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(4, 0.111);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(5, 0.084);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(6, 0.054);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(7, 0.034);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(8, 0.017);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(9, 0.012);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(10, 0.010);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(11, 0.003);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(12, 0.004);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(13, 0.003);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(14, 0.001);
+//        objectiveFrequencyShare.get(Purpose.RECREATION).put(15, 0.001);
+//
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(0, 0.206);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(1, 0.209);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(2, 0.201);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(3, 0.142);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(4, 0.092);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(5, 0.058);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(6, 0.039);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(7, 0.019);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(8, 0.015);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(9, 0.008);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(10, 0.008);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(11, 0.002);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(12, 0.001);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(13, 0.000);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(14, 0.000);
+//        objectiveFrequencyShare.get(Purpose.SHOPPING).put(15, 0.000);
+//
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(0, 0.372);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(1, 0.268);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(2, 0.157);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(3, 0.093);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(4, 0.052);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(5, 0.026);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(6, 0.016);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(7, 0.007);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(8, 0.003);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(9, 0.002);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(10, 0.004);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(11, 0.000);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(12, 0.000);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(13, 0.000);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(14, 0.000);
+//        objectiveFrequencyShare.get(Purpose.OTHER).put(15, 0.000);
+//    }
+
     private void readObjectiveValues() {
-        objectiveFrequencyShare.get(Purpose.WORK).put(0, 0.3738);
-        objectiveFrequencyShare.get(Purpose.WORK).put(1, 0.0351);
-        objectiveFrequencyShare.get(Purpose.WORK).put(2, 0.0456);
-        objectiveFrequencyShare.get(Purpose.WORK).put(3, 0.0633);
-        objectiveFrequencyShare.get(Purpose.WORK).put(4, 0.1218);
-        objectiveFrequencyShare.get(Purpose.WORK).put(5, 0.3219);
-        objectiveFrequencyShare.get(Purpose.WORK).put(6, 0.0319);
-        objectiveFrequencyShare.get(Purpose.WORK).put(7, 0.0066);
 
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(0, 0.2085);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(1, 0.0470);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(2, 0.0674);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(3, 0.0596);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(4, 0.1520);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(5, 0.4498);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(6, 0.0141);
-        objectiveFrequencyShare.get(Purpose.EDUCATION).put(7, 0.0016);
+        Path path = Path.of(frequencyObjectivesPath);
 
-        objectiveFrequencyShare.get(ACCOMPANY).put(0, 0.6215);
-        objectiveFrequencyShare.get(ACCOMPANY).put(1, 0.1743);
-        objectiveFrequencyShare.get(ACCOMPANY).put(2, 0.0778);
-        objectiveFrequencyShare.get(ACCOMPANY).put(3, 0.0396);
-        objectiveFrequencyShare.get(ACCOMPANY).put(4, 0.0307);
-        objectiveFrequencyShare.get(ACCOMPANY).put(5, 0.0407);
-        objectiveFrequencyShare.get(ACCOMPANY).put(6, 0.0135);
-        objectiveFrequencyShare.get(ACCOMPANY).put(7, 0.0019);
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
 
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(0, 0.155);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(1, 0.190);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(2, 0.171);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(3, 0.150);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(4, 0.111);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(5, 0.084);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(6, 0.054);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(7, 0.034);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(8, 0.017);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(9, 0.012);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(10, 0.010);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(11, 0.003);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(12, 0.004);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(13, 0.003);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(14, 0.001);
-        objectiveFrequencyShare.get(Purpose.RECREATION).put(15, 0.001);
+            String line = reader.readLine(); // skip header
 
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(0, 0.206);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(1, 0.209);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(2, 0.201);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(3, 0.142);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(4, 0.092);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(5, 0.058);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(6, 0.039);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(7, 0.019);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(8, 0.015);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(9, 0.008);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(10, 0.008);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(11, 0.002);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(12, 0.001);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(13, 0.000);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(14, 0.000);
-        objectiveFrequencyShare.get(Purpose.SHOPPING).put(15, 0.000);
+            while ((line = reader.readLine()) != null) {
 
-        objectiveFrequencyShare.get(Purpose.OTHER).put(0, 0.372);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(1, 0.268);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(2, 0.157);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(3, 0.093);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(4, 0.052);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(5, 0.026);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(6, 0.016);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(7, 0.007);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(8, 0.003);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(9, 0.002);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(10, 0.004);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(11, 0.000);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(12, 0.000);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(13, 0.000);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(14, 0.000);
-        objectiveFrequencyShare.get(Purpose.OTHER).put(15, 0.000);
+                String[] record = line.split(",");
+
+                Purpose purpose =
+                        Purpose.valueOf(record[0].trim().toUpperCase());
+
+                int frequency =
+                        Integer.parseInt(record[1].trim());
+
+                double share =
+                        Double.parseDouble(record[2].trim());
+
+                objectiveFrequencyShare
+                        .get(purpose)
+                        .put(frequency, share);
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Could not read frequency objective file: " + path, e);
+        }
     }
 
     private void summarizeSimulatedResult() {
@@ -504,6 +555,46 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             }
         }
     }
+
+    // temporary method--
+    private void writeSimulatedValues(String fileName)
+            throws FileNotFoundException {
+
+        PrintWriter pw = new PrintWriter(fileName);
+
+        pw.println("purpose,frequency,share");
+
+        for (Purpose purpose : Purpose.values()) {
+
+            if (purpose != Purpose.HOME && purpose != Purpose.SUBTOUR){
+                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)){
+
+                    for (int freq = 0; freq <= 7; freq++){
+                        pw.println(purpose + "," +
+                                freq + "," +
+                                String.format("%.3f",
+                                        simulatedFrequencyShare
+                                                .get(purpose)
+                                                .get(freq))
+                        );
+                    }
+                } else {
+                    for (int freq = 0; freq <= 15; freq++){
+                        pw.println(purpose + "," +
+                                freq + "," +
+                                String.format("%.3f",
+                                        simulatedFrequencyShare
+                                        .get(purpose)
+                                        .get(freq))
+                        );
+                    }
+                }
+            }
+        }
+        pw.close();
+    }
+    // -- temporary method
+
 
     private void printFinalCoefficientsTable(Map<Purpose, Map<String, Map<String, Double>>> finalCoefficientsTable) throws FileNotFoundException {
 
