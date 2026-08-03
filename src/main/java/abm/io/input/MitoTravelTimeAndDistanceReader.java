@@ -53,7 +53,7 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
         SkimTravelTimes travelTimes = new SkimTravelTimes();
         SkimTravelTimes travelDistances = new SkimTravelTimes();
 
-        if (Resources.instance.getRelativePath(Properties.AUTO_PEAK_SKIM).toString().contains(".omx"))  {
+        if (carFile.contains(".omx"))  {
 
             travelTimes.readSkim(Mode.CAR_DRIVER.toString(), carFile, carMatrixName, 1/60.);
             travelTimes.readSkim(Mode.BUS.toString(), busFile, busMatrixName, 1/60.);
@@ -64,15 +64,15 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
             travelDistances.readSkim(Mode.UNKNOWN.toString(), nonMotorizedFile, nonMotorizedMatrixName, 1.);
             dataSet.setTravelDistances(new MitoBasedTravelDistances(travelDistances));
 
-        } else if (Resources.instance.getRelativePath(Properties.AUTO_PEAK_SKIM).toString().contains(".parquet")) {
+        } else if (carFile.contains(".parquet")) {
 
-            travelTimes.readSkimFromParquet(Mode.CAR_DRIVER.toString(),Resources.instance.getRelativePath(Properties.AUTO_PEAK_SKIM).toString(), "FROM", "TO", "inVehTime_sec",1/60., lookup);
-            travelTimes.readSkimFromParquet(Mode.BUS.toString(), Resources.instance.getRelativePath(Properties.BUS_TRAVEL_TIME_SKIM).toString(), "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
-            travelTimes.readSkimFromParquet(Mode.TRAM_METRO.toString(), Resources.instance.getRelativePath(Properties.TRAM_METRO_TRAVEL_TIME_SKIM).toString(), "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
-            travelTimes.readSkimFromParquet(Mode.TRAIN.toString(), Resources.instance.getRelativePath(Properties.TRAIN_TRAVEL_TIME_SKIM).toString(), "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
+            travelTimes.readSkimFromParquet(Mode.CAR_DRIVER.toString(),carFile, "FROM", "TO", "inVehTime_sec",1/60., lookup);
+            travelTimes.readSkimFromParquet(Mode.BUS.toString(), busFile, "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
+            travelTimes.readSkimFromParquet(Mode.TRAM_METRO.toString(), tramMetroFile, "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
+            travelTimes.readSkimFromParquet(Mode.TRAIN.toString(), trainFile, "FROM", "TO", "totalTravelTime_sec",1/60., lookup);
             dataSet.setTravelTimes(new MitoBasedTravelTimes(travelTimes));
 
-            travelDistances.readSkimFromParquet(Mode.UNKNOWN.toString(), Resources.instance.getRelativePath(Properties.AUTO_PEAK_SKIM).toString(),
+            travelDistances.readSkimFromParquet(Mode.UNKNOWN.toString(), carFile,
                     "FROM","TO", "inVehDistance_m",1. / 1000., lookup);
             dataSet.setTravelDistances(new MitoBasedTravelDistances(travelDistances));
 
