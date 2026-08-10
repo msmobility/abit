@@ -127,17 +127,17 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
                 computeChoice(hh, male, female, coefDualEarner, HouseholdType.PARTNERED_DUAL_EARNER);
 
         if (chosen.equals(TeleworkAlternative.NO_ONE)){
-            male.setCanTelework(false);
-            female.setCanTelework(false);
+            male.setRemoteWork(false);
+            female.setRemoteWork(false);
         } else if (chosen.equals(TeleworkAlternative.ONLY_MALE)) {
-            male.setCanTelework(true);
-            female.setCanTelework(false);
+            male.setRemoteWork(true);
+            female.setRemoteWork(false);
         } else if (chosen.equals(TeleworkAlternative.ONLY_FEMALE)) {
-            male.setCanTelework(false);
-            female.setCanTelework(true);
+            male.setRemoteWork(false);
+            female.setRemoteWork(true);
         } else if (chosen.equals(TeleworkAlternative.BOTH)) {
-            male.setCanTelework(true);
-            female.setCanTelework(true);
+            male.setRemoteWork(true);
+            female.setRemoteWork(true);
         }
     }
     public void adaptTeleworkForPartneredSingleEarnerHouseholdMale(Household hh, Person male) {
@@ -145,14 +145,14 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         TeleworkAlternative chosen =
                 computeChoice(hh, male, null, coefSingleEarnerMale, HouseholdType.PARTNERED_SINGLE_EARNER_MALE);
 
-        male.setCanTelework(chosen == TeleworkAlternative.ONLY_MALE);
+        male.setRemoteWork(chosen == TeleworkAlternative.ONLY_MALE);
     }
     public void adaptTeleworkForPartneredSingleEarnerHouseholdFemale(Household hh, Person female) {
 
         TeleworkAlternative chosen =
                 computeChoice(hh, null, female, coefSingleEarnerFemale, HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE);
 
-        female.setCanTelework(chosen == TeleworkAlternative.ONLY_FEMALE);
+        female.setRemoteWork(chosen == TeleworkAlternative.ONLY_FEMALE);
     }
     public void adaptTeleworkForSinglePersonHousehold(Household hh) {
 
@@ -164,7 +164,7 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
 
         // If not working → auto NO telework
         if (!isWorking(p)) {
-            p.setCanTelework(false);
+            p.setRemoteWork(false);
             return;
         }
         Person male   = (p.getGender() == Gender.MALE) ? p : null;
@@ -173,7 +173,7 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         TeleworkAlternative chosen =
                 computeChoice(hh, male, female, coefSinglePerson, HouseholdType.SINGLE_PERSON);
 
-        p.setCanTelework(chosen == TeleworkAlternative.ONLY_MALE || chosen == TeleworkAlternative.ONLY_FEMALE);
+        p.setRemoteWork(chosen == TeleworkAlternative.ONLY_MALE || chosen == TeleworkAlternative.ONLY_FEMALE);
     }
 
     // --------------------------------------------------------------

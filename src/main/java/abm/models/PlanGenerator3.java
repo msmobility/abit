@@ -218,7 +218,7 @@ public class PlanGenerator3 implements Callable {
             for (DayOfWeek day : dayOfWeeks) {
 
                 Activity activity = null;
-                if (purpose.equals(Purpose.WORK) &&  person.canTelework() && AbitUtils.getRandomObject().nextDouble() <= TELEWORK_PROPENSITY){
+                if (purpose.equals(Purpose.WORK) &&  person.canRemoteWork() && AbitUtils.getRandomObject().nextDouble() <= TELEWORK_PROPENSITY){
                 continue;    //todo, here should be continue instead of break, we can talk about the details next time
                 }else{
                     activity = new Activity(person, purpose);

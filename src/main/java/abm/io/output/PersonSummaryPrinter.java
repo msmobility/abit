@@ -1,17 +1,11 @@
 package abm.io.output;
 
 import abm.data.DataSet;
-import abm.data.plans.Activity;
-import abm.data.plans.Purpose;
-import abm.data.plans.Tour;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.utils.AbitUtils;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
 
 public class PersonSummaryPrinter {
 
@@ -26,7 +20,7 @@ public class PersonSummaryPrinter {
 
         PrintWriter pw = new PrintWriter(fileName);
 
-        pw.println("Person, Age, Occupation, Gender, HabitualMode, Bike, DrivingLicense, canTelework, maritalStatus");
+        pw.println("Person, Age, Occupation, Gender, HabitualMode, Bike, DrivingLicense, canRemoteWork, maritalStatus");
 
         for (Household household:dataSet.getHouseholds().values()){
 
@@ -37,7 +31,7 @@ public class PersonSummaryPrinter {
 
                     pw.println(person.getId() + "," + person.getAge() + "," + person.getOccupation().toString() + ","
                             + person.getGender().toString() + "," + person.getHabitualMode().toString() + ","
-                            + person.hasBicycle() + "," + person.isHasLicense() + "," + person.canTelework() + "," + person.getRelationship());
+                            + person.hasBicycle() + "," + person.isHasLicense() + "," + person.canRemoteWork() + "," + person.getRelationship());
 
                 }
             }
