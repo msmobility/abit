@@ -15,7 +15,7 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
-import abm.models.teleworkAdaption.RemoteWorkAllowance;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;

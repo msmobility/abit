@@ -14,8 +14,8 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
-import abm.models.teleworkAdaption.RemoteWorkAllowance;
-import abm.models.teleworkAdaption.RemoteWorkAllowanceMultinomialLogitModel;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowanceMultinomialLogitModel;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;

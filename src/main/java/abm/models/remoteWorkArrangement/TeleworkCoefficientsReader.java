@@ -1,4 +1,4 @@
-package abm.models.teleworkAdaption;
+package abm.models.remoteWorkArrangement;
 
 import java.io.BufferedReader;
 import java.io.IOException;
