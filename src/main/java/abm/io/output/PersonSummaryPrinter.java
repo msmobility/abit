@@ -26,7 +26,7 @@ public class PersonSummaryPrinter {
 
         PrintWriter pw = new PrintWriter(fileName);
 
-        pw.println("Person, Age, Occupation, Gender, HabitualMode, Bike, DrivingLicense");
+        pw.println("Person, Age, Occupation, Gender, HabitualMode, Bike, DrivingLicense, canTelework, maritalStatus");
 
         for (Household household:dataSet.getHouseholds().values()){
 
@@ -37,7 +37,7 @@ public class PersonSummaryPrinter {
 
                     pw.println(person.getId() + "," + person.getAge() + "," + person.getOccupation().toString() + ","
                             + person.getGender().toString() + "," + person.getHabitualMode().toString() + ","
-                            + person.hasBicycle() + "," + person.isHasLicense());
+                            + person.hasBicycle() + "," + person.isHasLicense() + "," + person.canTelework() + "," + person.getRelationship());
 
                 }
             }

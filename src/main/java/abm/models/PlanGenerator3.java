@@ -15,11 +15,11 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
-import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -30,6 +30,11 @@ import java.util.stream.Collectors;
 public class PlanGenerator3 implements Callable {
 
     private static Logger logger = Logger.getLogger(PlanGenerator3.class);
+
+    private RemoteWorkAllowance remoteWorkAllowance;
+    // todo remove this temporary assignment
+    private final double TELEWORK_PROPENSITY = 0;
+
 
     private BikeOwnershipReader bikeOwnershipModel;
     private HabitualModeChoice habitualModeChoice;
@@ -83,6 +88,7 @@ public class PlanGenerator3 implements Callable {
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
         this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
+        this.remoteWorkAllowance = ((ModelSetupMuc) modelSetup).getRemoteWorkAllowance();
 
     }
 
@@ -99,7 +105,12 @@ public class PlanGenerator3 implements Callable {
 
     private void createPlanForOneHousehold(Household household) {
 
+        // todo call the chooseTelework method and make the telework information available for employed people within the households
+        remoteWorkAllowance.assignRemoteWorkAllowance(household);
+
+
         for (Person person : household.getPersons()) {
+
             createPlanForOnePerson(person);
         }
 
@@ -205,49 +216,53 @@ public class PlanGenerator3 implements Callable {
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
             for (DayOfWeek day : dayOfWeeks) {
-                Activity activity = new Activity(person, purpose);
-                activity.setDayOfWeek(day);
-                timeAssignment.assignDurationAndThenStartTime(activity);
 
-                if (purpose.equals(Purpose.WORK)){
-                    if (person.getJob()!=null){
-                            activity.setLocation(person.getJob().getLocation());
-                    }else{
-                        destinationChoice.selectMainActivityDestination(person, activity);
-                        continue;
-                    }
-                    if ((person.getJob().getType().equals("Finc")|person.getJob().getType().equals("Admn")|person.getJob().getType().equals("Serv")) && person.getRandom().nextDouble() < 0.40){
-                        continue;
-                    } else{
-                    }
+                Activity activity = null;
+                if (purpose.equals(Purpose.WORK) &&  person.canTelework() && AbitUtils.getRandomObject().nextDouble() <= TELEWORK_PROPENSITY){
+                continue;    //todo, here should be continue instead of break, we can talk about the details next time
                 }else{
-                    if (person.getSchool()!=null){
-                        activity.setLocation(person.getSchool().getLocation());
+                    activity = new Activity(person, purpose);
+                    activity.setDayOfWeek(day);
+                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    if (purpose.equals(Purpose.WORK)){
+                        if (person.getJob()!=null){
+
+                            activity.setLocation(person.getJob().getLocation());
+
+
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
+
                     }else{
-                        destinationChoice.selectMainActivityDestination(person, activity);
+                        if (person.getSchool()!=null){
+                            activity.setLocation(person.getSchool().getLocation());
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
                     }
                 }
 
 
-//                int maxTrial = 0;
-//                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-//                    timeAssignment.assignDurationAndThenStartTime(activity);
-//                    if (purpose.equals(Purpose.WORK)){
-//                    //    if (person.getJob()!=null){
-//                    //        activity.setLocation(person.getJob().getLocation());
-//                    //    }else{
-//                    //        destinationChoice.selectMainActivityDestination(person, activity);
-//                    //    }
-//
-//                    }else{
-//                        if (person.getSchool()!=null){
-//                            activity.setLocation(person.getSchool().getLocation());
-//                        }else{
-//                            destinationChoice.selectMainActivityDestination(person, activity);
-//                        }
-//                    }
-//                    maxTrial += 1;
-//                }
+                int maxTrial = 0;
+                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
+                    timeAssignment.assignDurationAndThenStartTime(activity);
+                    if (purpose.equals(Purpose.WORK)){
+                        if (person.getJob()!=null){
+                            activity.setLocation(person.getJob().getLocation());
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
+
+                    }else{
+                        if (person.getSchool()!=null){
+                            activity.setLocation(person.getSchool().getLocation());
+                        }else{
+                            destinationChoice.selectMainActivityDestination(person, activity);
+                        }
+                    }
+                    maxTrial += 1;
+                }
 
                 planTools.addMainTour(plan, activity);
 

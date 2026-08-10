@@ -11,8 +11,12 @@ import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +29,8 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
     private static final double TERMINATION_THRESHOLD = 0.02;
     double stepSize = 0.5;
     String inputFolder = AbitResources.instance.getString("habitual.mode.calibration.output");
+    String habitualModeObjectivesPath = AbitResources.instance.getString("habitual.mode.calibration.objectives");
+    String habitualModeAggregateObjectivesPath = AbitResources.instance.getString("habitual.mode.calibration.aggregate.objectives");
     DataSet dataSet;
     Map<Occupation, Map<HabitualMode, Double>> objectiveHabitualModeShare = new HashMap<>();
     Map<HabitualMode, Double> objectiveHabitualAggreModeShare = new HashMap<>();
@@ -128,6 +134,21 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
         logger.info("Finished the calibration of habitual mode choice model.");
 
+
+        // make absolutely sure final shares are up-to-date
+        summarizeSimulatedResult();
+
+        // write final simulated values to csv
+        try {
+            Path outputPath = Path.of(habitualModeObjectivesPath)
+                    .getParent()
+                    .resolve("habitual_mode_simulated.csv");
+
+            writeSimulatedValues(outputPath.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
         //Todo: obtain the updated coefficients + calibration factors
         Map<HabitualMode, Map<String, Double>> finalCoefficientsTable = habitualModeChoiceCalibration.obtainCoefficientsTable();
 
@@ -140,43 +161,94 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     }
 
+//    private void readObjectiveValues() {
+//
+//        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_DRIVER, 0.5424);
+//        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_PASSENGER, 0.0341);
+//        objectiveHabitualAggreModeShare.put(HabitualMode.PT, 0.2471);
+//        objectiveHabitualAggreModeShare.put(HabitualMode.BIKE, 0.1270);
+//        objectiveHabitualAggreModeShare.put(HabitualMode.WALK, 0.0494);
+//
+//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_DRIVER, 0.6476);
+//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_PASSENGER, 0.0257);
+//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.PT, 0.1725);
+//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.BIKE, 0.1135);
+//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.WALK, 0.0407);
+//
+//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_DRIVER, 0.1414);
+//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_PASSENGER, 0.0662);
+//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.PT, 0.5313);
+//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.BIKE, 0.1786);
+//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.WALK, 0.0825);
+//
+////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BUS, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BIKE, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.WALK, 0.00);
+////
+////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BUS, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BIKE, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.WALK, 0.00);
+////
+////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BUS, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
+////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.WALK, 0.00);
+//    }
+
     private void readObjectiveValues() {
 
-        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_DRIVER, 0.5424);
-        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_PASSENGER, 0.0341);
-        objectiveHabitualAggreModeShare.put(HabitualMode.PT, 0.2471);
-        objectiveHabitualAggreModeShare.put(HabitualMode.BIKE, 0.1270);
-        objectiveHabitualAggreModeShare.put(HabitualMode.WALK, 0.0494);
+        Path path = Path.of(habitualModeObjectivesPath);
+        Path aggregatePath = Path.of(habitualModeAggregateObjectivesPath);
 
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_DRIVER, 0.6476);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_PASSENGER, 0.0257);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.PT, 0.1725);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.BIKE, 0.1135);
-        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.WALK, 0.0407);
+        try (BufferedReader reader = Files.newBufferedReader(path);
+        BufferedReader aggregateReader = Files.newBufferedReader(aggregatePath)) {
 
-        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_DRIVER, 0.1414);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_PASSENGER, 0.0662);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.PT, 0.5313);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.BIKE, 0.1786);
-        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.WALK, 0.0825);
+            reader.readLine();
+            aggregateReader.readLine();
 
-//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BUS, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BIKE, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.WALK, 0.00);
-//
-//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BUS, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BIKE, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.WALK, 0.00);
-//
-//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BUS, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
-//        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.WALK, 0.00);
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                String[] record = line.split(",");
+
+                Occupation occupation = Occupation.valueOf(record[0].trim().toUpperCase());
+
+                HabitualMode mode = HabitualMode.valueOf(record[1].trim().toUpperCase());
+
+                double share = Double.parseDouble(record[2].trim());
+
+                objectiveHabitualModeShare.get(occupation).put(mode,share);
+
+                System.out.println(
+                        occupation + " " + mode + " -> " + share
+                );
+
+                }
+            while ((line = aggregateReader.readLine()) != null) {
+                String[] record = line.split(",");
+
+                HabitualMode mode = HabitualMode.valueOf(record[0].trim().toUpperCase());
+
+                double share = Double.parseDouble(record[1].trim());
+
+                objectiveHabitualAggreModeShare.put(mode, share);
+
+                System.out.println(
+                        "Aggregate: " + mode + " -> " + share
+                );
+
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Could not read habitual mode objective file: " + path, e);
+        }
     }
 
     private void summarizeSimulatedResult() {
@@ -227,6 +299,37 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             simulatedHabitualAggreModeShare.replace(habitualMode, modeShare);
         }
     }
+
+
+     // temporary method--
+    private void writeSimulatedValues(String fileName)
+            throws FileNotFoundException {
+
+        PrintWriter pw = new PrintWriter(fileName);
+
+        pw.println("occupation,mode,simulatedShare");
+
+        for (Occupation occupation : Occupation.values()) {
+
+            if (!(occupation == Occupation.EMPLOYED ||
+                    occupation == Occupation.STUDENT))
+                continue;
+
+            for (HabitualMode mode : HabitualMode.getHabitualModes()) {
+
+                pw.println(
+                        occupation + "," +
+                                mode + "," +
+                                simulatedHabitualModeShare
+                                        .get(occupation)
+                                        .get(mode)
+                );
+            }
+        }
+
+        pw.close();
+    }
+    // -- temporary method
 
     private void printFinalCoefficientsTable(Map<HabitualMode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
         logger.info("Writing habitual mode choice coefficient + calibration factors: " + inputFolder);

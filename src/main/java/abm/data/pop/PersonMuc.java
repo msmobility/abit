@@ -1,32 +1,29 @@
 package abm.data.pop;
 
-import abm.data.plans.*;
+import abm.data.plans.HabitualMode;
+import abm.data.plans.Plan;
+import abm.data.plans.Purpose;
+import abm.data.plans.Tour;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
 import java.util.Optional;
-import java.util.Random;
 
-public class Person {
+public class PersonMuc {
 
-    private boolean canTelework;
     private final int id;
     private final Household household;
     private HabitualMode habitualMode;
     private double habitualModeGcCarD;
     private double habitualModeGcCarP;
     private double habitualModeGcPT;
-    private final Random random;
-
-
+    private boolean canTelework;
 
     private double habitualModeBike;
     private double habitualModeWalk;
-
     private int age;
-
     private Gender gender;
     private Relationship relationship;
     private Occupation occupation;
@@ -37,34 +34,24 @@ public class Person {
     private int siloJobStartTimeWeekends;
     private int monthlyIncome_eur;
     private School school;
-
     private Disability disability;
-
     private int jobDuration;
     private int jobStartTimeWorkdays;
     private int jobStartTimeWeekends;
 
-
     private String employmentType;
     private final Attributes attributes = new Attributes();
     private Plan plan;
-
     private boolean bikeOwnership;
-
-
     private EmploymentStatus employmentStatus;
-
-    public Random getRandom() {
-        return random;
-    }
 
     //    public Person(int id, Household household) {
 //        this.id = id;
 //        this.household = household;
 //    }
-    public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation,
-                  boolean hasLicense, Job job, int siloJobDuration, int siloJobStartTimeWorkdays, int siloJobStartTimeWeekends,
-                  int monthlyIncome_eur, School school, Disability disability) {
+    public PersonMuc(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation,
+                     boolean hasLicense, Job job, int siloJobDuration, int siloJobStartTimeWorkdays, int siloJobStartTimeWeekends,
+                     int monthlyIncome_eur, School school, Disability disability) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -79,7 +66,6 @@ public class Person {
         this.monthlyIncome_eur = monthlyIncome_eur;
         this.school = school;
         this.disability = disability;
-        random = new Random(id);
     }
 
     public int getAge() {
@@ -270,5 +256,6 @@ public class Person {
     }
     public void setCanTelework(boolean canTeleWork) {this.canTelework = canTeleWork;
     }
+
 
 }

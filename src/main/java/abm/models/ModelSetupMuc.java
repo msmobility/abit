@@ -14,6 +14,8 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
+import abm.models.remoteWorkArrangement.RemoteWorkAllowanceMultinomialLogitModel;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -34,6 +36,8 @@ public class ModelSetupMuc implements ModelSetup{
     private final SubtourDestinationChoice subtourDestinationChoice;
     private final SubtourModeChoice subtourModeChoice;
     private final BikeOwnershipReader bikeOwnershipReader;
+    private final RemoteWorkAllowance remoteWorkAllowance;
+
 
 
     public ModelSetupMuc(DataSet dataSet) {
@@ -57,6 +61,7 @@ public class ModelSetupMuc implements ModelSetup{
         subtourTimeAssignment = new SubtourTimeAssignmentModel(dataSet);
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
+        remoteWorkAllowance = new RemoteWorkAllowanceMultinomialLogitModel(dataSet);
 
     }
 
@@ -127,5 +132,10 @@ public class ModelSetupMuc implements ModelSetup{
     public BikeOwnershipReader getBikeOwnershipReader() {
         return bikeOwnershipReader;
     }
+
+    public RemoteWorkAllowance getRemoteWorkAllowance() {
+        return remoteWorkAllowance;
+    }
+
 
 }
