@@ -44,6 +44,7 @@ public class PersonMuc {
     private Plan plan;
     private boolean bikeOwnership;
     private EmploymentStatus employmentStatus;
+    private RemoteWorkable remoteWorkable;
 
     //    public Person(int id, Household household) {
 //        this.id = id;
