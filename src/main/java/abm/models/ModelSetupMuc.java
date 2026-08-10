@@ -14,8 +14,8 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
-import abm.models.teleworkAdaption.TeleworkAdaptionChoice;
-import abm.models.teleworkAdaption.TeleworkHouseholdMultinomialLogitModel;
+import abm.models.teleworkAdaption.RemoteWorkAllowance;
+import abm.models.teleworkAdaption.RemoteWorkAllowanceMultinomialLogitModel;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -36,7 +36,7 @@ public class ModelSetupMuc implements ModelSetup{
     private final SubtourDestinationChoice subtourDestinationChoice;
     private final SubtourModeChoice subtourModeChoice;
     private final BikeOwnershipReader bikeOwnershipReader;
-    private final TeleworkAdaptionChoice teleworkAdaptionChoice;
+    private final RemoteWorkAllowance remoteWorkAllowance;
 
 
 
@@ -61,7 +61,7 @@ public class ModelSetupMuc implements ModelSetup{
         subtourTimeAssignment = new SubtourTimeAssignmentModel(dataSet);
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
-        teleworkAdaptionChoice = new TeleworkHouseholdMultinomialLogitModel(dataSet);
+        remoteWorkAllowance = new RemoteWorkAllowanceMultinomialLogitModel(dataSet);
 
     }
 
@@ -133,8 +133,8 @@ public class ModelSetupMuc implements ModelSetup{
         return bikeOwnershipReader;
     }
 
-    public TeleworkAdaptionChoice getTeleworkAdaptionChoice() {
-        return teleworkAdaptionChoice;
+    public RemoteWorkAllowance getRemoteWorkAllowance() {
+        return remoteWorkAllowance;
     }
 
 

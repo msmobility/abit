@@ -15,14 +15,11 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
-import abm.models.teleworkAdaption.TeleworkAdaptionChoice;
-import abm.models.teleworkAdaption.TeleworkAlternative;
+import abm.models.teleworkAdaption.RemoteWorkAllowance;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
-import de.tum.bgu.msm.modules.scenarios.Telework;
 import org.apache.log4j.Logger;
-import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.time.DayOfWeek;
 import java.util.*;
@@ -34,7 +31,7 @@ public class PlanGenerator3 implements Callable {
 
     private static Logger logger = Logger.getLogger(PlanGenerator3.class);
 
-    private TeleworkAdaptionChoice teleworkAdaptionChoice;
+    private RemoteWorkAllowance remoteWorkAllowance;
     // todo remove this temporary assignment
     private final double TELEWORK_PROPENSITY = 0;
 
@@ -91,7 +88,7 @@ public class PlanGenerator3 implements Callable {
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
         this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
-        this.teleworkAdaptionChoice = ((ModelSetupMuc) modelSetup).getTeleworkAdaptionChoice();
+        this.remoteWorkAllowance = ((ModelSetupMuc) modelSetup).getRemoteWorkAllowance();
 
     }
 
@@ -109,7 +106,7 @@ public class PlanGenerator3 implements Callable {
     private void createPlanForOneHousehold(Household household) {
 
         // todo call the chooseTelework method and make the telework information available for employed people within the households
-        teleworkAdaptionChoice.chooseTelework(household);
+        remoteWorkAllowance.assignRemoteWorkAllowance(household);
 
 
         for (Person person : household.getPersons()) {

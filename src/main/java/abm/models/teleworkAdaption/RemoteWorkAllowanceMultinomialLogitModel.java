@@ -17,7 +17,7 @@ import de.tum.bgu.msm.util.MitoUtil;
 import java.nio.file.Path;
 import java.util.*;
 
-public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionChoice {
+public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllowance {
 
     private final DataSet dataSet;
 
@@ -30,7 +30,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
 
     private boolean isTwoAltSinglePerson = false;
 
-    public TeleworkHouseholdMultinomialLogitModel(DataSet dataSet) {
+    public RemoteWorkAllowanceMultinomialLogitModel(DataSet dataSet) {
         this.dataSet = dataSet;
 
         Path coefFileDual = Path.of(AbitResources.instance.getString("telework.coef.dual"));
@@ -77,7 +77,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
         }
 
         if (hh.getPersons().size() == 1) {
-            Person p = hh.getPersons().getFirst();
+            Person p = hh.getPersons().get(0);
             // only classify as SINGLE_PERSON if they are actually working
             if (isWorking(p)) {
                 return HouseholdType.SINGLE_PERSON;
@@ -88,7 +88,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
     }
 
     @Override
-    public void chooseTelework(Household household) {
+    public void assignRemoteWorkAllowance(Household household) {
 
         HouseholdType type = classifyHousehold(household);
 
@@ -160,7 +160,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             return;
         }
         // The only person in the household
-        Person p = hh.getPersons().getFirst();
+        Person p = hh.getPersons().get(0);
 
         // If not working → auto NO telework
         if (!isWorking(p)) {
@@ -698,8 +698,8 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             case PARTNERED_SINGLE_EARNER_FEMALE-> { coefTable = coefSingleEarnerFemale; regressorMale   = null; }
             case SINGLE_PERSON                 -> {
                 coefTable = coefSinglePerson;
-                regressorMale   = (hh.getPersons().getFirst().getGender() == Gender.MALE)   ? hh.getPersons().getFirst() : null;
-                regressorFemale = (hh.getPersons().getFirst().getGender() == Gender.FEMALE) ? hh.getPersons().getFirst() : null;
+                regressorMale   = (hh.getPersons().get(0).getGender() == Gender.MALE)   ? hh.getPersons().get(0) : null;
+                regressorFemale = (hh.getPersons().get(0).getGender() == Gender.FEMALE) ? hh.getPersons().get(0) : null;
             }
             default                            -> coefTable = coefDualEarner;
         }
