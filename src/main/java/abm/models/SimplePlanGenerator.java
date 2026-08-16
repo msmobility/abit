@@ -23,9 +23,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class PlanGenerator implements Callable {
+public class SimplePlanGenerator implements Callable {
 
-    private static Logger logger = Logger.getLogger(PlanGenerator.class);
+    private static Logger logger = Logger.getLogger(SimplePlanGenerator.class);
 
     private HabitualModeChoice habitualModeChoice;
     private Map<Purpose, FrequencyGenerator> frequencyGenerators;
@@ -53,7 +53,7 @@ public class PlanGenerator implements Callable {
     private final SubtourModeChoice subtourModeChoice;
 
 
-    public PlanGenerator(DataSet dataSet, ModelSetup modelSetup, int thread) {
+    public SimplePlanGenerator(DataSet dataSet, ModelSetup modelSetup, int thread) {
         this.dataSet = dataSet;
         this.planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
         this.thread = thread;
