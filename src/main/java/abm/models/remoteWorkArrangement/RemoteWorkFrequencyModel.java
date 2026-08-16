@@ -63,7 +63,9 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
         int numOfRemoteWorkingDays = 0;
 
         if (person.canRemoteWork()) {
-            numOfRemoteWorkingDays = polrEstimateTrips(person);
+            //Todo update the model later after it is updated
+            //numOfRemoteWorkingDays = polrEstimateTrips(person);
+            numOfRemoteWorkingDays = 0;
         }
 
         return numOfRemoteWorkingDays;
