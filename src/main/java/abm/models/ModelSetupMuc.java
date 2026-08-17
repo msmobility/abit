@@ -14,8 +14,10 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
+import abm.models.remoteWorkArrangement.DayOfWeekRemoteWorkAssignmentModel;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowanceMultinomialLogitModel;
+import abm.models.remoteWorkArrangement.RemoteWorkFrequencyModel;
 import org.apache.commons.collections.map.HashedMap;
 
 import java.util.Map;
@@ -37,6 +39,18 @@ public class ModelSetupMuc implements ModelSetup{
     private final SubtourModeChoice subtourModeChoice;
     private final BikeOwnershipReader bikeOwnershipReader;
     private final RemoteWorkAllowance remoteWorkAllowance;
+    private final DayOfWeekRemoteWorkAssignmentModel dayOfWeekRemoteWorkAssignmentModel;
+
+    public DayOfWeekRemoteWorkAssignmentModel getDayOfWeekRemoteWorkAssignmentModel() {
+        return dayOfWeekRemoteWorkAssignmentModel;
+    }
+
+
+    public RemoteWorkFrequencyModel getRemoteWorkFrequencyModel() {
+        return remoteWorkFrequencyModel;
+    }
+
+    private final RemoteWorkFrequencyModel remoteWorkFrequencyModel;
 
 
 
@@ -47,6 +61,8 @@ public class ModelSetupMuc implements ModelSetup{
         tourModeChoice = new NestedLogitTourModeChoiceModel(dataSet);
         habitualModeChoice = new NestedLogitHabitualModeChoiceModel(dataSet);
         dayOfWeekDiscretionaryAssignment = new DayOfWeekDiscretionaryAssignmentModel(dataSet);
+        dayOfWeekRemoteWorkAssignmentModel = new DayOfWeekRemoteWorkAssignmentModel(dataSet);
+        this.remoteWorkFrequencyModel = new RemoteWorkFrequencyModel(dataSet, Purpose.WORK);
 
         frequencyGenerators = new HashedMap();
         for (Purpose purpose : Purpose.getAllPurposes()){
@@ -62,6 +78,7 @@ public class ModelSetupMuc implements ModelSetup{
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
         remoteWorkAllowance = new RemoteWorkAllowanceMultinomialLogitModel(dataSet);
+
 
     }
 

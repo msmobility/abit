@@ -15,7 +15,9 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.models.remoteWorkArrangement.DayOfWeekRemoteWorkAssignmentModel;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
+import abm.models.remoteWorkArrangement.RemoteWorkFrequencyModel;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
 import org.apache.log4j.Logger;
@@ -31,6 +33,7 @@ public class PlanGeneratorMuc implements Callable {
     private static Logger logger = Logger.getLogger(PlanGeneratorMuc.class);
 
     private RemoteWorkAllowance remoteWorkAllowance;
+    private RemoteWorkFrequencyModel remoteWorkFrequencyModel;
     // todo remove this temporary assignment
     private final double TELEWORK_PROPENSITY = 0;
 
@@ -42,6 +45,7 @@ public class PlanGeneratorMuc implements Callable {
     private TourModeChoice tourModeChoice;
     private DayOfWeekMandatoryAssignment dayOfWeekMandatoryAssignment;
     private DayOfWeekDiscretionaryAssignment dayOfWeekDiscretionaryAssignment;
+    private DayOfWeekRemoteWorkAssignmentModel dayOfWeekRemoteWorkAssignment;
     private TimeAssignment timeAssignment;
     private SplitByType splitByType;
     private SplitStopType stopSplitType;
@@ -85,6 +89,8 @@ public class PlanGeneratorMuc implements Callable {
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
         this.bikeOwnershipModel = modelSetup.getBikeOwnershipReader();
         this.remoteWorkAllowance = ((ModelSetupMuc) modelSetup).getRemoteWorkAllowance();
+        this.remoteWorkFrequencyModel = ((ModelSetupMuc) modelSetup).getRemoteWorkFrequencyModel();
+        this.dayOfWeekRemoteWorkAssignment = ((ModelSetupMuc) modelSetup).getDayOfWeekRemoteWorkAssignmentModel();
 
     }
 
@@ -202,31 +208,43 @@ public class PlanGeneratorMuc implements Callable {
             //TODO Ana has new job properties, this model needs be killed after updating the sp reader
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
+            DayOfWeek[] remoteWorkingDays;
+
+            if (purpose.equals(Purpose.WORK)) {
+
+                int numberOfRemoteWorkingDays = remoteWorkFrequencyModel.calculateNumberOfActivitiesPerWeek(person, Purpose.WORK);
+                remoteWorkingDays = dayOfWeekRemoteWorkAssignment.assignDaysOfWeek(dayOfWeeks, numberOfRemoteWorkingDays, Purpose.WORK, person);
+
+
+            }
+
             for (DayOfWeek day : dayOfWeeks) {
 
                 Activity activity = null;
-                if (purpose.equals(Purpose.WORK) &&  person.canRemoteWork() && AbitUtils.getRandomObject().nextDouble() <= TELEWORK_PROPENSITY){
-                continue;    //todo, here should be continue instead of break, we can talk about the details next time
-                }else{
-                    activity = new Activity(person, purpose);
-                    activity.setDayOfWeek(day);
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    if (purpose.equals(Purpose.WORK)){
-                        if (person.getJob()!=null){
 
+                activity = new Activity(person, purpose);
+                activity.setDayOfWeek(day);
+                timeAssignment.assignDurationAndThenStartTime(activity);
+                if (purpose.equals(Purpose.WORK)) {
+                    if (person.getJob() != null) {
+                        for (int numberRWDays = 0; numberRWDays < remoteWorkingDays.length; numberRWDays++) {
+                            if (day.equals(remoteWorkingDays[numberRWDays])) {
+                                activity.setLocation(person.getHousehold().getLocation());
+                            } else {
+                            }
+                        }
+                        if (activity.getLocation() == null) {
                             activity.setLocation(person.getJob().getLocation());
-
-
-                        }else{
-                            destinationChoice.selectMainActivityDestination(person, activity);
                         }
+                    } else {
+                        destinationChoice.selectMainActivityDestination(person, activity);
+                    }
 
-                    }else{
-                        if (person.getSchool()!=null){
-                            activity.setLocation(person.getSchool().getLocation());
-                        }else{
-                            destinationChoice.selectMainActivityDestination(person, activity);
-                        }
+                } else {
+                    if (person.getSchool() != null) {
+                        activity.setLocation(person.getSchool().getLocation());
+                    } else {
+                        destinationChoice.selectMainActivityDestination(person, activity);
                     }
                 }
 
@@ -234,17 +252,17 @@ public class PlanGeneratorMuc implements Callable {
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignDurationAndThenStartTime(activity);
-                    if (purpose.equals(Purpose.WORK)){
-                        if (person.getJob()!=null){
+                    if (purpose.equals(Purpose.WORK)) {
+                        if (person.getJob() != null) {
                             activity.setLocation(person.getJob().getLocation());
-                        }else{
+                        } else {
                             destinationChoice.selectMainActivityDestination(person, activity);
                         }
 
-                    }else{
-                        if (person.getSchool()!=null){
+                    } else {
+                        if (person.getSchool() != null) {
                             activity.setLocation(person.getSchool().getLocation());
-                        }else{
+                        } else {
                             destinationChoice.selectMainActivityDestination(person, activity);
                         }
                     }

@@ -19,6 +19,16 @@ public class Activity implements Comparable<Activity> {
     private DiscretionaryActivityType discretionaryActivityType;
     private Location location;
 
+    public boolean isAtHome() {
+        return atHome;
+    }
+
+    public void setAtHome(boolean atHome) {
+        this.atHome = atHome;
+    }
+
+    private boolean atHome = false;
+
     public Subtour getSubtour() {
         return subtour;
     }
