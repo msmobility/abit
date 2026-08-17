@@ -18,7 +18,6 @@ import abm.models.modeChoice.TourModeChoice;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.utils.AbitUtils;
 import abm.utils.PlanTools;
-import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 
 import java.time.DayOfWeek;
@@ -52,13 +51,11 @@ public class PlanGeneratorMuc implements Callable {
     private SubtourDestinationChoice subtourDestinationChoice;
 
 
-    PlanTools planTools;
+    private PlanTools planTools;
 
-    private AtomicInteger counter;
     private AtomicInteger stopWithoutTypecounter;
 
     private final DataSet dataSet;
-    private List<Person> persons;
     private List<Household> households;
     private final int thread;
     private final SubtourModeChoice subtourModeChoice;
@@ -71,7 +68,6 @@ public class PlanGeneratorMuc implements Callable {
         this.planTools = new PlanTools(dataSet.getTravelTimes(), dataSet.getTravelDistances());
         this.thread = thread;
 
-        counter = new AtomicInteger(0);
         stopWithoutTypecounter = new AtomicInteger(0);
 
         this.stopSplitType = modelSetup.getStopSplitType();
@@ -87,14 +83,9 @@ public class PlanGeneratorMuc implements Callable {
         this.subtourTimeAssignment = modelSetup.getSubtourTimeAssignment();
         this.subtourDestinationChoice = modelSetup.getSubtourDestinationChoice();
         this.subtourModeChoice = modelSetup.getSubtourModeChoice();
-        this.bikeOwnershipModel = ((ModelSetupMuc)modelSetup).getBikeOwnershipReader();
+        this.bikeOwnershipModel = modelSetup.getBikeOwnershipReader();
         this.remoteWorkAllowance = ((ModelSetupMuc) modelSetup).getRemoteWorkAllowance();
 
-    }
-
-    public Callable setPersons(List<Person> persons) {
-        this.persons = persons;
-        return this;
     }
 
     public Callable setHouseholds(List<Household> households) {
@@ -117,38 +108,14 @@ public class PlanGeneratorMuc implements Callable {
         //Start: Vehicle assignment and mode choice
         if (household.getNumberOfCars() > 0) {
             for (Purpose purpose : Purpose.getSortedPurposes()) {
-                if (purpose.equals(Purpose.WORK)) {
-                    //Step 1: loop over all workers in the household, check car and transit travel time ratio
+                if (purpose == Purpose.WORK) {
+                    //Step 1: rank workers by car and transit travel time ratio for their work tour
                     // car/pt ratio the smaller (more poor pt accessibility compared to car), then higher preference to use car
-                    List<Person> workers = household.getPersons().stream().filter(pp -> pp.hasWorkActivity()).collect(Collectors.toList());
-                    Map<Person, Double> carUsePreference = new HashMap<>();
-                    for (Person person : workers) {
-                        Location jobLocation;
-                        double startTime;
-                        if (person.getJob() != null) {
-                            jobLocation = person.getJob().getLocation();
-                            startTime = person.getJob().getStartTime_min();
-                        } else {
-                            //job location for non-employed person but has a work tour, e.g. student go for interview or internship
-                            Activity workActivity = person.getPlan().getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose().equals(Purpose.WORK)).collect(Collectors.toList()).get(0).getMainActivity();
-                            jobLocation = workActivity.getLocation();
-                            startTime = workActivity.getStartTime_min();
-                        }
-
-                        int carTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.CAR_DRIVER, startTime);
-                        int transitTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.TRAIN, startTime);
-                        double carPtRatio = carTravelTime / (double) transitTravelTime;
-                        carUsePreference.put(person, carPtRatio);
-                    }
-
-                    List<Map.Entry<Person, Double>> sortedPreference = new ArrayList<>(carUsePreference.entrySet());
-                    Collections.sort(sortedPreference, Map.Entry.comparingByValue());
-
                     //Step 2: check availability and choose mode for Work tours by the order of preference
-                    for (Map.Entry<Person, Double> entry : sortedPreference) {
-                        entry.getKey().getPlan().getTours().values().forEach(tour -> {
-                            if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
-                                tourModeChoice.checkCarAvailabilityAndChooseMode(household, entry.getKey(), tour, Purpose.WORK);
+                    for (Person worker : rankWorkersByCarPreference(household)) {
+                        worker.getPlan().getTours().values().forEach(tour -> {
+                            if (tour.getMainActivity().getPurpose() == Purpose.WORK) {
+                                tourModeChoice.checkCarAvailabilityAndChooseMode(household, worker, tour, Purpose.WORK);
                             }
                         });
                     }
@@ -189,18 +156,38 @@ public class PlanGeneratorMuc implements Callable {
         }
     }
 
-    int counterNonEmployedOrStudentWithMandAct;
-    int counterDiscActsOfNonEmployedStudentWithMandAct;
+    /**
+     * Ranks household workers by car/PT travel-time ratio for their WORK tour, ascending
+     * (a smaller ratio means transit is comparatively worse than driving, so that worker
+     * gets first pick of a household car).
+     */
+    private List<Person> rankWorkersByCarPreference(Household household) {
+        List<Person> workers = household.getPersons().stream().filter(pp -> pp.hasWorkActivity()).collect(Collectors.toList());
+        Map<Person, Double> carUsePreference = new HashMap<>();
+        for (Person person : workers) {
+            Location jobLocation;
+            double startTime;
+            if (person.getJob() != null) {
+                jobLocation = person.getJob().getLocation();
+                startTime = person.getJob().getStartTime_min();
+            } else {
+                //job location for non-employed person but has a work tour, e.g. student go for interview or internship
+                Activity workActivity = person.getPlan().getTours().values().stream().filter(tour -> tour.getMainActivity().getPurpose() == Purpose.WORK).collect(Collectors.toList()).get(0).getMainActivity();
+                jobLocation = workActivity.getLocation();
+                startTime = workActivity.getStartTime_min();
+            }
 
-    // Count total number of Activity instances in the map
-    private static int countTotalActivities(SortedMap<Purpose, List<Activity>> map) {
-        int totalCount = 0;
-
-        for (List<Activity> activityList : map.values()) {
-            totalCount += activityList.size();
+            int carTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.CAR_DRIVER, startTime);
+            // TRAIN is used as the transit proxy for this ratio
+            int transitTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.TRAIN, startTime);
+            double carPtRatio = carTravelTime / (double) transitTravelTime;
+            carUsePreference.put(person, carPtRatio);
         }
 
-        return totalCount;
+        List<Map.Entry<Person, Double>> sortedPreference = new ArrayList<>(carUsePreference.entrySet());
+        Collections.sort(sortedPreference, Map.Entry.comparingByValue());
+
+        return sortedPreference.stream().map(Map.Entry::getKey).collect(Collectors.toList());
     }
 
     private void createPlanForOnePerson(Person person) {
@@ -271,7 +258,6 @@ public class PlanGeneratorMuc implements Callable {
         }
 
 
-        SortedMap<Purpose, List<Activity>> discretionaryActivitiesMap = new TreeMap<>();
         List<Activity> stopsOnMandatory = new ArrayList<>();
         List<Activity> accompanyActsOnDiscretionaryTours = new ArrayList<>();
         List<Activity> shoppingActsOnDiscretionaryTours = new ArrayList<>();
@@ -283,8 +269,6 @@ public class PlanGeneratorMuc implements Callable {
             int numAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             for (int i = 0; i < numAct; i++) {
                 Activity activity = new Activity(person, purpose);
-                discretionaryActivitiesMap.putIfAbsent(purpose, new ArrayList<>());
-                discretionaryActivitiesMap.get(purpose).add(activity);
 
                 splitByType.assignActType(activity, person);
 
@@ -309,16 +293,6 @@ public class PlanGeneratorMuc implements Callable {
 
         }
 
-        long mandatoryTours = person.getPlan().getTours().values().stream().filter(t -> Purpose.getMandatoryPurposes().contains(t.getMainActivity().getPurpose())).count();
-
-
-        if (person.getOccupation() != Occupation.STUDENT && person.getOccupation() != Occupation.EMPLOYED && mandatoryTours > 0) {
-            counterNonEmployedOrStudentWithMandAct++;
-            // Count the total number of Activity instances
-            int totalActivityCount = countTotalActivities(discretionaryActivitiesMap);
-            counterDiscActsOfNonEmployedStudentWithMandAct = counterDiscActsOfNonEmployedStudentWithMandAct + totalActivityCount;
-        }
-
         stopsOnMandatory.forEach(activity -> {
             Tour selectedTour = planTools.findMandatoryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
@@ -338,271 +312,101 @@ public class PlanGeneratorMuc implements Callable {
         });
 
         for (Activity activity : accompanyActsOnDiscretionaryTours) {
-            int numAccompanyActsNotOnMandatoryTours = accompanyActsOnDiscretionaryTours.size();
-
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, accompanyActsOnDiscretionaryTours.size());
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.ACCOMPANY_PRIMARY) {
-                dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
-
-                int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    destinationChoice.selectMainActivityDestination(person, activity);
-                    maxTrial += 1;
-                }
-
-                planTools.addMainTour(plan, activity);
+                scheduleAsPrimaryTour(plan, person, activity);
             } else {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                //the order of time assignment and stopSplitByType is not yet decided
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        //timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                } else {
-                    //logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.ACCOMPANY);
             }
         }
 
         for (Activity activity : shoppingActsOnDiscretionaryTours) {
-            int numAccompanyActsNotOnMandatoryTours = shoppingActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, shoppingActsOnDiscretionaryTours.size());
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_PRIMARY) {
-                dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
-
-                int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    destinationChoice.selectMainActivityDestination(person, activity);
-                    maxTrial += 1;
-                }
-
-                planTools.addMainTour(plan, activity);
+                scheduleAsPrimaryTour(plan, person, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.SHOP_ON_ACCOMPANY) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.ACCOMPANY);
             } else {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.SHOPPING);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.SHOPPING);
             }
         }
 
         for (Activity activity : otherActsOnDiscretionaryTours) {
-            int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, otherActsOnDiscretionaryTours.size());
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_PRIMARY) {
-                dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
-
-                int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    destinationChoice.selectMainActivityDestination(person, activity);
-                    maxTrial += 1;
-                }
-
-                planTools.addMainTour(plan, activity);
+                scheduleAsPrimaryTour(plan, person, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_ACCOMPANY) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.ACCOMPANY);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_SHOP) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.SHOPPING);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.SHOPPING);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.OTHER_ON_OTHER) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.OTHER);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.OTHER);
             }
         }
 
         for (Activity activity : recreationActsOnDiscretionaryTours) {
-            int numAccompanyActsNotOnMandatoryTours = otherActsOnDiscretionaryTours.size();
-            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, numAccompanyActsNotOnMandatoryTours);
+            splitByType.assignActTypeForDiscretionaryTourActs(activity, person, otherActsOnDiscretionaryTours.size());
 
             if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_PRIMARY) {
-                dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
-                timeAssignment.assignDurationAndThenStartTime(activity);
-                destinationChoice.selectMainActivityDestination(person, activity);
-
-                int maxTrial = 0;
-                while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
-                    timeAssignment.assignDurationAndThenStartTime(activity);
-                    destinationChoice.selectMainActivityDestination(person, activity);
-                    maxTrial += 1;
-                }
-
-                planTools.addMainTour(plan, activity);
+                scheduleAsPrimaryTour(plan, person, activity);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_ACCOMPANY) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.ACCOMPANY);
-                if (selectedTour == null) {
-
-                }
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.ACCOMPANY);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_SHOP) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.SHOPPING);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.SHOPPING);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_OTHER) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.OTHER);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.OTHER);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_RECREATION) {
-                Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, Purpose.RECREATION);
-                activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-                timeAssignment.assignDurationToStop(activity);
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        int tempTime = selectedTour.getActivities().firstKey();
-                        Activity firstActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        int tempTime = selectedTour.getActivities().lastKey();
-                        Activity lastActivity = selectedTour.getActivities().get(tempTime);
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
-                }
+                scheduleAsStopOnTour(plan, person, activity, Purpose.RECREATION);
             }
+        }
+    }
+
+    /**
+     * Schedules a discretionary activity as its own main tour: day-of-week, duration/start
+     * time, and destination, with the placeholder reschedule retry loop kept as-is.
+     */
+    private void scheduleAsPrimaryTour(Plan plan, Person person, Activity activity) {
+        dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
+        timeAssignment.assignDurationAndThenStartTime(activity);
+        destinationChoice.selectMainActivityDestination(person, activity);
+
+        int maxTrial = 0;
+        while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
+            timeAssignment.assignDurationAndThenStartTime(activity);
+            destinationChoice.selectMainActivityDestination(person, activity);
+            maxTrial += 1;
+        }
+
+        planTools.addMainTour(plan, activity);
+    }
+
+    /**
+     * Schedules a discretionary activity as a stop before/after the person's existing tour
+     * for the given purpose. Logs and skips the activity if no such tour exists.
+     */
+    private void scheduleAsStopOnTour(Plan plan, Person person, Activity activity, Purpose tourPurposeToStackOn) {
+        Tour selectedTour = planTools.findDiscretionaryTourByPurpose(plan, tourPurposeToStackOn);
+        if (selectedTour == null) {
+            logger.warn("No " + tourPurposeToStackOn + " tour found to attach a " + activity.getPurpose() + " stop for person " + person.getId() + " - activity dropped.");
+            return;
+        }
+
+        activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
+        //the order of time assignment and stopSplitByType is not yet decided
+        timeAssignment.assignDurationToStop(activity);
+        StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
+        if (stopType != null) {
+            destinationChoice.selectStopDestination(person, selectedTour, activity);
+            if (stopType.equals(StopType.BEFORE)) {
+                planTools.addStopBefore(plan, activity, selectedTour);
+            } else {
+                planTools.addStopAfter(plan, activity, selectedTour);
+            }
+        } else {
+            logger.warn("Stops without a valid type: " + stopWithoutTypecounter.incrementAndGet());
         }
     }
 
