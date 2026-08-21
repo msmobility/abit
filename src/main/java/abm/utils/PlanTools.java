@@ -268,6 +268,16 @@ public class PlanTools {
      * Changes the outbound trip and splits it into two subtrips
      */
     public void addStopBefore(Plan plan, Activity stopBefore, Tour tour) {
+        addStopBefore(plan, stopBefore, tour, true);
+    }
+
+    /**
+     * @param recomputeTiming if true (existing behavior), the stop's start/end time is
+     *                        computed relative to the tour's main activity; if false, the
+     *                        stop's start/end time is trusted as already assigned by the
+     *                        caller (e.g. drawn from the starting distribution) and left as-is.
+     */
+    public void addStopBefore(Plan plan, Activity stopBefore, Tour tour, boolean recomputeTiming) {
 
         Activity firstNonHomeActInExistingTour = tour.getActivities().get(tour.getActivities().firstKey());
         final int timeLeavingFromHomeBeforeAddingStop_min = tour.getLegs().firstKey();
@@ -282,9 +292,14 @@ public class PlanTools {
                 Mode.UNKNOWN, firstNonHomeActInExistingTour.getStartTime_min());
 
         final int duration = stopBefore.getDuration();
-        int stopBefore_StartTime_min = (int) (Math.floor((double) firstNonHomeActInExistingTour.getStartTime_min() / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN - duration - travelTimeForSecondLeg);
-        stopBefore.setStartTime_min(stopBefore_StartTime_min);
-        stopBefore.setEndTime_min(stopBefore_StartTime_min + duration);
+        int stopBefore_StartTime_min;
+        if (recomputeTiming) {
+            stopBefore_StartTime_min = (int) (Math.floor((double) firstNonHomeActInExistingTour.getStartTime_min() / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN - duration - travelTimeForSecondLeg);
+            stopBefore.setStartTime_min(stopBefore_StartTime_min);
+            stopBefore.setEndTime_min(stopBefore_StartTime_min + duration);
+        } else {
+            stopBefore_StartTime_min = stopBefore.getStartTime_min();
+        }
 
         Leg firstLeg = new Leg(tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity(), stopBefore);
         tour.getLegs().get(timeLeavingFromHomeBeforeAddingStop_min).getPreviousActivity().setEndTime_min(stopBefore_StartTime_min - travelTimeForFirstLeg);
@@ -319,6 +334,16 @@ public class PlanTools {
      * @param tour
      */
     public void addStopAfter(Plan plan, Activity stopAfter, Tour tour) {
+        addStopAfter(plan, stopAfter, tour, true);
+    }
+
+    /**
+     * @param recomputeTiming if true (existing behavior), the stop's start/end time is
+     *                        computed relative to the tour's main activity; if false, the
+     *                        stop's start/end time is trusted as already assigned by the
+     *                        caller (e.g. drawn from the starting distribution) and left as-is.
+     */
+    public void addStopAfter(Plan plan, Activity stopAfter, Tour tour, boolean recomputeTiming) {
 
         Activity lastNonHomeActInExistingTour = tour.getActivities().get(tour.getActivities().lastKey());
         final int timeLeavingToHomeBeforeAddingStop_min = tour.getLegs().lastKey();
@@ -335,9 +360,14 @@ public class PlanTools {
                 Mode.UNKNOWN, stopAfter.getEndTime_min());
 
         final int duration = stopAfter.getDuration();
-        int stopAfter_StartTime_min = (int) (Math.ceil((double) lastNonHomeActInExistingTour.getEndTime_min() / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN + travelTimeForFirstLeg);
-        stopAfter.setStartTime_min(stopAfter_StartTime_min);
-        stopAfter.setEndTime_min(stopAfter_StartTime_min + duration);
+        int stopAfter_StartTime_min;
+        if (recomputeTiming) {
+            stopAfter_StartTime_min = (int) (Math.ceil((double) lastNonHomeActInExistingTour.getEndTime_min() / InternalProperties.SEARCH_INTERVAL_MIN) * InternalProperties.SEARCH_INTERVAL_MIN + travelTimeForFirstLeg);
+            stopAfter.setStartTime_min(stopAfter_StartTime_min);
+            stopAfter.setEndTime_min(stopAfter_StartTime_min + duration);
+        } else {
+            stopAfter_StartTime_min = stopAfter.getStartTime_min();
+        }
 
         Leg firstLeg = new Leg(lastNonHomeActInExistingTour, stopAfter);
         firstLeg.setTravelTime_min(travelTimeForFirstLeg);

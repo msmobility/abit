@@ -2,6 +2,7 @@ package abm.models;
 
 import abm.data.DataSet;
 import abm.data.geo.Location;
+import abm.data.geo.MicroLocation;
 import abm.data.plans.*;
 import abm.data.pop.*;
 import abm.io.input.BikeOwnershipReader;
@@ -277,17 +278,33 @@ public class PlanGeneratorMuc implements Callable {
         stopsOnMandatory.forEach(activity -> {
             Tour selectedTour = planTools.findMandatoryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
-            //the order of time assignment and stopSplitByType is not yet decided
-            timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
 
-            if (stopType != null) {
-                if (stopType.equals(StopType.BEFORE)) {
-                    destinationChoice.selectStopDestination(person, selectedTour, activity);
-                    planTools.addStopBefore(plan, activity, selectedTour);
+            boolean isInHomeWorkTour = selectedTour.getMainActivity().getPurpose() == Purpose.WORK
+                    && locationsMatch(selectedTour.getMainActivity().getLocation(), person.getHousehold().getLocation());
+
+            if (isInHomeWorkTour) {
+                // no commute to position a stop relative to on a remote-work day - draw start time and
+                // duration directly from the starting distribution instead of the before/after stop model
+                timeAssignment.assignDurationAndThenStartTime(activity);
+                destinationChoice.selectStopDestination(person, selectedTour, activity);
+                if (activity.getStartTime_min() < selectedTour.getMainActivity().getStartTime_min()) {
+                    planTools.addStopBefore(plan, activity, selectedTour, false);
                 } else {
-                    destinationChoice.selectStopDestination(person, selectedTour, activity);
-                    planTools.addStopAfter(plan, activity, selectedTour);
+                    planTools.addStopAfter(plan, activity, selectedTour, false);
+                }
+            } else {
+                //the order of time assignment and stopSplitByType is not yet decided
+                timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
+
+                if (stopType != null) {
+                    if (stopType.equals(StopType.BEFORE)) {
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
+                        planTools.addStopBefore(plan, activity, selectedTour);
+                    } else {
+                        destinationChoice.selectStopDestination(person, selectedTour, activity);
+                        planTools.addStopAfter(plan, activity, selectedTour);
+                    }
                 }
             }
         });
@@ -367,6 +384,18 @@ public class PlanGeneratorMuc implements Callable {
                 destinationChoice.selectMainActivityDestination(person, activity);
             }
         }
+    }
+
+    /**
+     * Coordinate-level location match (not zone-level, since a large zone can contain both a
+     * household and a job without them being the same place). Falls back to zone-id comparison
+     * only if either location doesn't carry coordinates.
+     */
+    private boolean locationsMatch(Location a, Location b) {
+        if (a instanceof MicroLocation && b instanceof MicroLocation) {
+            return ((MicroLocation) a).getCoordinate().equals2D(((MicroLocation) b).getCoordinate());
+        }
+        return a.getZoneId() == b.getZoneId();
     }
 
     /**
