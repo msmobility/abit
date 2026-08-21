@@ -6,9 +6,11 @@ import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
+import abm.data.pop.RemoteWorkable;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
+import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
@@ -18,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
@@ -27,7 +30,10 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     private Map<HabitualMode, Map<String, Double>> coefficients;
 
     private boolean runCalibration = false;
-    private Map<Occupation, Map<HabitualMode, Double>> updatedCalibrationFactors;
+
+//    private Map<Occupation, Map<HabitualMode, Double>> updatedCalibrationFactors;
+
+    private Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Double>>>> updatedCalibrationFactors;
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -45,10 +51,22 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet, Boolean runCalibration) {
         this(dataSet);
         this.updatedCalibrationFactors = new HashMap<>();
-        for (Occupation occupation : Occupation.values()) {
-            this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
-            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-                this.updatedCalibrationFactors.get(occupation).putIfAbsent(habitualMode, 0.0);
+//        for (Occupation occupation : Occupation.values()) {
+//            this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
+//            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+//                this.updatedCalibrationFactors.get(occupation).putIfAbsent(habitualMode, 0.0);
+//            }
+//        }
+        for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
+            updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
+            for (RemoteWorkable rw : RemoteWorkable.values()) {
+                updatedCalibrationFactors.get(occupation).putIfAbsent(rw, new HashMap<>());
+                for (DisabilityMuc disability : DisabilityMuc.values()) {
+                    updatedCalibrationFactors.get(occupation).get(rw).putIfAbsent(disability, new HashMap<>());
+                    for (HabitualMode mode : HabitualMode.getHabitualModesWithoutUnknown()) {
+                        updatedCalibrationFactors.get(occupation).get(rw).get(disability).put(mode,0.0);
+                    }
+                }
             }
         }
         this.runCalibration = runCalibration;
@@ -221,76 +239,115 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         switch (person.getOccupation()) {
             case EMPLOYED:
                 utility += coefficients.get(habitualMode).get("calibration_employed");
+                break;
             case STUDENT:
                 utility += coefficients.get(habitualMode).get("calibration_student");
+                break;
             case TODDLER:
                 utility += coefficients.get(habitualMode).get("calibration_toddler");
+                break;
             case RETIREE:
                 utility += coefficients.get(habitualMode).get("calibration_retiree");
+                break;
             case UNEMPLOYED:
                 utility += coefficients.get(habitualMode).get("calibration_unemployed");
+                break;
         }
 
         //Todo add updated calibration factor to the utility calculation, starting from 0
+//        if (runCalibration) {
+//            utility += updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
+//        }
+
+        // New implementation -------------------------------------------------------------------- start
         if (runCalibration) {
-            utility += updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
+            utility += updatedCalibrationFactors.get(person.getOccupation()).get(getRemoteWorkable(person)).get(hasDisability(person)).get(habitualMode);
         }
+        // New implementation -------------------------------------------------------------------- end
+
+
         return utility;
     }
+    public void updateCalibrationFactor(Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Double>>>> newCalibrationFactors){
 
-    public void updateCalibrationFactor(Map<Occupation, Map<HabitualMode, Double>> newCalibrationFactors) {
-        for (Occupation occupation : Occupation.values()) {
-
-            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-                double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(occupation).get(habitualMode);
-                double updatedCalibrationFactor = newCalibrationFactors.get(occupation).get(habitualMode) + calibrationFactorFromLastIteration;
-                this.updatedCalibrationFactors.get(occupation).replace(habitualMode, updatedCalibrationFactor);
-                logger.info("Calibration factor for " + occupation + "\t" + "and " + habitualMode + "\t" + ": " + updatedCalibrationFactor);
-
-            }
-        }
-    }
-
-    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
-
-        double originalCalibrationFactor = 0.0;
-        double updatedCalibrationFactor = 0.0;
-        double latestCalibrationFactor = 0.0;
-
-        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-            for (Occupation occupation : Occupation.values()) {
-                switch (occupation) {
-                    case EMPLOYED:
-                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_employed");
-                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                        coefficients.get(habitualMode).replace("calibration_employed", latestCalibrationFactor);
-                        break;
-                    case STUDENT:
-                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_student");
-                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                        this.coefficients.get(habitualMode).replace("calibration_student", latestCalibrationFactor);
-                    case TODDLER:
-                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_toddler");
-                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                        this.coefficients.get(habitualMode).replace("calibration_toddler", latestCalibrationFactor);
-                    case RETIREE:
-                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_retiree");
-                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                        this.coefficients.get(habitualMode).replace("calibration_retiree", latestCalibrationFactor);
-                    case UNEMPLOYED:
-                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_unemployed");
-                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-                        this.coefficients.get(habitualMode).replace("calibration_unemployed", latestCalibrationFactor);
+        for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
+            for (RemoteWorkable rw : RemoteWorkable.values()) {
+                for (DisabilityMuc disability : DisabilityMuc.values()) {
+                    for (HabitualMode mode : HabitualMode.getHabitualModesWithoutUnknown()) {
+                        double oldValue = updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(mode);
+                        double increment = newCalibrationFactors.get(occupation).get(rw).get(disability).get(mode);
+                        updatedCalibrationFactors.get(occupation).get(rw).get(disability).replace(mode, oldValue + increment);
+                        logger.info("Calibration factor for " + occupation + " " + rw + " " + disability + " " + mode + " : " + (oldValue + increment));
+                    }
                 }
             }
         }
-        return this.coefficients;
     }
+
+//   public void updateCalibrationFactor(Map<Occupation, Map<HabitualMode, Double>> newCalibrationFactors) {
+//        for (Occupation occupation : Occupation.values()) {
+//            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+//                double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                double updatedCalibrationFactor = newCalibrationFactors.get(occupation).get(habitualMode) + calibrationFactorFromLastIteration;
+//                this.updatedCalibrationFactors.get(occupation).replace(habitualMode, updatedCalibrationFactor);
+//                logger.info("Calibration factor for " + occupation + "\t" + "and " + habitualMode + "\t" + ": " + updatedCalibrationFactor);
+//
+//            }
+//        }
+//    }
+
+
+    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
+        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+            double updatedCalibrationFactor;
+            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.EMPLOYED, habitualMode);
+            coefficients.get(habitualMode).replace("calibration_employed", coefficients.get(habitualMode).get("calibration_employed") + updatedCalibrationFactor);
+            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.STUDENT, habitualMode);
+            coefficients.get(habitualMode).replace("calibration_student", coefficients.get(habitualMode).get("calibration_student") + updatedCalibrationFactor);
+        }
+        return coefficients;
+    }
+
+//    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
+//
+//        double originalCalibrationFactor = 0.0;
+//        double updatedCalibrationFactor = 0.0;
+//        double latestCalibrationFactor = 0.0;
+//
+//        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+//            for (Occupation occupation : Occupation.values()) {
+//                switch (occupation) {
+//                    case EMPLOYED:
+//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_employed");
+//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+//                        coefficients.get(habitualMode).replace("calibration_employed", latestCalibrationFactor);
+//                        break;
+//                    case STUDENT:
+//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_student");
+//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+//                        this.coefficients.get(habitualMode).replace("calibration_student", latestCalibrationFactor);
+//                    case TODDLER:
+//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_toddler");
+//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+//                        this.coefficients.get(habitualMode).replace("calibration_toddler", latestCalibrationFactor);
+//                    case RETIREE:
+//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_retiree");
+//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+//                        this.coefficients.get(habitualMode).replace("calibration_retiree", latestCalibrationFactor);
+//                    case UNEMPLOYED:
+//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_unemployed");
+//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
+//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+//                        this.coefficients.get(habitualMode).replace("calibration_unemployed", latestCalibrationFactor);
+//                }
+//            }
+//        }
+//        return this.coefficients;
+//    }
 
     //calculates generalized costs
     public Double calculateGeneralizedCosts(Person person, HabitualMode habitualMode) {
@@ -375,4 +432,29 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         return generalizedCost;
     }
 
+    private RemoteWorkable getRemoteWorkable(Person person) {
+
+        return person.canTelework()
+                ? RemoteWorkable.TRUE
+                : RemoteWorkable.FALSE;
+    }
+
+    private DisabilityMuc hasDisability(Person person) {
+
+        return person.getDisability() == Disability.WITHOUT
+                ? DisabilityMuc.WITHOUT
+                : DisabilityMuc.WITH;
+    }
+
+    private double getAverageCalibrationFactor(Occupation occupation, HabitualMode habitualMode) {
+        double sum = 0.0;
+        int count = 0;
+        for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (DisabilityMuc disability : DisabilityMuc.values()) {
+                sum += updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(habitualMode);
+                count++;
+            }
+        }
+        return count > 0 ? sum / count : 0.0;
+    }
 }
