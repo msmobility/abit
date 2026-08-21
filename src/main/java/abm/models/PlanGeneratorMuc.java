@@ -208,7 +208,7 @@ public class PlanGeneratorMuc implements Callable {
             //TODO Ana has new job properties, this model needs be killed after updating the sp reader
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
 
-            DayOfWeek[] remoteWorkingDays;
+            DayOfWeek[] remoteWorkingDays = new DayOfWeek[0];
 
             if (purpose.equals(Purpose.WORK)) {
 
@@ -220,52 +220,15 @@ public class PlanGeneratorMuc implements Callable {
 
             for (DayOfWeek day : dayOfWeeks) {
 
-                Activity activity = null;
-
-                activity = new Activity(person, purpose);
+                Activity activity = new Activity(person, purpose);
                 activity.setDayOfWeek(day);
                 timeAssignment.assignDurationAndThenStartTime(activity);
-                if (purpose.equals(Purpose.WORK)) {
-                    if (person.getJob() != null) {
-                        for (int numberRWDays = 0; numberRWDays < remoteWorkingDays.length; numberRWDays++) {
-                            if (day.equals(remoteWorkingDays[numberRWDays])) {
-                                activity.setLocation(person.getHousehold().getLocation());
-                            } else {
-                            }
-                        }
-                        if (activity.getLocation() == null) {
-                            activity.setLocation(person.getJob().getLocation());
-                        }
-                    } else {
-                        destinationChoice.selectMainActivityDestination(person, activity);
-                    }
-
-                } else {
-                    if (person.getSchool() != null) {
-                        activity.setLocation(person.getSchool().getLocation());
-                    } else {
-                        destinationChoice.selectMainActivityDestination(person, activity);
-                    }
-                }
-
+                assignMandatoryActivityLocation(person, purpose, activity, day, remoteWorkingDays);
 
                 int maxTrial = 0;
                 while (!plan.getBlockedTimeOfDay().isAvailable(activity.getStartTime_min(), activity.getEndTime_min()) && maxTrial <= TRIALS_RESCHEDULING) {
                     timeAssignment.assignDurationAndThenStartTime(activity);
-                    if (purpose.equals(Purpose.WORK)) {
-                        if (person.getJob() != null) {
-                            activity.setLocation(person.getJob().getLocation());
-                        } else {
-                            destinationChoice.selectMainActivityDestination(person, activity);
-                        }
-
-                    } else {
-                        if (person.getSchool() != null) {
-                            activity.setLocation(person.getSchool().getLocation());
-                        } else {
-                            destinationChoice.selectMainActivityDestination(person, activity);
-                        }
-                    }
+                    assignMandatoryActivityLocation(person, purpose, activity, day, remoteWorkingDays);
                     maxTrial += 1;
                 }
 
@@ -378,6 +341,30 @@ public class PlanGeneratorMuc implements Callable {
                 scheduleAsStopOnTour(plan, person, activity, Purpose.OTHER);
             } else if (activity.getDiscretionaryActivityType() == DiscretionaryActivityType.RECREATION_ON_RECREATION) {
                 scheduleAsStopOnTour(plan, person, activity, Purpose.RECREATION);
+            }
+        }
+    }
+
+    /**
+     * Resolves the destination for a mandatory (WORK/EDUCATION) activity on a given day:
+     * the job location, or the household location if this is one of the person's assigned
+     * remote-work days, or the school location; falls back to destinationChoice when no
+     * fixed location applies. Shared by the initial assignment and the reschedule loop so
+     * the two can't drift out of sync with each other.
+     */
+    private void assignMandatoryActivityLocation(Person person, Purpose purpose, Activity activity, DayOfWeek day, DayOfWeek[] remoteWorkingDays) {
+        if (purpose.equals(Purpose.WORK)) {
+            if (person.getJob() != null) {
+                boolean isRemoteWorkDay = Arrays.asList(remoteWorkingDays).contains(day);
+                activity.setLocation(isRemoteWorkDay ? person.getHousehold().getLocation() : person.getJob().getLocation());
+            } else {
+                destinationChoice.selectMainActivityDestination(person, activity);
+            }
+        } else {
+            if (person.getSchool() != null) {
+                activity.setLocation(person.getSchool().getLocation());
+            } else {
+                destinationChoice.selectMainActivityDestination(person, activity);
             }
         }
     }

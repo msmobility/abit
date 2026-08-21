@@ -13,11 +13,14 @@ import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
+import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.*;
 
 public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllowance {
+
+    private static final Logger logger = Logger.getLogger(RemoteWorkAllowanceMultinomialLogitModel.class);
 
     private final DataSet dataSet;
 
@@ -27,8 +30,6 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSingleEarnerMale = new HashMap<>();
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSingleEarnerFemale = new HashMap<>();
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSinglePerson = new HashMap<>();
-
-    private boolean isTwoAltSinglePerson = false;
 
     public RemoteWorkAllowanceMultinomialLogitModel(DataSet dataSet) {
         this.dataSet = dataSet;
@@ -51,7 +52,6 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         // Single-person → detect format
         TeleworkCoefficientsReader readerSingle = new TeleworkCoefficientsReader(coefFileSinglePerson);
         coefSinglePerson.putAll(readerSingle.readCoefficients());
-        isTwoAltSinglePerson = readerSingle.isTwoAlternative();
 
     }
 
@@ -59,17 +59,32 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
     public void assignRemoteWorkAllowance(Household household) {
 
         if(household.getHouseholdType() == HouseholdType.PARTNERED_DUAL_EARNER) {
-            Person employedMan = (Person) household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED));
-            Person employedWoman = (Person) household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED));
-            assignRemoteWorkArrangementForPartneredDualEarnerHousehold(household, employedMan, employedWoman);
+            Optional<Person> employedMan = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            Optional<Person> employedWoman = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedMan.isEmpty() || employedWoman.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_DUAL_EARNER but is missing an expected employed married man/woman - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            assignRemoteWorkArrangementForPartneredDualEarnerHousehold(household, employedMan.get(), employedWoman.get());
 
         } else if (household.getHouseholdType() == HouseholdType.PARTNERED_SINGLE_EARNER_MALE){
-            Person employedMan = (Person) household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED));
-            adaptTeleworkForPartneredSingleEarnerHouseholdMale(household, employedMan);
+            Optional<Person> employedMan = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedMan.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_SINGLE_EARNER_MALE but is missing the expected employed married man - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            adaptTeleworkForPartneredSingleEarnerHouseholdMale(household, employedMan.get());
 
         } else if (household.getHouseholdType() == HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE) {
-            Person employedWoman = (Person) household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED));
-            adaptTeleworkForPartneredSingleEarnerHouseholdFemale(household, employedWoman);
+            Optional<Person> employedWoman = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedWoman.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_SINGLE_EARNER_FEMALE but is missing the expected employed married woman - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            adaptTeleworkForPartneredSingleEarnerHouseholdFemale(household, employedWoman.get());
 
         } else if (household.getHouseholdType() == HouseholdType.SINGLE_WORKER){
             adaptTeleworkForSinglePersonHousehold(household);
@@ -127,7 +142,7 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         Person female = (p.getGender() == Gender.FEMALE) ? p : null;
 
         TeleworkAlternative chosen =
-                computeChoice(hh, male, female, coefSinglePerson, HouseholdType.SINGLE_NO_WORKER);
+                computeChoice(hh, male, female, coefSinglePerson, HouseholdType.SINGLE_WORKER);
 
         p.setRemoteWork(chosen == TeleworkAlternative.ONLY_MALE || chosen == TeleworkAlternative.ONLY_FEMALE);
     }
@@ -623,8 +638,8 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
 
     public void debugHousehold(Household hh) {
         HouseholdType type = hh.getHouseholdType();
-        Person male = (Person) hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED));
-        Person female = (Person) hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED));
+        Person male = hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst().orElse(null);
+        Person female = hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst().orElse(null);
 
         System.out.println("=== HH " + hh.getId() + " | type=" + type + " ===");
         System.out.printf("  male   : %s  income=%.0f  commute=%.1f%n",
