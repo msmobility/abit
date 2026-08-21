@@ -7,7 +7,7 @@ import abm.io.input.SimpleDataReaderManager;
 import abm.io.output.*;
 import abm.models.DefaultModelSetup;
 import abm.models.ModelSetup;
-import abm.models.PlanGenerator;
+import abm.models.SimplePlanGenerator;
 import abm.models.SimpleModelSetup;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -58,7 +58,7 @@ public class RunAbitSimple {
         }
 
         for (int i = 0; i < threads; i++) {
-            executor.addTaskToQueue(new PlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
+            executor.addTaskToQueue(new SimplePlanGenerator(dataSet, modelSetup, i).setPersons(personsByThread.get(i)));
         }
 
         executor.execute();

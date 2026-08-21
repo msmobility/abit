@@ -5,6 +5,7 @@ import abm.data.vehicle.Car;
 import abm.data.vehicle.CarType;
 import abm.data.vehicle.Vehicle;
 import abm.data.vehicle.VehicleUtil;
+import abm.models.remoteWorkArrangement.HouseholdType;
 
 
 import java.util.ArrayList;
@@ -19,19 +20,11 @@ public class Household {
     private List<Vehicle> vehicles = new ArrayList<>();
     private EconomicStatus economicStatus;
 
-    public Boolean getSimulated() {
-        return simulated;
-    }
-
-    public void setSimulated(Boolean simulated) {
-        this.simulated = simulated;
-    }
-
     private Boolean simulated;
 
-
-
     private int partition;
+
+    private HouseholdType householdType;
 
 
     public Household(int id, Location location, int numberOfCars) {
@@ -76,5 +69,22 @@ public class Household {
     public void setPartition(int partition) {
         this.partition = partition;
     }
+
+    public Boolean getSimulated() {
+        return simulated;
+    }
+
+    public void setSimulated(Boolean simulated) {
+        this.simulated = simulated;
+    }
+
+    public HouseholdType getHouseholdType() {
+        return householdType;
+    }
+
+    public void setHouseholdType(HouseholdType householdType) {
+        this.householdType = householdType;
+    }
+
 
 }

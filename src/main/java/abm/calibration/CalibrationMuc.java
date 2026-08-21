@@ -1,5 +1,7 @@
 package abm.calibration;
 
+import abm.calibration.remoteWork.RemoteWorkAllowanceCalibration;
+import abm.calibration.remoteWork.RemoteWorkFrequencyGeneratorCalibration;
 import abm.data.DataSet;
 
 import abm.properties.AbitResources;
@@ -39,6 +41,8 @@ public class CalibrationMuc {
     boolean calibrateSubTourDestinationChoice;
     boolean calibrateSubTourModeChoice;
 
+    boolean calibrateRemoteWorkAllowance;
+    boolean calibrateRemoteWorkFrequency;
 
     //Todo add all the calibration class here
     private HabitualModeChoiceCalibration habitualModeChoiceCalibration;
@@ -59,6 +63,9 @@ public class CalibrationMuc {
     private SubTourTimeAssignmentCalibration subTourTimeAssignmentCalibration;
     private SubTourDestinationChoiceCalibration subTourDestinationChoiceCalibration;
     private SubTourModeChoiceCalibration subTourModeChoiceCalibration;
+
+    private RemoteWorkFrequencyGeneratorCalibration remoteWorkFrequencyGeneratorCalibration;
+    private RemoteWorkAllowanceCalibration remoteWorkAllowanceCalibration;
 
     private final Map<String, Boolean> calibrationList = new HashMap<>();
 
@@ -128,6 +135,12 @@ public class CalibrationMuc {
         calibrateSubTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("mode.choice.subtour.calibration"));
         calibrationList.put("SubTourModeChoice", calibrateSubTourDestinationChoice);
 
+        calibrateRemoteWorkAllowance = Boolean.parseBoolean(AbitResources.instance.getString("remoteWork.allowance.calibration"));
+        calibrationList.put("RemoteWorkAllowance", calibrateRemoteWorkAllowance);
+
+        calibrateRemoteWorkFrequency = Boolean.parseBoolean(AbitResources.instance.getString("remoteWork.frequency.calibration"));
+        calibrationList.put("RemoteWorkFrequency", calibrateRemoteWorkFrequency);
+
     }
 
 
@@ -192,42 +205,42 @@ public class CalibrationMuc {
 //            splitStopByTypeCalibration.run();
 //        }
 
-        if (calibrateMainDestinationChoice){
+        if (calibrateMainDestinationChoice) {
             mainDestinationChoiceCalibration = new MainDestinationChoiceCalibration(dataSet);
             mainDestinationChoiceCalibration.setup();
             mainDestinationChoiceCalibration.load();
             mainDestinationChoiceCalibration.run();
         }
 
-        if (calibrateStopDestinationChoice){
+        if (calibrateStopDestinationChoice) {
             stopDestinationChoiceCalibration = new StopDestinationChoiceCalibration(dataSet);
             stopDestinationChoiceCalibration.setup();
             stopDestinationChoiceCalibration.load();
             stopDestinationChoiceCalibration.run();
         }
 
-        if (calibrateMainMcLogsumDestinationChoice){
+        if (calibrateMainMcLogsumDestinationChoice) {
             mainMcLogsumDestinationChoiceCalibration = new MainMcLogsumDestinationChoiceCalibration(dataSet);
             mainMcLogsumDestinationChoiceCalibration.setup();
             mainMcLogsumDestinationChoiceCalibration.load();
             mainMcLogsumDestinationChoiceCalibration.run();
         }
 
-        if (calibrateStopMcLogsumDestinationChoice){
+        if (calibrateStopMcLogsumDestinationChoice) {
             stopMcLogsumDestinationChoiceCalibration = new StopMcLogsumDestinationChoiceCalibration(dataSet);
             stopMcLogsumDestinationChoiceCalibration.setup();
             stopMcLogsumDestinationChoiceCalibration.load();
             stopMcLogsumDestinationChoiceCalibration.run();
         }
 
-        if (calibrateTourModeChoice){
+        if (calibrateTourModeChoice) {
             tourModeChoiceCalibration = new TourModeChoiceCalibration(dataSet);
             tourModeChoiceCalibration.setup();
             tourModeChoiceCalibration.load();
             tourModeChoiceCalibration.run();
         }
 
-        if (calibrateSubTourGeneration){
+        if (calibrateSubTourGeneration) {
             subTourGenerationCalibration = new SubTourGenerationCalibration(dataSet);
             subTourGenerationCalibration.setup();
             subTourGenerationCalibration.load();
@@ -241,18 +254,32 @@ public class CalibrationMuc {
 //            subTourTimeAssignmentCalibration.run();
 //        }
 
-        if (calibrateSubTourDestinationChoice){
+        if (calibrateSubTourDestinationChoice) {
             subTourDestinationChoiceCalibration = new SubTourDestinationChoiceCalibration(dataSet);
             subTourDestinationChoiceCalibration.setup();
             subTourDestinationChoiceCalibration.load();
             subTourDestinationChoiceCalibration.run();
         }
 
-        if (calibrateSubTourModeChoice){
+        if (calibrateSubTourModeChoice) {
             subTourModeChoiceCalibration = new SubTourModeChoiceCalibration(dataSet);
             subTourModeChoiceCalibration.setup();
             subTourModeChoiceCalibration.load();
             subTourModeChoiceCalibration.run();
+        }
+
+        if (calibrateRemoteWorkAllowance) {
+            remoteWorkAllowanceCalibration = new RemoteWorkAllowanceCalibration(dataSet);
+            remoteWorkAllowanceCalibration.setup();
+            remoteWorkAllowanceCalibration.load();
+            remoteWorkAllowanceCalibration.run();
+        }
+
+        if (calibrateRemoteWorkFrequency) {
+            remoteWorkFrequencyGeneratorCalibration = new RemoteWorkFrequencyGeneratorCalibration(dataSet);
+            remoteWorkFrequencyGeneratorCalibration.setup();
+            remoteWorkFrequencyGeneratorCalibration.load();
+            remoteWorkFrequencyGeneratorCalibration.run();
         }
 
     }

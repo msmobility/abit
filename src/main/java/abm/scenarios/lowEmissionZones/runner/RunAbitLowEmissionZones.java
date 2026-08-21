@@ -10,7 +10,6 @@ import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.OutputWriter;
 import abm.io.output.StatisticsPrinter;
 import abm.models.ModelSetup;
-import abm.models.PlanGenerator3;
 import abm.properties.AbitResources;
 import abm.scenarios.lowEmissionZones.ModelSetupMucLowEmissionZone;
 import abm.scenarios.lowEmissionZones.models.PlanGenerator3LowEmissionZones;

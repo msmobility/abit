@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class Person {
 
-    private boolean canTelework;
+    private boolean canRemoteWork;
     private final int id;
     private final Household household;
     private HabitualMode habitualMode;
@@ -265,10 +265,11 @@ public class Person {
         this.habitualModeWalk = habitualModeWalk;
     }
 
-    public boolean canTelework() {
-        return canTelework;
+    public boolean canRemoteWork() {
+        return canRemoteWork;
     }
-    public void setCanTelework(boolean canTeleWork) {this.canTelework = canTeleWork;
+    public void setRemoteWork(boolean canRemoteWork) {
+        this.canRemoteWork = canRemoteWork;
     }
 
 }

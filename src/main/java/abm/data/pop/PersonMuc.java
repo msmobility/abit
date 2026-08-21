@@ -4,6 +4,7 @@ import abm.data.plans.HabitualMode;
 import abm.data.plans.Plan;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
+import abm.models.remoteWorkArrangement.RemoteWorkFrequencyModel;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
@@ -19,7 +20,7 @@ public class PersonMuc {
     private double habitualModeGcCarD;
     private double habitualModeGcCarP;
     private double habitualModeGcPT;
-    private boolean canTelework;
+    private boolean canRemoteWork;
 
     private double habitualModeBike;
     private double habitualModeWalk;
@@ -252,10 +253,12 @@ public class PersonMuc {
         this.habitualModeWalk = habitualModeWalk;
     }
 
-    public boolean canTelework() {
-        return canTelework;
+    public boolean canRemoteWork() {
+        return canRemoteWork;
     }
-    public void setCanTelework(boolean canTeleWork) {this.canTelework = canTeleWork;
+
+    public void setRemoteWork(boolean canRemoteWork) {
+        this.canRemoteWork = canRemoteWork;
     }
 
 

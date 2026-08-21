@@ -1,4 +1,4 @@
-package abm.models.teleworkAdaption;
+package abm.models.remoteWorkArrangement;
 
 import abm.data.DataSet;
 import abm.data.geo.RegioStaR2;
@@ -13,11 +13,14 @@ import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
+import org.apache.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.*;
 
-public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionChoice {
+public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllowance {
+
+    private static final Logger logger = Logger.getLogger(RemoteWorkAllowanceMultinomialLogitModel.class);
 
     private final DataSet dataSet;
 
@@ -28,9 +31,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSingleEarnerFemale = new HashMap<>();
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSinglePerson = new HashMap<>();
 
-    private boolean isTwoAltSinglePerson = false;
-
-    public TeleworkHouseholdMultinomialLogitModel(DataSet dataSet) {
+    public RemoteWorkAllowanceMultinomialLogitModel(DataSet dataSet) {
         this.dataSet = dataSet;
 
         Path coefFileDual = Path.of(AbitResources.instance.getString("telework.coef.dual"));
@@ -51,93 +52,63 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
         // Single-person → detect format
         TeleworkCoefficientsReader readerSingle = new TeleworkCoefficientsReader(coefFileSinglePerson);
         coefSinglePerson.putAll(readerSingle.readCoefficients());
-        isTwoAltSinglePerson = readerSingle.isTwoAlternative();
 
-    }
-
-    public HouseholdType classifyHousehold(Household hh) {
-        if (hh == null || hh.getPersons().isEmpty()) {
-            return HouseholdType.NONE;
-        }
-
-        boolean partnered = hh.getPersons().stream()
-                .anyMatch(p -> p.getRelationship() == Relationship.married);
-
-        Person employedMan   = findWorkingMale(hh);
-        Person employedWoman = findWorkingFemale(hh);
-
-        if (partnered) {
-            if (employedMan != null && employedWoman != null) {
-                return HouseholdType.PARTNERED_DUAL_EARNER;
-            } else if (employedMan != null) {
-                return HouseholdType.PARTNERED_SINGLE_EARNER_MALE;
-            } else if (employedWoman != null) {
-                return HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE;
-            }
-        }
-
-        if (hh.getPersons().size() == 1) {
-            Person p = hh.getPersons().getFirst();
-            // only classify as SINGLE_PERSON if they are actually working
-            if (isWorking(p)) {
-                return HouseholdType.SINGLE_PERSON;
-            }
-        }
-
-        return HouseholdType.NONE;
     }
 
     @Override
-    public void chooseTelework(Household household) {
+    public void assignRemoteWorkAllowance(Household household) {
 
-        HouseholdType type = classifyHousehold(household);
+        if(household.getHouseholdType() == HouseholdType.PARTNERED_DUAL_EARNER) {
+            Optional<Person> employedMan = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            Optional<Person> employedWoman = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedMan.isEmpty() || employedWoman.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_DUAL_EARNER but is missing an expected employed married man/woman - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            assignRemoteWorkArrangementForPartneredDualEarnerHousehold(household, employedMan.get(), employedWoman.get());
 
-//        boolean isPartneredHousehold = false;
-//        // todo add a method to check whether this is a partnered or single households
-//        for (Person person : household.getPersons()){
-//            if (person.getRelationship() == Relationship.married){
-//                isPartneredHousehold = true;
-//                break;
-//            }
-//        }
+        } else if (household.getHouseholdType() == HouseholdType.PARTNERED_SINGLE_EARNER_MALE){
+            Optional<Person> employedMan = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedMan.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_SINGLE_EARNER_MALE but is missing the expected employed married man - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            adaptTeleworkForPartneredSingleEarnerHouseholdMale(household, employedMan.get());
 
-        Person employedMan = findWorkingMale(household);
-        Person employedWoman  = findWorkingFemale(household);
+        } else if (household.getHouseholdType() == HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE) {
+            Optional<Person> employedWoman = household.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst();
+            if (employedWoman.isEmpty()) {
+                logger.warn("Household " + household.getId() + " is classified as PARTNERED_SINGLE_EARNER_FEMALE but is missing the expected employed married woman - skipping remote-work assignment.");
+                household.getPersons().forEach(p -> p.setRemoteWork(false));
+                return;
+            }
+            adaptTeleworkForPartneredSingleEarnerHouseholdFemale(household, employedWoman.get());
 
-        if(type == HouseholdType.PARTNERED_DUAL_EARNER) {
-            adaptTeleworkForPartneredDualEarnerHousehold(household, employedMan, employedWoman);
-
-        } else if (type == HouseholdType.PARTNERED_SINGLE_EARNER_MALE){
-                // todo run the model for partned but single earner_male
-            adaptTeleworkForPartneredSingleEarnerHouseholdMale(household, employedMan);
-
-        } else if (type == HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE) {
-                // todo run the model for partnered but single earner_female
-            adaptTeleworkForPartneredSingleEarnerHouseholdFemale(household, employedWoman);
-
-        } else if (type == HouseholdType.SINGLE_PERSON){
+        } else if (household.getHouseholdType() == HouseholdType.SINGLE_WORKER){
             adaptTeleworkForSinglePersonHousehold(household);
 
         }
     }
 
-    private void adaptTeleworkForPartneredDualEarnerHousehold(Household hh, Person male, Person female) {
+    private void assignRemoteWorkArrangementForPartneredDualEarnerHousehold(Household hh, Person male, Person female) {
 
         TeleworkAlternative chosen =
                 computeChoice(hh, male, female, coefDualEarner, HouseholdType.PARTNERED_DUAL_EARNER);
 
         if (chosen.equals(TeleworkAlternative.NO_ONE)){
-            male.setCanTelework(false);
-            female.setCanTelework(false);
+            male.setRemoteWork(false);
+            female.setRemoteWork(false);
         } else if (chosen.equals(TeleworkAlternative.ONLY_MALE)) {
-            male.setCanTelework(true);
-            female.setCanTelework(false);
+            male.setRemoteWork(true);
+            female.setRemoteWork(false);
         } else if (chosen.equals(TeleworkAlternative.ONLY_FEMALE)) {
-            male.setCanTelework(false);
-            female.setCanTelework(true);
+            male.setRemoteWork(false);
+            female.setRemoteWork(true);
         } else if (chosen.equals(TeleworkAlternative.BOTH)) {
-            male.setCanTelework(true);
-            female.setCanTelework(true);
+            male.setRemoteWork(true);
+            female.setRemoteWork(true);
         }
     }
     public void adaptTeleworkForPartneredSingleEarnerHouseholdMale(Household hh, Person male) {
@@ -145,14 +116,14 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
         TeleworkAlternative chosen =
                 computeChoice(hh, male, null, coefSingleEarnerMale, HouseholdType.PARTNERED_SINGLE_EARNER_MALE);
 
-        male.setCanTelework(chosen == TeleworkAlternative.ONLY_MALE);
+        male.setRemoteWork(chosen == TeleworkAlternative.ONLY_MALE);
     }
     public void adaptTeleworkForPartneredSingleEarnerHouseholdFemale(Household hh, Person female) {
 
         TeleworkAlternative chosen =
                 computeChoice(hh, null, female, coefSingleEarnerFemale, HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE);
 
-        female.setCanTelework(chosen == TeleworkAlternative.ONLY_FEMALE);
+        female.setRemoteWork(chosen == TeleworkAlternative.ONLY_FEMALE);
     }
     public void adaptTeleworkForSinglePersonHousehold(Household hh) {
 
@@ -160,20 +131,20 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             return;
         }
         // The only person in the household
-        Person p = hh.getPersons().getFirst();
+        Person p = hh.getPersons().get(0);
 
         // If not working → auto NO telework
-        if (!isWorking(p)) {
-            p.setCanTelework(false);
+        if (p.getOccupation() != (Occupation.EMPLOYED)) {
+            p.setRemoteWork(false);
             return;
         }
         Person male   = (p.getGender() == Gender.MALE) ? p : null;
         Person female = (p.getGender() == Gender.FEMALE) ? p : null;
 
         TeleworkAlternative chosen =
-                computeChoice(hh, male, female, coefSinglePerson, HouseholdType.SINGLE_PERSON);
+                computeChoice(hh, male, female, coefSinglePerson, HouseholdType.SINGLE_WORKER);
 
-        p.setCanTelework(chosen == TeleworkAlternative.ONLY_MALE || chosen == TeleworkAlternative.ONLY_FEMALE);
+        p.setRemoteWork(chosen == TeleworkAlternative.ONLY_MALE || chosen == TeleworkAlternative.ONLY_FEMALE);
     }
 
     // --------------------------------------------------------------
@@ -396,26 +367,31 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
         jobType = jobType.trim();
         return jobType.equals("Finc");
     }
+
     private boolean isServiceAdministration(String jobType) {
         if (jobType == null) return false;
         jobType = jobType.trim();
         return jobType.equals("Serv") || jobType.equals("Admn");
     }
+
     private boolean isTransportLogistic(String jobType) {
         if (jobType == null) return false;
         jobType = jobType.trim();
         return jobType.equals("Trns") || jobType.equals("Retl");
     }
+
     private boolean isEssentialServices(String jobType) {
         if (jobType == null) return false;
         jobType = jobType.trim();
         return jobType.equals("Rlst");
     }
+
     private boolean isOther(String jobType) {
         if (jobType == null) return false;
         jobType = jobType.trim();
         return jobType.equals("Agri") || jobType.equals("Cons") || jobType.equals("Mnft") || jobType.equals("Util");
     }
+
     private double resolveUrbanRuralDegree(String var, Household hh) {
         try {
             Zone z = dataSet.getZones().get(hh.getLocation().getZoneId());
@@ -432,29 +408,34 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             return 0.0;
         }
     }
+
     private double householdIncome(Household hh) {
         if (hh == null) return -1;
         return hh.getPersons().stream()
                 .mapToDouble(p -> Math.max(0, p.getMonthlyIncome_eur()))
                 .sum();
     }
+
     private int countCars(Household hh) {
         if (hh == null) return 0;
         if (hh.getVehicles() != null && !hh.getVehicles().isEmpty())
             return hh.getVehicles().size();
         return hh.getNumberOfCars();
     }
+
     private double commuteInRange(Person p, int lo, int hi) {
         double t = getCommuteMinutes(p);
         if (t < 0) return 0;
         if (lo == hi) return indicator(t == lo);
         return indicator(t >= lo && t < hi);
     }
+
     private double commuteAbove(Person p, int thr) {
         double t = getCommuteMinutes(p);
         if (t < 0) return 0;
         return indicator(t >= thr);
     }
+
     private double getCommuteMinutes(Person p) {
         if (p == null
                 || p.getJob() == null
@@ -474,17 +455,18 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             return -1;
         }
     }
-    private boolean isWorking(Person p) {
-        return p != null && p.getOccupation() == Occupation.EMPLOYED;
-    }
+
     private double indicator(boolean b) { return b ? 1.0 : 0.0; }
+
     private boolean youngestChildInRange(Household hh, int lo, int hi) {
         Integer y = youngestChildAge(hh);
         return y != null && y >= lo && y < hi;
     }
+
     private boolean noChild(Household hh) {
         return youngestChildAge(hh) == null;
     }
+
     private Integer youngestChildAge(Household hh) {
         return hh.getPersons().stream()
                 .filter(p -> p.getAge() < 18)
@@ -492,21 +474,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
                 .min()
                 .stream().boxed().findFirst().orElse(null);
     }
-    private Person findWorkingMale(Household hh) {
-        if (hh == null) return null;
-        return hh.getPersons().stream()
-                .sorted(Comparator.comparingInt(Person::getAge).reversed())
-                .filter(p -> p.getGender() == Gender.MALE && isWorking(p))
-                .findFirst().orElse(null);
-    }
-    private Person findWorkingFemale(Household hh) {
-        if (hh == null) return null;
 
-        return hh.getPersons().stream()
-                .sorted(Comparator.comparingInt(Person::getAge).reversed())
-                .filter(p -> p.getGender() == Gender.FEMALE && isWorking(p))
-                .findFirst().orElse(null);
-    }
     private TeleworkAlternative computeChoice(
             Household hh,
             Person male,
@@ -537,7 +505,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
                 );
             }
 
-            case SINGLE_PERSON -> {
+            case SINGLE_WORKER -> {
                 alternatives = List.of(
                         TeleworkAlternative.NO_ONE,
                         male != null ? TeleworkAlternative.ONLY_MALE : TeleworkAlternative.ONLY_FEMALE
@@ -605,7 +573,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
                 case PARTNERED_SINGLE_EARNER_FEMALE ->
                         x = computeRegressorSingleEarnerFemale(var, female, hh);
 
-                case SINGLE_PERSON ->
+                case SINGLE_WORKER ->
                         x = computeRegressorSinglePerson(var, (male != null ? male : female), hh);
 
                 default -> x = 0;
@@ -635,6 +603,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
 
         return utilities;
     }
+
     public Map<TeleworkAlternative, Double> getProbabilities(Household hh, Person male, Person female) {
 
         Map<TeleworkAlternative, Double> utilities =
@@ -668,9 +637,9 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
 // --------------------------------------------------------------
 
     public void debugHousehold(Household hh) {
-        HouseholdType type = classifyHousehold(hh);
-        Person male   = findWorkingMale(hh);
-        Person female = findWorkingFemale(hh);
+        HouseholdType type = hh.getHouseholdType();
+        Person male = hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.MALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst().orElse(null);
+        Person female = hh.getPersons().stream().filter(p -> (p.getRelationship() == Relationship.married && p.getGender() == Gender.FEMALE && p.getOccupation() == Occupation.EMPLOYED)).findFirst().orElse(null);
 
         System.out.println("=== HH " + hh.getId() + " | type=" + type + " ===");
         System.out.printf("  male   : %s  income=%.0f  commute=%.1f%n",
@@ -696,10 +665,10 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             case PARTNERED_DUAL_EARNER         -> coefTable = coefDualEarner;
             case PARTNERED_SINGLE_EARNER_MALE  -> { coefTable = coefSingleEarnerMale;   regressorFemale = null; }
             case PARTNERED_SINGLE_EARNER_FEMALE-> { coefTable = coefSingleEarnerFemale; regressorMale   = null; }
-            case SINGLE_PERSON                 -> {
+            case SINGLE_WORKER                 -> {
                 coefTable = coefSinglePerson;
-                regressorMale   = (hh.getPersons().getFirst().getGender() == Gender.MALE)   ? hh.getPersons().getFirst() : null;
-                regressorFemale = (hh.getPersons().getFirst().getGender() == Gender.FEMALE) ? hh.getPersons().getFirst() : null;
+                regressorMale   = (hh.getPersons().get(0).getGender() == Gender.MALE)   ? hh.getPersons().get(0) : null;
+                regressorFemale = (hh.getPersons().get(0).getGender() == Gender.FEMALE) ? hh.getPersons().get(0) : null;
             }
             default                            -> coefTable = coefDualEarner;
         }
@@ -753,7 +722,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             case PARTNERED_DUAL_EARNER          -> List.of(TeleworkAlternative.values());
             case PARTNERED_SINGLE_EARNER_MALE   -> List.of(TeleworkAlternative.NO_ONE, TeleworkAlternative.ONLY_MALE);
             case PARTNERED_SINGLE_EARNER_FEMALE -> List.of(TeleworkAlternative.NO_ONE, TeleworkAlternative.ONLY_FEMALE);
-            case SINGLE_PERSON                  -> List.of(TeleworkAlternative.NO_ONE,
+            case SINGLE_WORKER                  -> List.of(TeleworkAlternative.NO_ONE,
                     male != null ? TeleworkAlternative.ONLY_MALE : TeleworkAlternative.ONLY_FEMALE);
             default                             -> List.of(TeleworkAlternative.values());
         };
@@ -766,7 +735,7 @@ public class TeleworkHouseholdMultinomialLogitModel implements TeleworkAdaptionC
             case PARTNERED_DUAL_EARNER          -> computeRegressorDualEarner(var, male, female, hh);
             case PARTNERED_SINGLE_EARNER_MALE   -> computeRegressorSingleEarnerMale(var, male, hh);
             case PARTNERED_SINGLE_EARNER_FEMALE -> computeRegressorSingleEarnerFemale(var, female, hh);
-            case SINGLE_PERSON                  -> computeRegressorSinglePerson(var, male != null ? male : female, hh);
+            case SINGLE_WORKER                  -> computeRegressorSinglePerson(var, male != null ? male : female, hh);
             default                             -> 0.0;
         };
     }

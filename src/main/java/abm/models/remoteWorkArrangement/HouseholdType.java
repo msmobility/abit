@@ -1,0 +1,13 @@
+package abm.models.remoteWorkArrangement;
+
+public enum HouseholdType {
+    PARTNERED_DUAL_EARNER,
+    PARTNERED_SINGLE_EARNER_FEMALE,
+    PARTNERED_SINGLE_EARNER_MALE,
+    PARTNERED_NO_WORKER,
+    SINGLE_WORKER,
+    SINGLE_NO_WORKER,
+    OTHER_WORKER,
+    OTHER_NO_WORKER,
+    NONE
+}
