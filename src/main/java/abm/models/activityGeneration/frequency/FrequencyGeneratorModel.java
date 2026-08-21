@@ -1025,7 +1025,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     private RemoteWorkable getRemoteWorkable(Person person) {
 
-        return person.canTelework()
+        return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
     }

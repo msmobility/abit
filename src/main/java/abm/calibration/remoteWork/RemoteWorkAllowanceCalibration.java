@@ -163,7 +163,7 @@ public class RemoteWorkAllowanceCalibration implements ModelComponent {
                             maxDifference = Math.abs(difference);
                         }
                     }
-                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateEducationCalibrationFactor(calibrationFactors.get(purpose));
                 }
             }
 
@@ -204,7 +204,7 @@ public class RemoteWorkAllowanceCalibration implements ModelComponent {
                                 maxDifference = Math.abs(difference);
                             }
                         }
-                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateEducationCalibrationFactor(calibrationFactors.get(purpose));
                     }
                 }
             }
@@ -311,12 +311,12 @@ public class RemoteWorkAllowanceCalibration implements ModelComponent {
             if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)) {
                 finalCoefficientsTable.get(purpose).replace("zero", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountWorkEducationCoefficients());
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 } else {
-                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainAccompanyCountCoefficients());
+                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 }
             } else {
-                finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
             }
         }
 

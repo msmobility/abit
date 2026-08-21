@@ -5,6 +5,7 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
+import abm.data.plans.DisabilityMuc;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -458,6 +459,35 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
             this.updatedCalibrationFactors.replace(i, updatedCalibrationFactor);
             logger.info("Calibration factor for " + purpose + "\t" + "and " + i + "\t" + ": " + updatedCalibrationFactor);
         }
+    }
+
+        public Map<String, Double> obtainZeroCoefficients() {
+        double originalCalibrationFactor = zeroCoef.get("calibration");
+        double updatedCalibrationFactor = updatedCalibrationFactors.get(0);
+        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
+        this.zeroCoef.replace("calibration", latestCalibrationFactor);
+        return zeroCoef;
+    }
+
+    public Map<String, Double> obtainZeroCoefficients(
+            Occupation occupation,
+            EmploymentStatus employmentStatus,
+            RemoteWorkable remoteWorkable,
+            DisabilityMuc disability) {
+
+        Map<String, Double> coefficients = new HashMap<>(zeroCoef);
+
+        double originalCalibration = coefficients.get("calibration");
+        double updatedCalibration;
+        if (purpose == Purpose.WORK) {
+            updatedCalibration = updatedCalibrationFactors.get(0);
+        } else if (purpose == Purpose.EDUCATION) {
+            updatedCalibration = updatedCalibrationFactors.get(0);
+        } else { // ACCOMPANY
+            updatedCalibration = updatedCalibrationFactors.get(0);
+        }
+        coefficients.replace("calibration", originalCalibration + updatedCalibration);
+        return coefficients;
     }
 
 }

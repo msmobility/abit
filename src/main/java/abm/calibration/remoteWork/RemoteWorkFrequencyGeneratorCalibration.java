@@ -11,6 +11,7 @@ import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
+import abm.models.remoteWorkArrangement.RemoteWorkFrequencyModel;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
@@ -64,12 +65,12 @@ public class RemoteWorkFrequencyGeneratorCalibration implements ModelComponent {
         //Todo: read boolean input from the property file and create the model which needs to be calibrated
         calibrateMandatoryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.mand.calibration"));
         for (Purpose purpose : Purpose.getMandatoryPurposes()) {
-            frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateMandatoryActGen));
+            frequencyGeneratorsForCalibration.put(purpose, new RemoteWorkFrequencyModel(dataSet, purpose, calibrateMandatoryActGen));
         }
 
         calibrateDiscretionaryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-            frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateDiscretionaryActGen));
+            frequencyGeneratorsForCalibration.put(purpose, new RemoteWorkFrequencyModel(dataSet, purpose, calibrateDiscretionaryActGen));
         }
 
         //Todo: initialize all the data containers that might be needed for calibration
@@ -164,7 +165,7 @@ public class RemoteWorkFrequencyGeneratorCalibration implements ModelComponent {
                             maxDifference = Math.abs(difference);
                         }
                     }
-                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                    ((RemoteWorkFrequencyModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                 }
             }
 
@@ -205,7 +206,7 @@ public class RemoteWorkFrequencyGeneratorCalibration implements ModelComponent {
                                 maxDifference = Math.abs(difference);
                             }
                         }
-                        ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
+                        ((RemoteWorkFrequencyModel) frequencyGeneratorsForCalibration.get(purpose)).updateCalibrationFactor(calibrationFactors.get(purpose));
                     }
                 }
             }
@@ -310,14 +311,14 @@ public class RemoteWorkFrequencyGeneratorCalibration implements ModelComponent {
         //Todo: obtain the updated coefficients + calibration factors
         for (Purpose purpose : Purpose.getAllPurposes()) {
             if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)) {
-                finalCoefficientsTable.get(purpose).replace("zero", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
+                finalCoefficientsTable.get(purpose).replace("zero", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountWorkEducationCoefficients());
+                    finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 } else {
-                    finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainAccompanyCountCoefficients());
+                    finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
                 }
             } else {
-                finalCoefficientsTable.get(purpose).replace("count", ((FrequencyGeneratorModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
+                finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
             }
         }
 
