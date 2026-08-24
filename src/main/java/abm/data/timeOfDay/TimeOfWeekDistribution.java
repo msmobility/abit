@@ -84,4 +84,21 @@ public class TimeOfWeekDistribution {
         return timeOfDayDistribution;
     }
 
+    /**
+     * Restricts this distribution to a time window, zeroing out probabilities outside
+     * [windowStartMin, windowEndMin]. Same pattern as {@link #getForThisDayOfWeek(DayOfWeek)}.
+     */
+    public TimeOfWeekDistribution restrictToWindow(int windowStartMin, int windowEndMin) {
+        TimeOfWeekDistribution restricted = new TimeOfWeekDistribution();
+        this.internalMap.keySet().forEach(m -> {
+            if (m >= windowStartMin && m <= windowEndMin) {
+                restricted.setProbability(m, this.internalMap.get(m));
+            } else {
+                restricted.setProbability(m, 0.);
+            }
+        });
+
+        return restricted;
+    }
+
 }

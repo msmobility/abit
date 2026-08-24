@@ -158,6 +158,10 @@ public class Activity implements Comparable<Activity> {
         this.discretionaryActivityType = discretionaryActivityType;
     }
 
+    public Tour getTour() {
+        return tour;
+    }
+
     public void setTour(Tour tour) {
         this.tour = tour;
     }

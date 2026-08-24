@@ -1,5 +1,7 @@
 package abm.utils;
 
+import abm.data.geo.Location;
+import abm.data.geo.MicroLocation;
 import abm.data.plans.*;
 import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.data.travelInformation.TravelDistances;
@@ -27,6 +29,18 @@ public class PlanTools {
 
     public static int startOfTheWeek() {
         return 0;
+    }
+
+    /**
+     * Coordinate-level location match (not zone-level, since a large zone can contain both a
+     * household and a job without them being the same place). Falls back to zone-id comparison
+     * only if either location doesn't carry coordinates.
+     */
+    public static boolean locationsMatch(Location a, Location b) {
+        if (a instanceof MicroLocation && b instanceof MicroLocation) {
+            return ((MicroLocation) a).getCoordinate().equals2D(((MicroLocation) b).getCoordinate());
+        }
+        return a.getZoneId() == b.getZoneId();
     }
 
     private final TravelDistances travelDistances;
@@ -390,6 +404,24 @@ public class PlanTools {
         } else {
             plan.addUnmetActivities(stopAfter_StartTime_min, stopAfter);
         }
+    }
+
+    /**
+     * Extends a tour's main activity end time by extensionMinutes (e.g. to preserve total work
+     * duration after a discretionary stop interrupted an in-home WORK tour), re-validating the
+     * extended slot against the plan's blocked time first. Returns false (no change made) if the
+     * extension would conflict with something already scheduled that day.
+     */
+    public boolean extendMainActivityEndTime(Plan plan, Tour tour, int extensionMinutes) {
+        Activity mainActivity = tour.getMainActivity();
+        int oldEnd = mainActivity.getEndTime_min();
+        int newEnd = oldEnd + extensionMinutes;
+        if (plan.getBlockedTimeOfDay().isAvailable(oldEnd, newEnd)) {
+            plan.getBlockedTimeOfDay().blockTime(oldEnd, newEnd);
+            mainActivity.setEndTime_min(newEnd);
+            return true;
+        }
+        return false;
     }
 
     public static Tour findMandatoryTour(Plan plan) {
