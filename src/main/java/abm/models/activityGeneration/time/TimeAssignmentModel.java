@@ -5,6 +5,7 @@ import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
 import abm.data.timeOfDay.*;
 import abm.properties.AbitResources;
+import abm.properties.InternalProperties;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 
@@ -310,6 +311,12 @@ public class TimeAssignmentModel implements TimeAssignment {
             }
         } else {
             startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
+        }
+
+        // duration is drawn independently of the window - clamp so the activity doesn't run
+        // past the window even though the start time was correctly restricted to it
+        if (startTime + newDuration > windowEndMin) {
+            newDuration = Math.max(InternalProperties.SEARCH_INTERVAL_MIN, windowEndMin - startTime);
         }
 
         // Setters

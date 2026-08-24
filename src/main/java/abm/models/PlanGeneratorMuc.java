@@ -329,7 +329,7 @@ public class PlanGeneratorMuc implements Callable {
 
                 if (activity.getTour() != null) {
                     // stop was successfully attached - extend the work day to preserve total work duration
-                    boolean extended = planTools.extendMainActivityEndTime(plan, selectedTour, activity.getDuration());
+                    boolean extended = planTools.extendMainActivityEndTime(plan, selectedTour, activity);
                     if (!extended) {
                         logger.warn("Could not extend WORK activity end time to preserve total work duration for person "
                                 + person.getId() + " - extension window conflicts with an already-blocked time.");

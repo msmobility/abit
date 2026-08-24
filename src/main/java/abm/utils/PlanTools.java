@@ -407,17 +407,27 @@ public class PlanTools {
     }
 
     /**
-     * Extends a tour's main activity end time by extensionMinutes (e.g. to preserve total work
-     * duration after a discretionary stop interrupted an in-home WORK tour), re-validating the
-     * extended slot against the plan's blocked time first. Returns false (no change made) if the
-     * extension would conflict with something already scheduled that day.
+     * Extends a tour's main activity end time by attachedStop's duration (e.g. to preserve total
+     * work duration after a discretionary stop interrupted an in-home WORK tour), re-validating
+     * the extended slot against the plan's blocked time first. Returns false (no change made) if
+     * the extension would conflict with something already scheduled that day.
+     * <p>
+     * Anchored at max(mainActivity end, attachedStop end) rather than always the main activity's
+     * end, since a stop attached AFTER the main activity already occupies time past that end -
+     * anchoring at the main activity's end alone would re-claim the stop's own just-committed
+     * block. The extra grid-tick buffer clears the boundary where blockTime's ceiling rounding
+     * and isAvailable's floor rounding would otherwise still touch the same grid point (mirrors
+     * the ceil(...) + buffer pattern already used in addStopAfter's recomputeTiming branch).
      */
-    public boolean extendMainActivityEndTime(Plan plan, Tour tour, int extensionMinutes) {
+    public static boolean extendMainActivityEndTime(Plan plan, Tour tour, Activity attachedStop) {
         Activity mainActivity = tour.getMainActivity();
-        int oldEnd = mainActivity.getEndTime_min();
-        int newEnd = oldEnd + extensionMinutes;
-        if (plan.getBlockedTimeOfDay().isAvailable(oldEnd, newEnd)) {
-            plan.getBlockedTimeOfDay().blockTime(oldEnd, newEnd);
+        int extensionMinutes = attachedStop.getDuration();
+        int lastOccupied = Math.max(mainActivity.getEndTime_min(), attachedStop.getEndTime_min());
+        int extensionStart = (int) Math.ceil((double) lastOccupied / InternalProperties.SEARCH_INTERVAL_MIN)
+                * InternalProperties.SEARCH_INTERVAL_MIN + InternalProperties.SEARCH_INTERVAL_MIN;
+        int newEnd = extensionStart + extensionMinutes;
+        if (plan.getBlockedTimeOfDay().isAvailable(extensionStart, newEnd)) {
+            plan.getBlockedTimeOfDay().blockTime(extensionStart, newEnd);
             mainActivity.setEndTime_min(newEnd);
             return true;
         }
