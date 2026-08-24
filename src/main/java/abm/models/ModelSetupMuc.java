@@ -14,6 +14,8 @@ import abm.models.destinationChoice.DestinationChoiceModel;
 import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.destinationChoice.SubtourDestinationChoiceModel;
 import abm.models.modeChoice.*;
+import abm.models.planConsistency.PlanConsistencyRepair;
+import abm.models.planConsistency.PlanConsistencyRepairModel;
 import abm.models.remoteWorkArrangement.DayOfWeekRemoteWorkAssignmentModel;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowanceMultinomialLogitModel;
@@ -40,6 +42,7 @@ public class ModelSetupMuc implements ModelSetup{
     private final BikeOwnershipReader bikeOwnershipReader;
     private final RemoteWorkAllowance remoteWorkAllowance;
     private final DayOfWeekRemoteWorkAssignmentModel dayOfWeekRemoteWorkAssignmentModel;
+    private final PlanConsistencyRepair planConsistencyRepair;
 
     public DayOfWeekRemoteWorkAssignmentModel getDayOfWeekRemoteWorkAssignmentModel() {
         return dayOfWeekRemoteWorkAssignmentModel;
@@ -78,6 +81,7 @@ public class ModelSetupMuc implements ModelSetup{
         subtourDestinationChoice  =new SubtourDestinationChoiceModel(dataSet);
         subtourModeChoice = new SubtourModeChoiceModel(dataSet);
         remoteWorkAllowance = new RemoteWorkAllowanceMultinomialLogitModel(dataSet);
+        planConsistencyRepair = new PlanConsistencyRepairModel(dataSet.getTravelTimes());
 
 
     }
@@ -152,6 +156,10 @@ public class ModelSetupMuc implements ModelSetup{
 
     public RemoteWorkAllowance getRemoteWorkAllowance() {
         return remoteWorkAllowance;
+    }
+
+    public PlanConsistencyRepair getPlanConsistencyRepair() {
+        return planConsistencyRepair;
     }
 
 

@@ -27,7 +27,11 @@ public class TourPrinter {
         for (Person person : dataSet.getPersons().values()) {
             if (person.getPlan() != null){
                 for (Tour tour : person.getPlan().getTours().values()) {
+                    if (!tour.getLegs().isEmpty()) {
+                        // leg-less (in-home WORK) tours have no legs to report - Tour.toString()
+                        // calls legs.firstKey()/lastKey(), which throw on an empty map
                         pw.println(tour.toString());
+                    }
                 }
             }
         }

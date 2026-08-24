@@ -3,12 +3,10 @@ package abm.models.activityGeneration.frequency;
 import abm.data.DataSet;
 import abm.data.plans.*;
 import abm.data.pop.EmploymentStatus;
-import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
-import abm.utils.PlanTools;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;
@@ -75,9 +73,8 @@ public class SubtourGeneratorModel implements SubtourGenerator {
         if (mandatoryTour.getMainActivity().getStartTime_min() < 0) {
             hasSubtour = false;
         }
-        Household household = person.getHousehold();
-        if (PlanTools.locationsMatch(mandatoryTour.getMainActivity().getLocation(), household.getLocation())) {
-            // in-home (remote-work) tour - no subtour possible, there's no commute to leave from
+        if (mandatoryTour.getLegs().isEmpty()) {
+            // leg-less (in-home remote-work) tour - no subtour possible, there's no commute to leave from
             hasSubtour = false;
         }
 

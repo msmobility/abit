@@ -407,35 +407,116 @@ public class PlanTools {
     }
 
     /**
-     * Extends a tour's main activity end time by attachedStop's duration (e.g. to preserve total
-     * work duration after a discretionary stop interrupted an in-home WORK tour), re-validating
-     * the extended slot against the plan's blocked time first. Returns false (no change made) if
-     * the extension would conflict with something already scheduled that day.
-     * <p>
-     * Anchored at max(mainActivity end, attachedStop end) rather than always the main activity's
-     * end, since a stop attached AFTER the main activity already occupies time past that end -
-     * anchoring at the main activity's end alone would re-claim the stop's own just-committed
-     * block. The extra grid-tick buffer clears the boundary where blockTime's ceiling rounding
-     * and isAvailable's floor rounding would otherwise still touch the same grid point (mirrors
-     * the ceil(...) + buffer pattern already used in addStopAfter's recomputeTiming branch).
+     * Creates a leg-less tour for an uninterrupted WFH (in-home WORK) day - no bookend/leg
+     * computation at all, since there's no travel. tour.getLegs() stays empty, which is the
+     * discriminator downstream consumers use to recognize a no-travel tour.
      */
-    public static boolean extendMainActivityEndTime(Plan plan, Tour tour, Activity attachedStop) {
-        Activity mainActivity = tour.getMainActivity();
-        int extensionMinutes = attachedStop.getDuration();
-        int lastOccupied = Math.max(mainActivity.getEndTime_min(), attachedStop.getEndTime_min());
-        int extensionStart = (int) Math.ceil((double) lastOccupied / InternalProperties.SEARCH_INTERVAL_MIN)
-                * InternalProperties.SEARCH_INTERVAL_MIN + InternalProperties.SEARCH_INTERVAL_MIN;
-        int newEnd = extensionStart + extensionMinutes;
-        if (plan.getBlockedTimeOfDay().isAvailable(extensionStart, newEnd)) {
-            plan.getBlockedTimeOfDay().blockTime(extensionStart, newEnd);
-            mainActivity.setEndTime_min(newEnd);
-            return true;
+    public void addInHomeTour(Plan plan, Activity mainTourActivity) {
+        if (plan.getBlockedTimeOfDay().isAvailable(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min())) {
+            mainTourActivity.setAtHome(true);
+            Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
+            mainTourActivity.setTour(tour);
+            plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
+            plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
+        } else {
+            plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
         }
-        return false;
+    }
+
+    /**
+     * Splits a Purpose.WORK, isAtHome() activity around an overlapping discretionary activity,
+     * and spins that activity off as its own real tour, bookended by the two WORK halves - the
+     * same pattern Tours already use for HOME bookends (never inserted into tour.getActivities(),
+     * never given .setTour()). Chainable: `work` may be an untouched leg-less tour's main
+     * activity, or an already-split tour's bookend (a second interruption the same day targets
+     * whichever WORK/isAtHome() activity it overlaps).
+     * <p>
+     * `work`'s own current span is already registered as blocked (from addInHomeTour, or from a
+     * prior split's own re-block) - that block is released before checking availability, so the
+     * checks below see only genuinely *other* encumbrances, not work's own reservation of the
+     * space being subdivided. Both the away window and the resumed-work (workAfter) span are
+     * validated; on failure work's original block is restored before giving up.
+     */
+    public void splitInHomeWorkAroundActivity(Plan plan, Activity work, Activity activity) {
+        int originalStart = work.getStartTime_min();
+        int originalEnd = work.getEndTime_min();
+
+        int travelToActivity = travelTimes.getTravelTimeInMinutes(work.getLocation(), activity.getLocation(), Mode.UNKNOWN, activity.getStartTime_min());
+        int travelFromActivity = travelTimes.getTravelTimeInMinutes(activity.getLocation(), work.getLocation(), Mode.UNKNOWN, activity.getEndTime_min());
+        int rawLeaveTime = activity.getStartTime_min() - travelToActivity;
+        int rawReturnTime = activity.getEndTime_min() + travelFromActivity;
+
+        // hard reject: leaving before the work period we're interrupting even started makes no
+        // sense (work-period boundary check, distinct from the calendar-day clip below)
+        if (rawLeaveTime < originalStart) {
+            plan.addUnmetActivities(activity.getStartTime_min(), activity);
+            return;
+        }
+
+        DayOfWeek dayOfWeek = work.getDayOfWeek();
+        int dayStartMin = dayOfWeek.ordinal() * 24 * 60;
+        int dayEndMin = (dayOfWeek.ordinal() + 1) * 24 * 60 - 1;
+
+        // clip to the calendar day boundary rather than reject
+        int leaveTime = Math.max(rawLeaveTime, dayStartMin);
+        int returnTime = Math.min(rawReturnTime, dayEndMin);
+        int remainingOriginalDuration = originalEnd - leaveTime;
+        int workAfterEnd = returnTime + remainingOriginalDuration + activity.getDuration();
+
+        // release work's own current reservation first, so the checks below see only genuinely
+        // *other* encumbrances, not the space we're about to subdivide
+        plan.getBlockedTimeOfDay().setAvailable(originalStart, originalEnd);
+
+        boolean awayWindowFree = plan.getBlockedTimeOfDay().isAvailable(leaveTime, returnTime);
+        boolean resumedWorkFree = plan.getBlockedTimeOfDay().isAvailable(returnTime, workAfterEnd);
+
+        if (!awayWindowFree || !resumedWorkFree) {
+            // restore work's original reservation before giving up - leave the day's
+            // blocked-time structure exactly as it was found
+            plan.getBlockedTimeOfDay().blockTime(originalStart, originalEnd);
+            plan.addUnmetActivities(activity.getStartTime_min(), activity);
+            return;
+        }
+
+        // if `work` is itself the main activity of a still-uninterrupted leg-less tour, that
+        // tour entry is retired now - if `work` is already just a bookend of a previously-split
+        // tour, there is no tour entry to retire (bookends were never independently tracked)
+        plan.getTours().values().removeIf(t -> t.getLegs().isEmpty() && t.getMainActivity() == work);
+
+        Activity workBefore = work; // reuse the existing Activity object
+        workBefore.setEndTime_min(leaveTime);
+        workBefore.setAtHome(true);
+
+        Activity workAfter = new Activity(work.getPerson(), Purpose.WORK);
+        workAfter.setDayOfWeek(work.getDayOfWeek());
+        workAfter.setLocation(work.getLocation());
+        workAfter.setAtHome(true);
+        workAfter.setStartTime_min(returnTime);
+        workAfter.setEndTime_min(workAfterEnd);
+
+        Tour newTour = new Tour(activity, plan.getTours().size() + 1);
+        Leg outbound = new Leg(workBefore, activity);
+        outbound.setTravelTime_min(travelToActivity);
+        Leg inbound = new Leg(activity, workAfter);
+        inbound.setTravelTime_min(travelFromActivity);
+        newTour.getLegs().put(leaveTime, outbound);
+        newTour.getLegs().put(activity.getEndTime_min(), inbound);
+        activity.setTour(newTour);
+
+        // re-block all three resulting pieces explicitly - the original span was fully
+        // released above
+        plan.getBlockedTimeOfDay().blockTime(originalStart, leaveTime);
+        plan.getBlockedTimeOfDay().blockTime(leaveTime, returnTime);
+        plan.getBlockedTimeOfDay().blockTime(returnTime, workAfterEnd);
+
+        plan.getTours().put(activity.getStartTime_min(), newTour);
     }
 
     public static Tour findMandatoryTour(Plan plan) {
-        final List<Tour> tourList = plan.getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
+        final List<Tour> tourList = plan.getTours().values().stream()
+                .filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose()))
+                .filter(tour -> !tour.getLegs().isEmpty())
+                .collect(Collectors.toList());
         Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);
     }

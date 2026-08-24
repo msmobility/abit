@@ -15,6 +15,7 @@ import abm.models.destinationChoice.SubtourDestinationChoice;
 import abm.models.modeChoice.HabitualModeChoice;
 import abm.models.modeChoice.SubtourModeChoice;
 import abm.models.modeChoice.TourModeChoice;
+import abm.models.planConsistency.PlanConsistencyRepair;
 import abm.models.remoteWorkArrangement.DayOfWeekRemoteWorkAssignmentModel;
 import abm.models.remoteWorkArrangement.RemoteWorkAllowance;
 import abm.models.remoteWorkArrangement.RemoteWorkFrequencyModel;
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PlanGeneratorMuc implements Callable {
 
@@ -53,6 +55,7 @@ public class PlanGeneratorMuc implements Callable {
     private SubtourGenerator subtourGenerator;
     private SubtourTimeAssignment subtourTimeAssignment;
     private SubtourDestinationChoice subtourDestinationChoice;
+    private PlanConsistencyRepair planConsistencyRepair;
 
 
     private PlanTools planTools;
@@ -65,10 +68,6 @@ public class PlanGeneratorMuc implements Callable {
     private final SubtourModeChoice subtourModeChoice;
 
     private final int TRIALS_RESCHEDULING = -1;
-
-    // how far (in minutes) before/after the recorded work period a discretionary stop on an
-    // in-home WORK tour is still allowed to start - a modeling parameter, tune as needed
-    private static final int WFH_STOP_WINDOW_BUFFER_MIN = 60;
 
 
     public PlanGeneratorMuc(DataSet dataSet, ModelSetup modelSetup, int thread) {
@@ -95,6 +94,7 @@ public class PlanGeneratorMuc implements Callable {
         this.remoteWorkAllowance = ((ModelSetupMuc) modelSetup).getRemoteWorkAllowance();
         this.remoteWorkFrequencyModel = ((ModelSetupMuc) modelSetup).getRemoteWorkFrequencyModel();
         this.dayOfWeekRemoteWorkAssignment = ((ModelSetupMuc) modelSetup).getDayOfWeekRemoteWorkAssignmentModel();
+        this.planConsistencyRepair = ((ModelSetupMuc) modelSetup).getPlanConsistencyRepair();
 
     }
 
@@ -124,23 +124,8 @@ public class PlanGeneratorMuc implements Callable {
                     //Step 2: check availability and choose mode for Work tours by the order of preference
                     for (Person worker : rankWorkersByCarPreference(household)) {
                         worker.getPlan().getTours().values().forEach(tour -> {
-                            if (tour.getMainActivity().getPurpose() == Purpose.WORK) {
-                                if (PlanTools.locationsMatch(tour.getMainActivity().getLocation(), worker.getHousehold().getLocation())) {
-                                    // in-home WORK tour - don't compete for/block a household car under Purpose.WORK
-                                    Optional<Activity> firstStop = tour.getActivities().values().stream()
-                                            .filter(a -> a != tour.getMainActivity())
-                                            .findFirst();
-                                    if (firstStop.isPresent()) {
-                                        tourModeChoice.checkCarAvailabilityAndChooseMode(household, worker, tour, firstStop.get().getPurpose());
-                                    } else {
-                                        // no travel happens on this tour, but tourMode/legMode still need a
-                                        // non-null value for downstream consumers (see PlansToMATSimPlans.java) -
-                                        // reuse the existing no-car-available path instead of skipping entirely
-                                        tourModeChoice.chooseMode(worker, tour, Purpose.WORK, Boolean.FALSE);
-                                    }
-                                } else {
-                                    tourModeChoice.checkCarAvailabilityAndChooseMode(household, worker, tour, Purpose.WORK);
-                                }
+                            if (tour.getMainActivity().getPurpose() == Purpose.WORK && !tour.getLegs().isEmpty()) {
+                                tourModeChoice.checkCarAvailabilityAndChooseMode(household, worker, tour, Purpose.WORK);
                             }
                         });
                     }
@@ -159,7 +144,9 @@ public class PlanGeneratorMuc implements Callable {
             //TODO: for the household has no car, car is still available for mode choice? (e.g. car share, taxi)
             for (Person person : household.getPersons()) {
                 person.getPlan().getTours().values().forEach(tour -> {
-                    tourModeChoice.chooseMode(person, tour, tour.getMainActivity().getPurpose(), Boolean.FALSE);
+                    if (!tour.getLegs().isEmpty()) {
+                        tourModeChoice.chooseMode(person, tour, tour.getMainActivity().getPurpose(), Boolean.FALSE);
+                    }
                 });
             }
         }
@@ -178,6 +165,12 @@ public class PlanGeneratorMuc implements Callable {
                     subtourModeChoice.chooseSubtourMode(tour);
                 }
             }
+        }
+
+        // every leg now has a real, non-UNKNOWN mode assigned - reconcile travel-time drift
+        // between the placeholder estimate used at scheduling time and the actual chosen mode
+        for (Person person : household.getPersons()) {
+            planConsistencyRepair.repairPlan(person.getPlan());
         }
     }
 
@@ -207,19 +200,7 @@ public class PlanGeneratorMuc implements Callable {
             int transitTravelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), jobLocation, Mode.TRAIN, startTime);
             double carPtRatio = carTravelTime / (double) transitTravelTime;
 
-            // scale by the fraction of this week's work days that are actually out-of-home -
-            // a fully-WFH week drives the ratio to 0, an all-out-of-home week leaves it unchanged
-            List<Tour> workTours = person.getPlan().getTours().values().stream()
-                    .filter(t -> t.getMainActivity().getPurpose() == Purpose.WORK)
-                    .collect(Collectors.toList());
-            int totalWorkDays = workTours.size();
-            long outOfHomeWorkDays = workTours.stream()
-                    .filter(t -> !PlanTools.locationsMatch(t.getMainActivity().getLocation(), person.getHousehold().getLocation()))
-                    .count();
-            double outOfHomeFraction = totalWorkDays == 0 ? 0.0 : (double) outOfHomeWorkDays / totalWorkDays;
-            double adjustedRatio = carPtRatio * outOfHomeFraction;
-
-            carUsePreference.put(person, adjustedRatio);
+            carUsePreference.put(person, carPtRatio);
         }
 
         List<Map.Entry<Person, Double>> sortedPreference = new ArrayList<>(carUsePreference.entrySet());
@@ -264,7 +245,18 @@ public class PlanGeneratorMuc implements Callable {
                     maxTrial += 1;
                 }
 
-                planTools.addMainTour(plan, activity);
+                boolean isRemoteWorkDay = purpose == Purpose.WORK && Arrays.asList(remoteWorkingDays).contains(day);
+                if (isRemoteWorkDay) {
+                    planTools.addInHomeTour(plan, activity);
+                } else {
+                    planTools.addMainTour(plan, activity);
+                }
+                if (activity.getTour() != null && purpose == Purpose.WORK) {
+                    plan.addWorkDay(day);
+                    if (isRemoteWorkDay) {
+                        plan.addRemoteWorkDay(day);
+                    }
+                }
 
 
             }
@@ -310,44 +302,17 @@ public class PlanGeneratorMuc implements Callable {
             Tour selectedTour = planTools.findMandatoryTour(plan);
             activity.setDayOfWeek(selectedTour.getMainActivity().getDayOfWeek());
 
-            boolean isInHomeWorkTour = selectedTour.getMainActivity().getPurpose() == Purpose.WORK
-                    && PlanTools.locationsMatch(selectedTour.getMainActivity().getLocation(), person.getHousehold().getLocation());
+            //the order of time assignment and stopSplitByType is not yet decided
+            timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
+            StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
 
-            if (isInHomeWorkTour) {
-                // no commute to position a stop relative to on a remote-work day - draw start time and
-                // duration directly from the starting distribution instead of the before/after stop model,
-                // restricted to a window around the work period itself
-                int windowStart = selectedTour.getMainActivity().getStartTime_min() - WFH_STOP_WINDOW_BUFFER_MIN;
-                int windowEnd = selectedTour.getMainActivity().getEndTime_min() + WFH_STOP_WINDOW_BUFFER_MIN;
-                ((TimeAssignmentModel) timeAssignment).assignDurationAndThenStartTimeWithinWindow(activity, windowStart, windowEnd);
-                destinationChoice.selectStopDestination(person, selectedTour, activity);
-                if (activity.getStartTime_min() < selectedTour.getMainActivity().getStartTime_min()) {
-                    planTools.addStopBefore(plan, activity, selectedTour, false);
+            if (stopType != null) {
+                if (stopType.equals(StopType.BEFORE)) {
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
+                    planTools.addStopBefore(plan, activity, selectedTour);
                 } else {
-                    planTools.addStopAfter(plan, activity, selectedTour, false);
-                }
-
-                if (activity.getTour() != null) {
-                    // stop was successfully attached - extend the work day to preserve total work duration
-                    boolean extended = planTools.extendMainActivityEndTime(plan, selectedTour, activity);
-                    if (!extended) {
-                        logger.warn("Could not extend WORK activity end time to preserve total work duration for person "
-                                + person.getId() + " - extension window conflicts with an already-blocked time.");
-                    }
-                }
-            } else {
-                //the order of time assignment and stopSplitByType is not yet decided
-                timeAssignment.assignDurationToStop(activity); //till this step, we should know whether the current trip is before or after mandatory activity
-                StopType stopType = stopSplitType.getStopType(person, activity, selectedTour);
-
-                if (stopType != null) {
-                    if (stopType.equals(StopType.BEFORE)) {
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopBefore(plan, activity, selectedTour);
-                    } else {
-                        destinationChoice.selectStopDestination(person, selectedTour, activity);
-                        planTools.addStopAfter(plan, activity, selectedTour);
-                    }
+                    destinationChoice.selectStopDestination(person, selectedTour, activity);
+                    planTools.addStopAfter(plan, activity, selectedTour);
                 }
             }
         });
@@ -431,7 +396,10 @@ public class PlanGeneratorMuc implements Callable {
 
     /**
      * Schedules a discretionary activity as its own main tour: day-of-week, duration/start
-     * time, and destination, with the placeholder reschedule retry loop kept as-is.
+     * time, and destination, with the placeholder reschedule retry loop kept as-is. If the
+     * resulting timing overlaps an existing in-home WORK activity, that WORK activity is split
+     * around this one instead of scheduling an independent tour - see
+     * findOverlappingInHomeWorkActivity and PlanTools.splitInHomeWorkAroundActivity.
      */
     private void scheduleAsPrimaryTour(Plan plan, Person person, Activity activity) {
         dayOfWeekDiscretionaryAssignment.assignDayOfWeek(activity);
@@ -445,7 +413,36 @@ public class PlanGeneratorMuc implements Callable {
             maxTrial += 1;
         }
 
-        planTools.addMainTour(plan, activity);
+        Activity overlappingWork = findOverlappingInHomeWorkActivity(plan, activity);
+        if (overlappingWork != null) {
+            planTools.splitInHomeWorkAroundActivity(plan, overlappingWork, activity);
+        } else {
+            planTools.addMainTour(plan, activity);
+        }
+    }
+
+    /**
+     * Finds a Purpose.WORK, isAtHome() activity overlapping the given activity's time - either an
+     * untouched leg-less tour's main activity, or an already-split tour's bookend (a second
+     * interruption the same day targets whichever WORK/isAtHome() activity it overlaps).
+     */
+    private Activity findOverlappingInHomeWorkActivity(Plan plan, Activity activity) {
+        Stream<Activity> legLessTourMains = plan.getTours().values().stream()
+                .filter(tour -> tour.getLegs().isEmpty())
+                .map(Tour::getMainActivity);
+        Stream<Activity> splitTourBookends = plan.getTours().values().stream()
+                .filter(tour -> !tour.getLegs().isEmpty())
+                .flatMap(tour -> tour.getLegs().values().stream())
+                .flatMap(leg -> Stream.of(leg.getPreviousActivity(), leg.getNextActivity()))
+                .distinct();
+
+        return Stream.concat(legLessTourMains, splitTourBookends)
+                .filter(a -> a.getPurpose() == Purpose.WORK && a.isAtHome())
+                .filter(a -> a.getDayOfWeek() == activity.getDayOfWeek())
+                .filter(a -> a.getStartTime_min() < activity.getEndTime_min()
+                        && activity.getStartTime_min() < a.getEndTime_min())
+                .findFirst()
+                .orElse(null);
     }
 
     /**

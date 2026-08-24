@@ -182,7 +182,8 @@ public class CheckResults {
                 for (Person person : household.getPersons()){
                     if (person.getPlan()!=null){
                         for (Tour tour: person.getPlan().getTours().values()){
-                            if (tour.getTourMode().equals(Mode.CAR_DRIVER)){
+                            // leg-less (in-home WORK) tours never enter mode choice, so tourMode is null
+                            if (tour.getTourMode() != null && tour.getTourMode().equals(Mode.CAR_DRIVER)){
                                 int carID = tour.getCar().getId();
                                 int startKey = tour.getLegs().firstKey();
                                 int startTime = tour.getLegs().get(startKey).getPreviousActivity().getEndTime_min();

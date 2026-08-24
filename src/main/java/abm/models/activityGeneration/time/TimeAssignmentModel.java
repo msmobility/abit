@@ -5,7 +5,6 @@ import abm.data.plans.Activity;
 import abm.data.plans.Purpose;
 import abm.data.timeOfDay.*;
 import abm.properties.AbitResources;
-import abm.properties.InternalProperties;
 import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 
@@ -257,66 +256,6 @@ public class TimeAssignmentModel implements TimeAssignment {
             }
         } else {
             startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
-        }
-
-        // Setters
-        activity.setStartTime_min(startTime);
-        activity.setEndTime_min(startTime + newDuration);
-    }
-
-    /**
-     * Same as {@link #assignDurationAndThenStartTime(Activity)}, but restricts the candidate
-     * start times to [windowStartMin, windowEndMin] before drawing - e.g. a discretionary stop
-     * attached to an in-home WORK tour, conditioned on the WORK activity's own period. Kept off
-     * the {@link TimeAssignment} interface since it's only meaningful for this use case (the
-     * `simple` use case has no remote-work model at all).
-     */
-    public void assignDurationAndThenStartTimeWithinWindow(Activity activity, int windowStartMin, int windowEndMin) {
-
-        final DayOfWeek dayOfWeek = activity.getDayOfWeek();
-        int travelTime = 30; //default travel time
-        int startTime;
-        int initialDuration = typicalDuration.get(activity.getPurpose());
-
-        //Select duration first
-        int newDuration = durationDistributionMap.get(activity.getPurpose()).get(getInterval(8, activity.getPurpose())).selectTime(activity.getPerson().getRandom());
-        if (newDuration + travelTime > initialDuration) {
-            //tour does not fit here! Make it shorter
-            newDuration = initialDuration;
-        }
-
-        //Select start time next
-        int midnight = (activity.getDayOfWeek().ordinal()) * 24 * 60;
-
-        BlockedTimeOfWeekLinkedList blockedTimeOfWeek = activity.getPerson().getPlan().getBlockedTimeOfDay();
-
-        TimeOfWeekDistribution timeOfWeekDistribution = timeOfWeekDistributionMap.get(activity.getPurpose());
-        timeOfWeekDistribution = TimeOfDayUtils.updateTODWithAvailabilityAndDuration(timeOfWeekDistribution, blockedTimeOfWeek, newDuration);
-        timeOfWeekDistribution = timeOfWeekDistribution.getForThisDayOfWeek(dayOfWeek);
-        timeOfWeekDistribution = timeOfWeekDistribution.restrictToWindow(windowStartMin, windowEndMin);
-
-        if (activity.getPurpose() == Purpose.WORK && activity.getPerson().getOccupation() == Occupation.EMPLOYED
-                && activity.getPerson().getSiloJobDuration() > 0) {
-            newDuration = activity.getPerson().getSiloJobDuration();
-            if (dayOfWeek.equals(DayOfWeek.SATURDAY) || dayOfWeek.equals(DayOfWeek.SUNDAY)) {
-                startTime = activity.getPerson().getSiloJobStartTimeWeekends() + midnight;
-            } else {
-                startTime = activity.getPerson().getSiloJobStartTimeWorkdays() + midnight;
-            }
-
-            double startTimeProbability = timeOfWeekDistribution.probability(startTime);
-
-            if (startTimeProbability == 0) {
-                startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
-            }
-        } else {
-            startTime = timeOfWeekDistribution.selectTime(activity.getPerson().getRandom());
-        }
-
-        // duration is drawn independently of the window - clamp so the activity doesn't run
-        // past the window even though the start time was correctly restricted to it
-        if (startTime + newDuration > windowEndMin) {
-            newDuration = Math.max(InternalProperties.SEARCH_INTERVAL_MIN, windowEndMin - startTime);
         }
 
         // Setters

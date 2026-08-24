@@ -4,6 +4,7 @@ import abm.data.pop.Person;
 import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.utils.PlanTools;
 
+import java.time.DayOfWeek;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -20,6 +21,8 @@ public class Plan implements Iterable<Plan> {
     private SortedMap<Integer, Activity> unmetActivities;
     private SortedMap<Integer, Tour> tours;
     private BlockedTimeOfWeekLinkedList blockedTimeOfWeek;
+    private Set<DayOfWeek> workDays = new HashSet<>();
+    private Set<DayOfWeek> remoteWorkDays = new HashSet<>();
     private Plan() {
 
     }
@@ -132,6 +135,22 @@ public class Plan implements Iterable<Plan> {
 
     public void addUnmetActivities(Integer timeIndex, Activity unmetActivity) {
         this.unmetActivities.put(timeIndex, unmetActivity);
+    }
+
+    public void addWorkDay(DayOfWeek day) {
+        workDays.add(day);
+    }
+
+    public void addRemoteWorkDay(DayOfWeek day) {
+        remoteWorkDays.add(day);
+    }
+
+    public Set<DayOfWeek> getWorkDays() {
+        return workDays;
+    }
+
+    public Set<DayOfWeek> getRemoteWorkDays() {
+        return remoteWorkDays;
     }
 
     @Override

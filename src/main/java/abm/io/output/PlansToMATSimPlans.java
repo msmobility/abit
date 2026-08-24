@@ -54,6 +54,12 @@ public class PlansToMATSimPlans {
                 matsimPerson.addPlan(matsimPlan);
                 for (Tour tour : pp.getPlan().getTours().values()) {
 
+                    if (tour.getLegs().isEmpty()) {
+                        // leg-less (in-home WORK) tour - no travel to export, and no mode was
+                        // ever chosen for it (also avoids NPE on the null tourMode below)
+                        continue;
+                    }
+
                     Mode tourMode = tour.getTourMode();
                     String carType = null;
                     if (tourMode.equals(Mode.CAR_DRIVER)) {
@@ -161,7 +167,10 @@ public class PlansToMATSimPlans {
         Coord coord = new Coord(coordinate.getX(),
                 coordinate.getY());
 
-        return PopulationUtils.createActivityFromCoord(previousActivity.getPurpose().toString().toLowerCase(), coord);
+        // in-home WORK bookends (isAtHome()) are exported as HOME, not WORK - WFH work time
+        // is not exported as a distinct activity to MATSim
+        Purpose purposeForExport = previousActivity.isAtHome() ? Purpose.HOME : previousActivity.getPurpose();
+        return PopulationUtils.createActivityFromCoord(purposeForExport.toString().toLowerCase(), coord);
     }
 
 

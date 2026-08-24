@@ -745,18 +745,16 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (Purpose.getDiscretionaryPurposes().contains(purpose)) {
 
+            // read directly from Plan rather than deriving from Tour structure - immune to
+            // whatever shape a WFH day ends up taking (leg-less tour, split-bookend tour)
+            numDaysWork = pp.getPlan().getWorkDays().size();
+
             final List<Tour> tourList = pp.getPlan().getTours().values().stream().filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose())).collect(Collectors.toList());
 
-            int[] daysOfWork = new int[]{0, 0, 0, 0, 0, 0, 0};
             int[] daysOfEducation = new int[]{0, 0, 0, 0, 0, 0, 0};
 
             for (Tour tour : tourList) {
-                if (tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
-                    int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
-                    if (daysOfWork[dayOfWeek - 1] == 0) {
-                        daysOfWork[dayOfWeek - 1] = 1;
-                    }
-                } else {
+                if (!tour.getMainActivity().getPurpose().equals(Purpose.WORK)) {
                     int dayOfWeek = tour.getMainActivity().getDayOfWeek().getValue();
                     if (daysOfEducation[dayOfWeek - 1] == 0) {
                         daysOfEducation[dayOfWeek - 1] = 1;
@@ -764,7 +762,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 }
             }
 
-            numDaysWork = Arrays.stream(daysOfWork).sum();
             numDaysEducation = Arrays.stream(daysOfEducation).sum();
         }
 
