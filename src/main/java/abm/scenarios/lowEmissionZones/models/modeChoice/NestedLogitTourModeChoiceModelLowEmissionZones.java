@@ -306,8 +306,8 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         numDaysEducation = Arrays.stream(daysOfEducation).sum();
         numDaysMandatory = numDaysWork + numDaysEducation;
 
-        utility += numDaysWork * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_edu", 0.);
-        utility += numDaysEducation * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_work", 0.);
+        utility += numDaysWork * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_work", 0.);
+        utility += numDaysEducation * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_edu", 0.);
         utility += numDaysMandatory * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_mand", 0.);
 
         //tour purpose
@@ -458,8 +458,8 @@ public class NestedLogitTourModeChoiceModelLowEmissionZones implements TourModeC
         utility += gc * purposeModeCoefficients.get(purpose).get(mode).get("gc");
 
         //number of days with work or education tours
-        utility += attributes.get("numDaysWork") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_edu", 0.);
-        utility += attributes.get("numDaysEducation") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_work", 0.);
+        utility += attributes.get("numDaysWork") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_work", 0.);
+        utility += attributes.get("numDaysEducation") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_edu", 0.);
         utility += attributes.get("numDaysMandatory") * purposeModeCoefficients.get(purpose).get(mode).getOrDefault("num_days_mand", 0.);
 
         //tour purpose

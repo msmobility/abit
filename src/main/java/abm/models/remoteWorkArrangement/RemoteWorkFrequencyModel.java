@@ -445,8 +445,8 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
             numDaysEducation = Arrays.stream(daysOfEducation).sum();
         }
 
-        predictor += numDaysWork * coefficients.get("num_days_edu");
-        predictor += numDaysEducation * coefficients.get("num_days_work");
+        predictor += numDaysWork * coefficients.get("num_days_work");
+        predictor += numDaysEducation * coefficients.get("num_days_edu");
         //predictor += coefficients.get("calibration");
 
         return predictor;
