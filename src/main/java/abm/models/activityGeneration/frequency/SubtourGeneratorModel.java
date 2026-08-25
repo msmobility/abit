@@ -73,7 +73,7 @@ public class SubtourGeneratorModel implements SubtourGenerator {
         if (mandatoryTour.getMainActivity().getStartTime_min() < 0) {
             hasSubtour = false;
         }
-        if (mandatoryTour.getLegs().isEmpty()) {
+        if (mandatoryTour instanceof HomeEpisode) {
             // leg-less (in-home remote-work) tour - no subtour possible, there's no commute to leave from
             hasSubtour = false;
         }

@@ -2,6 +2,7 @@ package abm.io.output;
 
 import abm.data.DataSet;
 import abm.data.plans.Activity;
+import abm.data.plans.HomeEpisode;
 import abm.data.plans.Leg;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
@@ -57,7 +58,7 @@ public class ActivityPrinter {
                         Set<Activity> printedActivities = Collections.newSetFromMap(new IdentityHashMap<>());
                         for (Tour tour : person.getPlan().getTours().values()) {
 
-                            if (tour.getLegs().isEmpty()) {
+                            if (tour instanceof HomeEpisode) {
                                 // leg-less (in-home WORK) tour - no legs to walk, print the main activity directly
                                 for (Activity activity : tour.getActivities().values()) {
                                     if (printedActivities.add(activity)) {

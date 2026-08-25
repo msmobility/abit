@@ -2,6 +2,7 @@ package abm.io.output;
 
 import abm.data.DataSet;
 import abm.data.plans.Activity;
+import abm.data.plans.HomeEpisode;
 import abm.data.plans.Tour;
 import abm.data.pop.Person;
 
@@ -27,7 +28,7 @@ public class TourPrinter {
         for (Person person : dataSet.getPersons().values()) {
             if (person.getPlan() != null){
                 for (Tour tour : person.getPlan().getTours().values()) {
-                    if (!tour.getLegs().isEmpty()) {
+                    if (!(tour instanceof HomeEpisode)) {
                         // leg-less (in-home WORK) tours have no legs to report - Tour.toString()
                         // calls legs.firstKey()/lastKey(), which throw on an empty map
                         pw.println(tour.toString());

@@ -7,6 +7,7 @@ import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
 import abm.properties.InternalProperties;
+import org.apache.log4j.Logger;
 
 import java.time.DayOfWeek;
 import java.util.Collections;
@@ -15,6 +16,8 @@ import java.util.stream.Collectors;
 
 
 public class PlanTools {
+
+    private static final Logger logger = Logger.getLogger(PlanTools.class);
 
     private final TravelTimes travelTimes;
 
@@ -408,13 +411,14 @@ public class PlanTools {
 
     /**
      * Creates a leg-less tour for an uninterrupted WFH (in-home WORK) day - no bookend/leg
-     * computation at all, since there's no travel. tour.getLegs() stays empty, which is the
-     * discriminator downstream consumers use to recognize a no-travel tour.
+     * computation at all, since there's no travel. Wrapped in a HomeEpisode, which is the
+     * discriminator (instanceof HomeEpisode) downstream consumers use to recognize a no-travel
+     * tour.
      */
     public void addInHomeTour(Plan plan, Activity mainTourActivity) {
         if (plan.getBlockedTimeOfDay().isAvailable(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min())) {
             mainTourActivity.setAtHome(true);
-            Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
+            HomeEpisode tour = new HomeEpisode(mainTourActivity, plan.getTours().size() + 1);
             mainTourActivity.setTour(tour);
             plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
             plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
@@ -460,62 +464,176 @@ public class PlanTools {
         // clip to the calendar day boundary rather than reject
         int leaveTime = Math.max(rawLeaveTime, dayStartMin);
         int returnTime = Math.min(rawReturnTime, dayEndMin);
-        int remainingOriginalDuration = originalEnd - leaveTime;
-        int workAfterEnd = returnTime + remainingOriginalDuration + activity.getDuration();
 
-        // release work's own current reservation first, so the checks below see only genuinely
-        // *other* encumbrances, not the space we're about to subdivide
-        plan.getBlockedTimeOfDay().setAvailable(originalStart, originalEnd);
+        // decide which case this is before any mutation begins
+        Tour dependentTour = findDependentTour(plan, work);
 
-        boolean awayWindowFree = plan.getBlockedTimeOfDay().isAvailable(leaveTime, returnTime);
-        boolean resumedWorkFree = plan.getBlockedTimeOfDay().isAvailable(returnTime, workAfterEnd);
-
-        if (!awayWindowFree || !resumedWorkFree) {
-            // restore work's original reservation before giving up - leave the day's
-            // blocked-time structure exactly as it was found
-            plan.getBlockedTimeOfDay().blockTime(originalStart, originalEnd);
+        // hard reject (Case B only): dependentTour already departs at originalEnd - if the
+        // interruption doesn't get the person home until after that, it's an unschedulable
+        // conflict (accommodating it would require moving dependentTour's own timing, which
+        // this method does not do). Without this check, isAvailable/blockTime's range scans
+        // silently no-op when returnTime > originalEnd (start > end means their "for" loops
+        // never execute), which would otherwise let this slip through and produce a
+        // negative-duration workMiddle instead of failing safely.
+        if (dependentTour != null && returnTime > originalEnd) {
             plan.addUnmetActivities(activity.getStartTime_min(), activity);
             return;
         }
 
-        // if `work` is itself the main activity of a still-uninterrupted leg-less tour, that
-        // tour entry is retired now - if `work` is already just a bookend of a previously-split
-        // tour, there is no tour entry to retire (bookends were never independently tracked)
-        plan.getTours().values().removeIf(t -> t.getLegs().isEmpty() && t.getMainActivity() == work);
+        // release work's own current reservation first, so the checks below see only genuinely
+        // *other* encumbrances, not the space we're about to subdivide
+        plan.getBlockedTimeOfDay().setAvailable(originalStart, originalEnd);
+        boolean awayWindowFree = plan.getBlockedTimeOfDay().isAvailable(leaveTime, returnTime);
 
-        Activity workBefore = work; // reuse the existing Activity object
-        workBefore.setEndTime_min(leaveTime);
-        workBefore.setAtHome(true);
+        if (dependentTour == null) {
+            // Case A: `work` is not yet anyone's departure point - fresh split, or a re-split of
+            // a workAfter-type fragment. workAfter gets its own new HomeEpisode; work's existing
+            // HomeEpisode (if any) stays valid as-is, since its main activity is just truncated
+            // in place - nothing to retire.
+            int remainingOriginalDuration = originalEnd - leaveTime;
+            int workAfterEnd = returnTime + remainingOriginalDuration + activity.getDuration();
+            boolean resumedWorkFree = plan.getBlockedTimeOfDay().isAvailable(returnTime, workAfterEnd);
 
-        Activity workAfter = new Activity(work.getPerson(), Purpose.WORK);
-        workAfter.setDayOfWeek(work.getDayOfWeek());
-        workAfter.setLocation(work.getLocation());
-        workAfter.setAtHome(true);
-        workAfter.setStartTime_min(returnTime);
-        workAfter.setEndTime_min(workAfterEnd);
+            if (!awayWindowFree || !resumedWorkFree) {
+                plan.getBlockedTimeOfDay().blockTime(originalStart, originalEnd);
+                plan.addUnmetActivities(activity.getStartTime_min(), activity);
+                return;
+            }
 
-        Tour newTour = new Tour(activity, plan.getTours().size() + 1);
-        Leg outbound = new Leg(workBefore, activity);
-        outbound.setTravelTime_min(travelToActivity);
-        Leg inbound = new Leg(activity, workAfter);
-        inbound.setTravelTime_min(travelFromActivity);
-        newTour.getLegs().put(leaveTime, outbound);
-        newTour.getLegs().put(activity.getEndTime_min(), inbound);
-        activity.setTour(newTour);
+            Activity workBefore = work; // reuse the existing Activity object
+            workBefore.setEndTime_min(leaveTime);
+            workBefore.setAtHome(true);
 
-        // re-block all three resulting pieces explicitly - the original span was fully
-        // released above
-        plan.getBlockedTimeOfDay().blockTime(originalStart, leaveTime);
-        plan.getBlockedTimeOfDay().blockTime(leaveTime, returnTime);
-        plan.getBlockedTimeOfDay().blockTime(returnTime, workAfterEnd);
+            Activity workAfter = new Activity(work.getPerson(), Purpose.WORK);
+            workAfter.setDayOfWeek(work.getDayOfWeek());
+            workAfter.setLocation(work.getLocation());
+            workAfter.setAtHome(true);
+            workAfter.setStartTime_min(returnTime);
+            workAfter.setEndTime_min(workAfterEnd);
+            HomeEpisode workAfterEpisode = new HomeEpisode(workAfter, plan.getTours().size() + 1);
+            workAfter.setTour(workAfterEpisode);
 
-        plan.getTours().put(activity.getStartTime_min(), newTour);
+            Tour newTour = new Tour(activity, plan.getTours().size() + 2);
+            Leg outbound = new Leg(workBefore, activity);
+            outbound.setTravelTime_min(travelToActivity);
+            Leg inbound = new Leg(activity, workAfter);
+            inbound.setTravelTime_min(travelFromActivity);
+            newTour.getLegs().put(leaveTime, outbound);
+            newTour.getLegs().put(activity.getEndTime_min(), inbound);
+            activity.setTour(newTour);
+
+            // re-block all three resulting pieces explicitly - the original span was fully
+            // released above
+            plan.getBlockedTimeOfDay().blockTime(originalStart, leaveTime);
+            plan.getBlockedTimeOfDay().blockTime(leaveTime, returnTime);
+            plan.getBlockedTimeOfDay().blockTime(returnTime, workAfterEnd);
+
+            plan.getTours().put(activity.getStartTime_min(), newTour);
+            plan.getTours().put(workAfter.getStartTime_min(), workAfterEpisode);
+        } else {
+            // Case B: `work` is already dependentTour's departure point. Don't compensate
+            // locally (that would push past where dependentTour already departs) - fill the gap
+            // exactly, re-point dependentTour's leg to the new middle fragment, and route the
+            // actual duration compensation to the day's current tail instead.
+            boolean middleFree = plan.getBlockedTimeOfDay().isAvailable(returnTime, originalEnd);
+
+            if (!awayWindowFree || !middleFree) {
+                plan.getBlockedTimeOfDay().blockTime(originalStart, originalEnd);
+                plan.addUnmetActivities(activity.getStartTime_min(), activity);
+                return;
+            }
+
+            Activity workBefore = work; // reuse the existing Activity object
+            workBefore.setEndTime_min(leaveTime);
+            workBefore.setAtHome(true);
+
+            Activity workMiddle = new Activity(work.getPerson(), Purpose.WORK);
+            workMiddle.setDayOfWeek(work.getDayOfWeek());
+            workMiddle.setLocation(work.getLocation());
+            workMiddle.setAtHome(true);
+            workMiddle.setStartTime_min(returnTime);
+            workMiddle.setEndTime_min(originalEnd); // exactly fills the gap - no local compensation
+            HomeEpisode workMiddleEpisode = new HomeEpisode(workMiddle, plan.getTours().size() + 1);
+            workMiddle.setTour(workMiddleEpisode);
+
+            Tour newTour = new Tour(activity, plan.getTours().size() + 2);
+            Leg outbound = new Leg(workBefore, activity);
+            outbound.setTravelTime_min(travelToActivity);
+            Leg inbound = new Leg(activity, workMiddle);
+            inbound.setTravelTime_min(travelFromActivity);
+            newTour.getLegs().put(leaveTime, outbound);
+            newTour.getLegs().put(activity.getEndTime_min(), inbound);
+            activity.setTour(newTour);
+
+            // re-point dependentTour's departure leg to workMiddle - same boundary value
+            // (originalEnd), so its map key is unchanged, only which object represents it
+            Activity tailStart = dependentTour.getLegs().get(dependentTour.getLegs().lastKey()).getNextActivity();
+            dependentTour.getLegs().get(dependentTour.getLegs().firstKey()).setPreviousActivity(workMiddle);
+
+            plan.getBlockedTimeOfDay().blockTime(originalStart, leaveTime);
+            plan.getBlockedTimeOfDay().blockTime(leaveTime, returnTime);
+            plan.getBlockedTimeOfDay().blockTime(returnTime, originalEnd);
+
+            plan.getTours().put(activity.getStartTime_min(), newTour);
+            plan.getTours().put(workMiddle.getStartTime_min(), workMiddleEpisode);
+
+            Activity tail = findTailFrom(plan, tailStart);
+            extendTailForCompensation(plan, tail, activity.getDuration());
+        }
+    }
+
+    /**
+     * Finds the real (non-HomeEpisode) tour whose outbound leg departs from `boundary` - i.e.,
+     * `boundary` is already "spoken for" as that tour's departure point. A bookend can only ever
+     * be referenced this way via a tour's first leg (internal legs' previousActivity are always
+     * tracked/real activities), so only each tour's first leg needs checking.
+     */
+    private Tour findDependentTour(Plan plan, Activity boundary) {
+        for (Tour tour : plan.getTours().values()) {
+            if (tour instanceof HomeEpisode || tour.getLegs().isEmpty()) {
+                continue;
+            }
+            Leg firstLeg = tour.getLegs().get(tour.getLegs().firstKey());
+            if (firstLeg.getPreviousActivity() == boundary) {
+                return tour;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Walks forward from `candidate` through the chain of dependent tours (each one's own
+     * "after" fragment) until reaching an activity nothing currently depends on - the day's
+     * current tail, the safe place to route duration compensation.
+     */
+    private Activity findTailFrom(Plan plan, Activity candidate) {
+        Tour dependent = findDependentTour(plan, candidate);
+        while (dependent != null) {
+            candidate = dependent.getLegs().get(dependent.getLegs().lastKey()).getNextActivity();
+            dependent = findDependentTour(plan, candidate);
+        }
+        return candidate;
+    }
+
+    /**
+     * Extends the day's tail WFH fragment by extraDuration to preserve total work time, using
+     * the same availability-check-then-clip pattern used everywhere else in this class.
+     */
+    private void extendTailForCompensation(Plan plan, Activity tail, int extraDuration) {
+        int newEnd = tail.getEndTime_min() + extraDuration;
+        if (plan.getBlockedTimeOfDay().isAvailable(tail.getEndTime_min(), newEnd)) {
+            plan.getBlockedTimeOfDay().blockTime(tail.getEndTime_min(), newEnd);
+            tail.setEndTime_min(newEnd);
+        } else {
+            logger.warn("Plan consistency: could not extend the day's tail WFH fragment for person "
+                    + tail.getPerson().getId() + " to preserve total work duration - a later tour already occupies that time.");
+        }
     }
 
     public static Tour findMandatoryTour(Plan plan) {
         final List<Tour> tourList = plan.getTours().values().stream()
                 .filter(tour -> Purpose.getMandatoryPurposes().contains(tour.getMainActivity().getPurpose()))
-                .filter(tour -> !tour.getLegs().isEmpty())
+                .filter(tour -> !(tour instanceof HomeEpisode))
                 .collect(Collectors.toList());
         Collections.shuffle(tourList, AbitUtils.getRandomObject());
         return tourList.stream().findFirst().orElse(null);

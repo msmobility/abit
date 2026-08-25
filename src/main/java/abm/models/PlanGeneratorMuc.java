@@ -28,7 +28,6 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class PlanGeneratorMuc implements Callable {
 
@@ -124,7 +123,7 @@ public class PlanGeneratorMuc implements Callable {
                     //Step 2: check availability and choose mode for Work tours by the order of preference
                     for (Person worker : rankWorkersByCarPreference(household)) {
                         worker.getPlan().getTours().values().forEach(tour -> {
-                            if (tour.getMainActivity().getPurpose() == Purpose.WORK && !tour.getLegs().isEmpty()) {
+                            if (tour.getMainActivity().getPurpose() == Purpose.WORK && !(tour instanceof HomeEpisode)) {
                                 tourModeChoice.checkCarAvailabilityAndChooseMode(household, worker, tour, Purpose.WORK);
                             }
                         });
@@ -144,7 +143,7 @@ public class PlanGeneratorMuc implements Callable {
             //TODO: for the household has no car, car is still available for mode choice? (e.g. car share, taxi)
             for (Person person : household.getPersons()) {
                 person.getPlan().getTours().values().forEach(tour -> {
-                    if (!tour.getLegs().isEmpty()) {
+                    if (!(tour instanceof HomeEpisode)) {
                         tourModeChoice.chooseMode(person, tour, tour.getMainActivity().getPurpose(), Boolean.FALSE);
                     }
                 });
@@ -427,17 +426,12 @@ public class PlanGeneratorMuc implements Callable {
      * interruption the same day targets whichever WORK/isAtHome() activity it overlaps).
      */
     private Activity findOverlappingInHomeWorkActivity(Plan plan, Activity activity) {
-        Stream<Activity> legLessTourMains = plan.getTours().values().stream()
-                .filter(tour -> tour.getLegs().isEmpty())
-                .map(Tour::getMainActivity);
-        Stream<Activity> splitTourBookends = plan.getTours().values().stream()
-                .filter(tour -> !tour.getLegs().isEmpty())
-                .flatMap(tour -> tour.getLegs().values().stream())
-                .flatMap(leg -> Stream.of(leg.getPreviousActivity(), leg.getNextActivity()))
-                .distinct();
-
-        return Stream.concat(legLessTourMains, splitTourBookends)
-                .filter(a -> a.getPurpose() == Purpose.WORK && a.isAtHome())
+        // every WFH fragment - whole-day or split - is now uniformly some HomeEpisode's main
+        // activity, and that main activity is always Purpose.WORK + isAtHome() by construction
+        // (addInHomeTour/splitInHomeWorkAroundActivity), so the type check alone is sufficient
+        return plan.getTours().values().stream()
+                .filter(tour -> tour instanceof HomeEpisode)
+                .map(Tour::getMainActivity)
                 .filter(a -> a.getDayOfWeek() == activity.getDayOfWeek())
                 .filter(a -> a.getStartTime_min() < activity.getEndTime_min()
                         && activity.getStartTime_min() < a.getEndTime_min())

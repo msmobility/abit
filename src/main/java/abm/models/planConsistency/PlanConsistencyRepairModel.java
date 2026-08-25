@@ -1,6 +1,7 @@
 package abm.models.planConsistency;
 
 import abm.data.plans.Activity;
+import abm.data.plans.HomeEpisode;
 import abm.data.plans.Leg;
 import abm.data.plans.Plan;
 import abm.data.plans.Subtour;
@@ -81,7 +82,7 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
         Integer oldKey = tracked.rekeyable ? findLegKey(tracked.parentTour, leg) : null;
         leg.setTravelTime_min(newTravelTime);
 
-        if (leg.getPreviousActivity().getTour() == null) {
+        if (leg.getPreviousActivity().getTour() == null || leg.getPreviousActivity().getTour() instanceof HomeEpisode) {
             // edge leg, bookend before - absorb by moving the bookend's own end boundary; the
             // "real" nextActivity's timing is untouched
             int newBookendEnd = leg.getNextActivity().getStartTime_min() - newTravelTime;
@@ -94,7 +95,7 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
                         + " - preceding bookend cannot fully absorb the corrected travel time without colliding with an earlier tour.");
                 leg.getPreviousActivity().setEndTime_min(earliestAllowed);
             }
-        } else if (leg.getNextActivity().getTour() == null) {
+        } else if (leg.getNextActivity().getTour() == null || leg.getNextActivity().getTour() instanceof HomeEpisode) {
             // edge leg, bookend after - absorb by moving the bookend's own start boundary
             int newBookendStart = leg.getPreviousActivity().getEndTime_min() + newTravelTime;
             int latestAllowed = nextTourBoundary(plan, tracked.parentTour);
@@ -134,7 +135,7 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
             return PlanTools.startOfTheWeek();
         }
         Tour priorTour = before.get(before.lastKey());
-        return priorTour.getLegs().isEmpty()
+        return priorTour instanceof HomeEpisode
                 ? priorTour.getMainActivity().getEndTime_min()
                 : priorTour.getLegs().get(priorTour.getLegs().lastKey()).getNextActivity().getEndTime_min();
     }
@@ -151,7 +152,7 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
             return PlanTools.endOfTheWeek();
         }
         Tour nextTour = after.get(after.firstKey());
-        return nextTour.getLegs().isEmpty()
+        return nextTour instanceof HomeEpisode
                 ? nextTour.getMainActivity().getStartTime_min()
                 : nextTour.getLegs().firstKey();
     }
