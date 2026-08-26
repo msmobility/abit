@@ -31,6 +31,13 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSingleEarnerFemale = new HashMap<>();
     private final Map<String, EnumMap<TeleworkAlternative, Double>> coefSinglePerson = new HashMap<>();
 
+    private boolean runCalibration = false;
+
+    // additive ASC-style calibration term, segmented by household type (each type has its own
+    // coefficient table/alternative set) and by alternative - mirrors the established
+    // updatedCalibrationFactors pattern used by NestedLogitHabitualModeChoiceModel etc.
+    private Map<HouseholdType, Map<TeleworkAlternative, Double>> updatedCalibrationFactors;
+
     public RemoteWorkAllowanceMultinomialLogitModel(DataSet dataSet) {
         this.dataSet = dataSet;
 
@@ -53,6 +60,19 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         TeleworkCoefficientsReader readerSingle = new TeleworkCoefficientsReader(coefFileSinglePerson);
         coefSinglePerson.putAll(readerSingle.readCoefficients());
 
+    }
+
+    public RemoteWorkAllowanceMultinomialLogitModel(DataSet dataSet, Boolean runCalibration) {
+        this(dataSet);
+        this.runCalibration = runCalibration;
+        this.updatedCalibrationFactors = new HashMap<>();
+        for (HouseholdType type : List.of(HouseholdType.PARTNERED_DUAL_EARNER, HouseholdType.PARTNERED_SINGLE_EARNER_MALE,
+                HouseholdType.PARTNERED_SINGLE_EARNER_FEMALE, HouseholdType.SINGLE_WORKER)) {
+            updatedCalibrationFactors.putIfAbsent(type, new HashMap<>());
+            for (TeleworkAlternative alt : TeleworkAlternative.values()) {
+                updatedCalibrationFactors.get(type).putIfAbsent(alt, 0.0);
+            }
+        }
     }
 
     @Override
@@ -587,7 +607,33 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
             }
         }
 
+        if (runCalibration && updatedCalibrationFactors.containsKey(type)) {
+            u += updatedCalibrationFactors.get(type).get(alt);
+        }
+
         return u;
+    }
+
+    /**
+     * Accumulates a calibration-iteration delta into the running calibration factor, mirroring
+     * NestedLogitHabitualModeChoiceModel.updateCalibrationFactor's pattern.
+     */
+    public void updateCalibrationFactor(Map<HouseholdType, Map<TeleworkAlternative, Double>> newCalibrationFactors) {
+        for (HouseholdType type : updatedCalibrationFactors.keySet()) {
+            for (TeleworkAlternative alt : TeleworkAlternative.values()) {
+                double oldValue = updatedCalibrationFactors.get(type).get(alt);
+                double increment = newCalibrationFactors.get(type).get(alt);
+                updatedCalibrationFactors.get(type).put(alt, oldValue + increment);
+                logger.info("Remote work allowance calibration factor for " + type + " | " + alt + " : " + (oldValue + increment));
+            }
+        }
+    }
+
+    /**
+     * Final, accumulated calibration factors - for the calibration class to print/export.
+     */
+    public Map<HouseholdType, Map<TeleworkAlternative, Double>> obtainCoefficientsTable() {
+        return updatedCalibrationFactors;
     }
     public Map<TeleworkAlternative, Double> getUtilities(Household hh, Person male, Person female) {
 

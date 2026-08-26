@@ -490,4 +490,20 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
         return coefficients;
     }
 
+    /**
+     * Count-model (ordered-logit) coefficients, with the iteratively-accumulated
+     * calibration_1|2..calibration_6|7 factors baked in - mirrors obtainZeroCoefficients()'s
+     * pattern but for the count side, which polrEstimateTrips (lines 90-103) reads from
+     * updatedCalibrationFactors.get(1..6), not get(0).
+     */
+    public Map<String, Double> obtainCountCoefficients() {
+        String[] calibrationKeys = {"calibration_1|2", "calibration_2|3", "calibration_3|4", "calibration_4|5", "calibration_5|6", "calibration_6|7"};
+        for (int i = 0; i < calibrationKeys.length; i++) {
+            double originalCalibrationFactor = countCoef.get(calibrationKeys[i]);
+            double updatedCalibrationFactor = updatedCalibrationFactors.get(i + 1);
+            this.countCoef.replace(calibrationKeys[i], originalCalibrationFactor + updatedCalibrationFactor);
+        }
+        return countCoef;
+    }
+
 }

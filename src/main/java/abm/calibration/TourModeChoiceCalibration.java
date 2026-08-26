@@ -427,6 +427,9 @@ public class TourModeChoiceCalibration implements ModelComponent {
                     for (Mode mode : Mode.getModes()) {
                         cumulativeSum = cumulativeSum + simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode);
                     }
+                    if (cumulativeSum == 0) {
+                        continue;
+                    }
                     for (Mode mode : Mode.getModes()) {
                         double share = (double) simulatedTourModeCount.get(region).get(purpose).get(dayOfWeek).get(mode) / cumulativeSum;
                         simulatedTourModeShare.get(region).get(purpose).get(dayOfWeek).replace(mode, share);

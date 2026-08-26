@@ -317,10 +317,10 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
                         Purpose mainPurpose = tour.getMainActivity().getPurpose();
 
                         if (person.getOccupation().equals(Occupation.EMPLOYED) && tour.getMainActivity().getPurpose().equals(Purpose.WORK)){
-                            break;
+                            continue;
                         }
                         if (person.getOccupation().equals(Occupation.STUDENT) && tour.getMainActivity().getPurpose().equals(Purpose.EDUCATION)){
-                            break;
+                            continue;
                         }
 
                         double distanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(household.getLocation(), tour.getMainActivity().getLocation(), Mode.UNKNOWN, 0.);
@@ -345,6 +345,9 @@ public class MainDestinationChoiceCalibration implements ModelComponent {
             }
         }
         for (Purpose purpose : Purpose.getAllPurposes()) {
+            if (numberOfAct.get(purpose) == 0) {
+                continue;
+            }
             for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                 simulatedMainDestinationDistanceShare.get(purpose).put(i,  (double) simulatedMainDestinationDistanceCount.get(purpose).get(i) / (double) numberOfAct.get(purpose));
             }

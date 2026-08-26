@@ -312,13 +312,9 @@ public class RemoteWorkFrequencyGeneratorCalibration implements ModelComponent {
         for (Purpose purpose : Purpose.getAllPurposes()) {
             if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION) || purpose.equals(ACCOMPANY)) {
                 finalCoefficientsTable.get(purpose).replace("zero", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
-                if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
-                    finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
-                } else {
-                    finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
-                }
+                finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
             } else {
-                finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainZeroCoefficients());
+                finalCoefficientsTable.get(purpose).replace("count", ((RemoteWorkFrequencyModel) (frequencyGeneratorsForCalibration.get(purpose))).obtainCountCoefficients());
             }
         }
 

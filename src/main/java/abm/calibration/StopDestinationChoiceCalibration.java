@@ -270,12 +270,19 @@ public class StopDestinationChoiceCalibration implements ModelComponent {
         }
         for (Purpose purpose : Purpose.getAllPurposes()) {
             if (purpose.equals(Purpose.WORK)) {
+                if (numberOfAct.get(purpose) == 0) {
+                    continue;
+                }
                 for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                     simulatedStopDestinationDistanceShare.get(purpose).put(i,  (double)simulatedStopDestinationDistanceCount.get(purpose).get(i) / (double) numberOfAct.get(purpose));
                 }
                 simulatedStopDestinationAverageDistance_km.put(purpose, simulatedStopDestinationAverageDistance_km.get(purpose) / numberOfAct.get(purpose));
 
             }else {
+                int combinedDiscretionaryCount = numberOfAct.get(Purpose.EDUCATION) + numberOfAct.get(Purpose.ACCOMPANY) + numberOfAct.get(Purpose.SHOPPING) + numberOfAct.get(Purpose.OTHER) + numberOfAct.get(Purpose.RECREATION);
+                if (combinedDiscretionaryCount == 0 || numberOfAct.get(purpose) == 0) {
+                    continue;
+                }
                 for (int i = 1; i <= NUMBER_OF_BINS; i++) {
                     simulatedStopDestinationDistanceShare.get(purpose).put(i, ((double) (simulatedStopDestinationDistanceCount.get(Purpose.EDUCATION).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.ACCOMPANY).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.SHOPPING).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.OTHER).get(i) + simulatedStopDestinationDistanceCount.get(Purpose.RECREATION).get(i))) / ((double) (numberOfAct.get(Purpose.EDUCATION)+numberOfAct.get(Purpose.ACCOMPANY)+numberOfAct.get(Purpose.SHOPPING)+numberOfAct.get(Purpose.OTHER)+numberOfAct.get(Purpose.RECREATION))));
                 }

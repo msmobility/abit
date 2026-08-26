@@ -247,8 +247,6 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
             if (calibrateDiscretionaryActGen) {
                 for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-                    if (purpose == Purpose.ACCOMPANY)
-                        continue;
                     for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
                         for (RemoteWorkable rw : RemoteWorkable.values()) {
                             if (!isValidDiscretionarySegment(occupation, rw)) {
