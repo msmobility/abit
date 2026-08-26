@@ -80,7 +80,7 @@ public class DestinationChoiceModel implements DestinationChoice {
             for (Zone origin : dataSet.getZones().values()) {
                 for (Zone destination : dataSet.getZones().values()) {
                     final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
-                    final double travelDistanceInKm = travelDistanceInMeters / 1000;
+                    final double travelDistanceInKm = (double) travelDistanceInMeters / 1000;
                     final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
                     double utility;
                     if(!runCalibrationMain){
@@ -88,7 +88,7 @@ public class DestinationChoiceModel implements DestinationChoice {
                     }else{
                         utility = (coefficientsMain.get(purpose).get("ALPHA") * coefficientsMain.get(purpose).get("ALPHA_calibration")) * Math.exp((coefficientsMain.get(purpose).get("BETA") * coefficientsMain.get(purpose).get("BETA_calibration") * updatedCalibrationFactorsMain.get(purpose).get("BETA_calibration")) * travelDistanceInKm);
                     }
-                    double probability = attractor * Math.exp(utility);
+                    double probability = attractor * utility;
                     probabilityMatrix.setIndexed(origin.getId(), destination.getId(), probability);
 
                 }
@@ -107,7 +107,7 @@ public class DestinationChoiceModel implements DestinationChoice {
             for (Zone origin : dataSet.getZones().values()) {
                 for (Zone destination : dataSet.getZones().values()) {
                     final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
-                    final double travelDistanceInKm = travelDistanceInMeters / 1000;
+                    final double travelDistanceInKm = (double) travelDistanceInMeters / 1000;
                     final double attractor = zoneAttractorsByPurpose.get(purpose).get(destination);
                     double utility;
                     if(!runCalibrationStop){
@@ -115,7 +115,7 @@ public class DestinationChoiceModel implements DestinationChoice {
                     }else{
                         utility = (coefficientsStop.get(purpose).get("ALPHA") * coefficientsStop.get(purpose).get("ALPHA_calibration")) * Math.exp((coefficientsStop.get(purpose).get("BETA") * coefficientsStop.get(purpose).get("BETA_calibration")* updatedCalibrationFactorsStop.get(purpose).get("BETA_calibration")) * travelDistanceInKm);
                     }
-                    double probability = attractor * Math.exp(utility);
+                    double probability = attractor * utility;
                     probabilityMatrix.setIndexed(origin.getId(), destination.getId(), probability);
 
                 }

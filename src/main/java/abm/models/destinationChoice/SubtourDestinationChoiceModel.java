@@ -72,7 +72,7 @@ public class SubtourDestinationChoiceModel implements SubtourDestinationChoice {
             for (Zone destination : dataSet.getZones().values()) {
                 final int travelDistanceInMeters = dataSet.getTravelDistances().getTravelDistanceInMeters(origin, destination, Mode.UNKNOWN, 0.);
                 final double attractor = zoneAttractors.get(destination);
-                double utility = attractor * Math.exp((BETA + coefficientsSubtourDestination.get(Purpose.WORK).get("calibration")) * (double)(travelDistanceInMeters/1000));
+                double utility = attractor * Math.exp((BETA + coefficientsSubtourDestination.get(Purpose.WORK).get("calibration")) * ((double) travelDistanceInMeters / 1000));
                 utilityMatrix.setIndexed(origin.getId(), destination.getId(), utility);
             }
         }

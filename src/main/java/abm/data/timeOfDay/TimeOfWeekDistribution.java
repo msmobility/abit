@@ -60,7 +60,7 @@ public class TimeOfWeekDistribution {
 
     public int selectTime(Random random) {
         if (MitoUtil.getSum(internalMap.values()) > 0){
-            return MitoUtil.select(internalMap, random) + (int) ((AbitUtils.getRandomObject().nextDouble()-0.5) * InternalProperties.SEARCH_INTERVAL_MIN);
+            return MitoUtil.select(internalMap, random) + (int) ((random.nextDouble()-0.5) * InternalProperties.SEARCH_INTERVAL_MIN);
         } else {
             return -1;
         }

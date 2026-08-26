@@ -93,6 +93,17 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- every test in this repo is written in JUnit 4 style (org.junit.Test), pulled in
+             transitively via the de.tum.bgu.msm dependencies - without this bridge, Surefire's
+             JUnit Platform provider (selected because junit-jupiter is the only JUnit dependency
+             declared explicitly) silently finds and runs zero tests -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.matsim.contrib</groupId>
             <artifactId>otfvis</artifactId>

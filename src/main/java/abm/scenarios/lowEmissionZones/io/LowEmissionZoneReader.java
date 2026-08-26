@@ -25,9 +25,8 @@ public class LowEmissionZoneReader {
             evForbidden.put(zoneId.getId(), false);
         }
 
-        try {
+        try (BufferedReader br = new BufferedReader(new FileReader(LOW_EMISSION_ZONES_PATH))) {
             final Map<String, Integer> indexes = new HashMap<>();
-            BufferedReader br = new BufferedReader(new FileReader(LOW_EMISSION_ZONES_PATH));
             processHeader(br, indexes);
             processRecords(br, indexes, evForbidden);
         } catch (IOException e) {
