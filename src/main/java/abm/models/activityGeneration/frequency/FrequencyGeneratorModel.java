@@ -44,7 +44,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
     Map<Integer, Double> updatedCalibrationFactors = new HashMap<>();
     Map<CalibrationOccupation, Map<EmploymentStatus, Map<Integer, Double>>> updatedWorkCalibrationFactors;
-    Map<Integer, Map<Integer, Double>> updatedRemoteWorkCalibrationFactors;
     Map<Integer, Double> updatedEducationCalibrationFactors = new HashMap<>();
     Map<CalibrationOccupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<Integer, Double>>>> updatedDiscretionaryCalibrationFactors;
 

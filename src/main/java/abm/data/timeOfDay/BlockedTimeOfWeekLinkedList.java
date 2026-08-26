@@ -80,7 +80,10 @@ public class BlockedTimeOfWeekLinkedList {
         BlockedTimeOfWeekLinkedList availableTimeOfDay = new BlockedTimeOfWeekLinkedList();
 
         this.internalList.forEach(m -> {
-            if (m > midnightBefore && m < midnightBefore + 60 * 24) {
+            // >= (not >) so the exact midnight-start minute of this day is correctly attributed
+            // here instead of being silently dropped by both this day's and the previous day's
+            // filter
+            if (m >= midnightBefore && m < midnightBefore + 60 * 24) {
                 if (this.internalList.contains(m)) {
                     availableTimeOfDay.internalList.add(m);
                 }

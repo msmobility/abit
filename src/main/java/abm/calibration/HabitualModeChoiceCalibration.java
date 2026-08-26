@@ -11,7 +11,6 @@ import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Occupation;
-import org.apache.hadoop.hdfs.inotify.Event;
 import org.apache.log4j.Logger;
 
 

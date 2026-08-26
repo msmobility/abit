@@ -108,7 +108,11 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
         double prob = 1 - phi;
         cumProb += prob;
 
-        while (cumProb < randomNumber) {
+        // i == 7 is already the maximum representable frequency here (6 intercepts cover the
+        // 1|2..6|7 boundaries); capping the loop at i < 7 avoids intercepts[i - 2] indexing past
+        // the array end (intercepts[6]) if floating-point rounding ever leaves cumProb a hair
+        // short of randomNumber at the boundary.
+        while (cumProb < randomNumber && i < 7) {
             i++;
             if (i < 7) {
                 prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));

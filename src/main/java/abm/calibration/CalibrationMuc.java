@@ -133,7 +133,7 @@ public class CalibrationMuc {
         calibrationList.put("SubTourDestination", calibrateSubTourDestinationChoice);
 
         calibrateSubTourModeChoice = Boolean.parseBoolean(AbitResources.instance.getString("mode.choice.subtour.calibration"));
-        calibrationList.put("SubTourModeChoice", calibrateSubTourDestinationChoice);
+        calibrationList.put("SubTourModeChoice", calibrateSubTourModeChoice);
 
         calibrateRemoteWorkAllowance = Boolean.parseBoolean(AbitResources.instance.getString("remoteWork.allowance.calibration"));
         calibrationList.put("RemoteWorkAllowance", calibrateRemoteWorkAllowance);
