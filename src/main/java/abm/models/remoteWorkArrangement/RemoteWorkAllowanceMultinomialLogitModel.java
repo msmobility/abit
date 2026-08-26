@@ -89,6 +89,9 @@ public class RemoteWorkAllowanceMultinomialLogitModel implements RemoteWorkAllow
         } else if (household.getHouseholdType() == HouseholdType.SINGLE_WORKER){
             adaptTeleworkForSinglePersonHousehold(household);
 
+        } else if (household.getHouseholdType() == HouseholdType.OTHER_WORKER) {
+            logger.warn("Household " + household.getId() + " is classified as OTHER_WORKER - remote-work allowance is not modeled for this household type yet, defaulting every person to no remote work.");
+            household.getPersons().forEach(p -> p.setRemoteWork(false));
         }
     }
 

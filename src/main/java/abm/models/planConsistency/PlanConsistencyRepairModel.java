@@ -87,6 +87,12 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
             // "real" nextActivity's timing is untouched
             int newBookendEnd = leg.getNextActivity().getStartTime_min() - newTravelTime;
             int earliestAllowed = priorTourBoundary(plan, tracked.parentTour);
+            if (!tracked.rekeyable) {
+                // subtour leg (mainActivityPart1) - the neighboring-tour boundary alone isn't
+                // tight enough here; also can't retreat past the main activity's own original
+                // start, the point it was actually carved out of
+                earliestAllowed = Math.max(earliestAllowed, tracked.parentTour.getMainActivity().getStartTime_min());
+            }
             if (newBookendEnd >= earliestAllowed) {
                 leg.getPreviousActivity().setEndTime_min(newBookendEnd);
             } else {
@@ -99,6 +105,11 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
             // edge leg, bookend after - absorb by moving the bookend's own start boundary
             int newBookendStart = leg.getPreviousActivity().getEndTime_min() + newTravelTime;
             int latestAllowed = nextTourBoundary(plan, tracked.parentTour);
+            if (!tracked.rekeyable) {
+                // subtour leg (mainActivityPart2) - also can't advance past the main activity's
+                // own original end, the point it resumes at
+                latestAllowed = Math.min(latestAllowed, tracked.parentTour.getMainActivity().getEndTime_min());
+            }
             if (newBookendStart <= latestAllowed) {
                 leg.getNextActivity().setStartTime_min(newBookendStart);
             } else {

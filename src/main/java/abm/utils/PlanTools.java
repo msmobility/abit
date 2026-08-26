@@ -114,18 +114,15 @@ public class PlanTools {
                     firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
                     firstLeg.setDistance(travelDistanceToMainAct_m);
 
-                    Activity homeActAfterMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-                    homeActAfterMainAct.setStartTime_min(timeArrivingHome_min);
-                    homeActAfterMainAct.setEndTime_min(firstHomeAct.getEndTime_min());
-                    homeActAfterMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-                    homeActAfterMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
+                    // reuse firstHomeAct itself as the "after" bookend rather than creating a
+                    // second Activity object for the same time window - the existing tour's own
+                    // first leg already references it, and mutating its start below is exactly
+                    // the resulting window this new tour's return leg needs too
+                    firstHomeAct.setStartTime_min(timeArrivingHome_min);
 
-                    final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
+                    final Leg secondLeg = new Leg(mainTourActivity, firstHomeAct);
                     secondLeg.setTravelTime_min(travelTimeBackFromMainActivity_min);
                     secondLeg.setDistance(travelDistanceBackFromMainActivity_m);
-
-                    //Todo modify home act on the selected tour
-                    firstHomeAct.setStartTime_min(timeArrivingHome_min);
 
                     Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
                     tour.getLegs().put(timeLeavingHome_min, firstLeg);
@@ -139,14 +136,12 @@ public class PlanTools {
 
                 if (secondHomeAct.getStartTime_min() <= mainTourActivity.getStartTime_min() && secondHomeAct.getEndTime_min() >= mainTourActivity.getEndTime_min()) {
 
-                    //Todo add activities and legs to the new tour
-                    Activity homeActBeforeMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-                    homeActBeforeMainAct.setStartTime_min(secondHomeAct.getStartTime_min());
-                    homeActBeforeMainAct.setEndTime_min(timeLeavingHome_min);
-                    homeActBeforeMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-                    homeActBeforeMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
+                    // reuse secondHomeAct itself as the "before" bookend rather than creating a
+                    // second Activity object for the same time window - see the matching comment
+                    // in the branch above
+                    secondHomeAct.setEndTime_min(timeLeavingHome_min);
 
-                    final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
+                    final Leg firstLeg = new Leg(secondHomeAct, mainTourActivity);
                     firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
                     firstLeg.setDistance(travelDistanceToMainAct_m);
 
@@ -159,10 +154,6 @@ public class PlanTools {
                     final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
                     secondLeg.setTravelTime_min(travelTimeBackFromMainActivity_min);
                     secondLeg.setDistance(travelDistanceBackFromMainActivity_m);
-
-
-                    //Todo modify home act on the selected tour
-                    secondHomeAct.setEndTime_min(timeLeavingHome_min);
 
                     Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
                     tour.getLegs().put(timeLeavingHome_min, firstLeg);
