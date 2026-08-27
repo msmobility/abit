@@ -153,6 +153,23 @@ public class Plan implements Iterable<Plan> {
         return remoteWorkDays;
     }
 
+    /**
+     * Per-day work-status classification: WFH if this day is in remoteWorkDays, WFO if it's in
+     * workDays but not remotely, NON_WORKING otherwise. remoteWorkDays is always a subset of
+     * workDays (PlanGeneratorMuc only ever calls addRemoteWorkDay from inside the same
+     * success-gated block that also calls addWorkDay), so checking remoteWorkDays first is
+     * correct regardless.
+     */
+    public DayType getDayType(DayOfWeek day) {
+        if (remoteWorkDays.contains(day)) {
+            return DayType.WFH;
+        }
+        if (workDays.contains(day)) {
+            return DayType.WFO;
+        }
+        return DayType.NON_WORKING;
+    }
+
     @Override
     public Iterator<Plan> iterator() {
         return null;

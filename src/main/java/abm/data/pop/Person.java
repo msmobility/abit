@@ -6,6 +6,7 @@ import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
+import java.time.DayOfWeek;
 import java.util.Optional;
 import java.util.Random;
 
@@ -148,6 +149,11 @@ public class Person {
 
     public Plan getPlan() {
         return plan;
+    }
+
+    /** Convenience delegate - see Plan.getDayType(DayOfWeek). */
+    public DayType getDayType(DayOfWeek day) {
+        return getPlan().getDayType(day);
     }
 
     public void setPlan(Plan plan) {
