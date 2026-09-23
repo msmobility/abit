@@ -3,7 +3,6 @@ package abm.calibration;
 import abm.data.DataSet;
 import abm.data.plans.DisabilityMuc;
 import abm.data.plans.HabitualMode;
-import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.RemoteWorkable;

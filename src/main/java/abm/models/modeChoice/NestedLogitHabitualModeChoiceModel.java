@@ -5,11 +5,9 @@ import abm.data.geo.RegioStaR2;
 import abm.data.plans.*;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
-import abm.data.pop.Relationship;
 import abm.data.pop.RemoteWorkable;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
-import abm.utils.AbitUtils;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Gender;
 import de.tum.bgu.msm.data.person.Occupation;
@@ -31,8 +29,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
     private boolean runCalibration = false;
 
-//    private Map<Occupation, Map<HabitualMode, Double>> updatedCalibrationFactors;
-
     private Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Double>>>> updatedCalibrationFactors;
 
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet) {
@@ -51,12 +47,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     public NestedLogitHabitualModeChoiceModel(DataSet dataSet, Boolean runCalibration) {
         this(dataSet);
         this.updatedCalibrationFactors = new HashMap<>();
-//        for (Occupation occupation : Occupation.values()) {
-//            this.updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
-//            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-//                this.updatedCalibrationFactors.get(occupation).putIfAbsent(habitualMode, 0.0);
-//            }
-//        }
+
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
             updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
             for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
@@ -151,18 +142,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         double utility = 0.;
 
         utility += coefficients.get(habitualMode).get("(Intercept)");
-
-/*        utility += household.getPersons().size() * coefficients.get(mode).get("hh.size");
-
-        int numAdults = (int) household.getPersons().stream().filter(p -> p.getRelationship() != Relationship.child || p.getAge() >= 18).count();
-        double numAutos = household.getNumberOfCars();
-        double autosPerAdult = numAutos / numAdults;
-        if (autosPerAdult > 1) {
-            autosPerAdult = 1.0;
-        }*/
-
-        /*        utility += autosPerAdult * coefficients.get(mode).get("hh.autosPerAdult");*/
-
         RegioStaR2 regioStaR2 = dataSet.getZones().get(household.getLocation().getZoneId()).getRegioStaR2Type();
         if (regioStaR2.equals(RegioStaR2.URBAN)) {
             utility += coefficients.get(habitualMode).get("hh.urban");
@@ -183,54 +162,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         if (person.getOccupation().equals(Occupation.STUDENT)) {
             utility += coefficients.get(habitualMode).get("p.occupationStatus_Student");
         }
-
-
-/*        final double SPEED_WALK_KMH = 4;
-        final double SPEED_BICYCLE_KMH = 10;
-        if (person.getOccupation().equals(Occupation.EMPLOYED)) {
-            double travelTime;
-            double travelDistanceAuto;
-            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
-                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.CAR_DRIVER, person.getJob().getStartTime_min());
-            } else if (habitualMode == HabitualMode.PT) {
-                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
-                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
-                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
-                travelTime = Math.min(travelTime_bus, travelTime_metro);
-                travelTime = Math.min(travelTime, travelTime_train);
-            } else if (habitualMode == HabitualMode.BIKE) {
-                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
-                travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
-            } else {
-                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.UNKNOWN, person.getJob().getStartTime_min());
-                travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
-            }
-
-            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
-        }
-
-        if (person.getOccupation().equals(Occupation.STUDENT)) {
-
-            double travelTime;
-            double travelDistanceAuto;
-            if (habitualMode == HabitualMode.CAR_DRIVER || habitualMode == HabitualMode.CAR_PASSENGER) {
-                travelTime = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.CAR_DRIVER, person.getSchool().getStartTime_min());
-            } else if (habitualMode == HabitualMode.PT) {
-                double travelTime_bus = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.BUS, person.getJob().getStartTime_min());
-                double travelTime_train = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAIN, person.getJob().getStartTime_min());
-                double travelTime_metro = dataSet.getTravelTimes().getTravelTimeInMinutes(person.getHousehold().getLocation(), person.getJob().getLocation(), Mode.TRAM_METRO, person.getJob().getStartTime_min());
-                travelTime = Math.min(travelTime_bus, travelTime_metro);
-                travelTime = Math.min(travelTime, travelTime_train);
-            } else if (habitualMode == HabitualMode.BIKE) {
-                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
-                travelTime = (travelDistanceAuto / 1000. / SPEED_BICYCLE_KMH) * 60;
-            } else {
-                travelDistanceAuto = dataSet.getTravelDistances().getTravelDistanceInMeters(person.getHousehold().getLocation(), person.getSchool().getLocation(), Mode.UNKNOWN, person.getSchool().getStartTime_min());
-                travelTime = (travelDistanceAuto / 1000. / SPEED_WALK_KMH) * 60;
-            }
-            utility += travelTime * coefficients.get(habitualMode).get("travelTime");
-        }*/
-        //generalized costs
         double generalizedCost = calculateGeneralizedCosts(person, habitualMode);
 
         utility += generalizedCost * coefficients.get(habitualMode).get("gc");
@@ -254,17 +185,9 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 break;
         }
 
-        //Todo add updated calibration factor to the utility calculation, starting from 0
-//        if (runCalibration) {
-//            utility += updatedCalibrationFactors.get(person.getOccupation()).get(habitualMode);
-//        }
-
-        // New implementation -------------------------------------------------------------------- start
         if (runCalibration) {
             utility += updatedCalibrationFactors.get(person.getOccupation()).get(getRemoteWorkable(person)).get(hasDisability(person)).get(habitualMode);
         }
-        // New implementation -------------------------------------------------------------------- end
-
 
         return utility;
     }
@@ -283,31 +206,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
             }
         }
     }
-
-//   public void updateCalibrationFactor(Map<Occupation, Map<HabitualMode, Double>> newCalibrationFactors) {
-//        for (Occupation occupation : Occupation.values()) {
-//            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-//                double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                double updatedCalibrationFactor = newCalibrationFactors.get(occupation).get(habitualMode) + calibrationFactorFromLastIteration;
-//                this.updatedCalibrationFactors.get(occupation).replace(habitualMode, updatedCalibrationFactor);
-//                logger.info("Calibration factor for " + occupation + "\t" + "and " + habitualMode + "\t" + ": " + updatedCalibrationFactor);
-//
-//            }
-//        }
-//    }
-
-//
-//    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
-//        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-//            double updatedCalibrationFactor;
-//            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.EMPLOYED, habitualMode);
-//            coefficients.get(habitualMode).replace("calibration_employed", coefficients.get(habitualMode).get("calibration_employed") + updatedCalibrationFactor);
-//            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.STUDENT, habitualMode);
-//            coefficients.get(habitualMode).replace("calibration_student", coefficients.get(habitualMode).get("calibration_student") + updatedCalibrationFactor);
-//        }
-//        return coefficients;
-//    }
-
 
     public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
@@ -349,48 +247,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         return coefficients;
     }
-
-
-//    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
-//
-//        double originalCalibrationFactor = 0.0;
-//        double updatedCalibrationFactor = 0.0;
-//        double latestCalibrationFactor = 0.0;
-//
-//        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-//            for (Occupation occupation : Occupation.values()) {
-//                switch (occupation) {
-//                    case EMPLOYED:
-//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_employed");
-//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//                        coefficients.get(habitualMode).replace("calibration_employed", latestCalibrationFactor);
-//                        break;
-//                    case STUDENT:
-//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_student");
-//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//                        this.coefficients.get(habitualMode).replace("calibration_student", latestCalibrationFactor);
-//                    case TODDLER:
-//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_toddler");
-//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//                        this.coefficients.get(habitualMode).replace("calibration_toddler", latestCalibrationFactor);
-//                    case RETIREE:
-//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_retiree");
-//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//                        this.coefficients.get(habitualMode).replace("calibration_retiree", latestCalibrationFactor);
-//                    case UNEMPLOYED:
-//                        originalCalibrationFactor = this.coefficients.get(habitualMode).get("calibration_unemployed");
-//                        updatedCalibrationFactor = updatedCalibrationFactors.get(occupation).get(habitualMode);
-//                        latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//                        this.coefficients.get(habitualMode).replace("calibration_unemployed", latestCalibrationFactor);
-//                }
-//            }
-//        }
-//        return this.coefficients;
-//    }
 
     //calculates generalized costs
     public Double calculateGeneralizedCosts(Person person, HabitualMode habitualMode) {
@@ -492,18 +348,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 ? DisabilityMuc.WITHOUT
                 : DisabilityMuc.WITH;
     }
-
-//    private double getAverageCalibrationFactor(Occupation occupation, HabitualMode habitualMode) {
-//        double sum = 0.0;
-//        int count = 0;
-//        for (RemoteWorkable rw : RemoteWorkable.values()) {
-//            for (DisabilityMuc disability : DisabilityMuc.values()) {
-//                sum += updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(habitualMode);
-//                count++;
-//            }
-//        }
-//        return count > 0 ? sum / count : 0.0;
-//    }
 
     private String getCalibrationVariableName(
             Occupation occupation,
