@@ -13,10 +13,10 @@ public class AddHbefaDescriptionsToVehicles {
     public static void main(String[] args) {
 
         String inputVehicles =
-                "output/10pct-sample-size/80pct_10Iter_matsim_output/output_allVehicles.xml.gz";
+                "output/10pct-of100population-sample-size/baseline_200Iter_matsim_output/output_allVehicles.xml.gz";
 
         String outputVehicles =
-                "output/10pct-sample-size/vehicles_80pct_hbefa.xml";
+                "output/10pct-of100population-sample-size/vehicles_baseline_200Iter_hbefa.xml";
 
         // Load vehicles
         Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());

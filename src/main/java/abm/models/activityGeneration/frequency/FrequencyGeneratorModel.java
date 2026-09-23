@@ -7,7 +7,6 @@ import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
 import abm.data.plans.DisabilityMuc;
-import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -20,8 +19,10 @@ import de.tum.bgu.msm.data.person.Occupation;
 import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -30,109 +31,564 @@ import java.util.stream.Collectors;
 
 
 public class FrequencyGeneratorModel implements FrequencyGenerator {
-    //extends RandomizableConcurrentFunction<Tuple<Purpose, Map<Person, List<Activity>>>>
 
     private static final Logger logger = Logger.getLogger(FrequencyGeneratorModel.class);
-
     private final DataSet dataSet;
     private final Purpose purpose;
-
     private Map<String, Double> zeroCoef;
     private final Map<String, Double> countCoef;
-
     private boolean runCalibration;
+    private final boolean applyAccompanyCalibration;
+    private static final Map<String, CalibrationSegment> CALIBRATION_SEGMENTS = createCalibrationSegmentMapping();
 
-    Map<Integer, Double> updatedCalibrationFactors = new HashMap<>();
+    public static final boolean ENABLE_ACCOMPANY_CALIBRATION = false;
+
+
     Map<CalibrationOccupation, Map<EmploymentStatus, Map<Integer, Double>>> updatedWorkCalibrationFactors;
-    Map<Integer, Map<Integer, Double>> updatedRemoteWorkCalibrationFactors;
     Map<Integer, Double> updatedEducationCalibrationFactors = new HashMap<>();
     Map<CalibrationOccupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<Integer, Double>>>> updatedDiscretionaryCalibrationFactors;
 
-    public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose) {
+    private final Path mandatoryZeroInputPath =
+            Path.of(AbitResources.instance.getString("actgen.mand.zero"));
+    private final Path mandatoryCountInputPath =
+            Path.of(AbitResources.instance.getString("actgen.mand.count"));
+    private final Path accompanyZeroInputPath =
+            Path.of(AbitResources.instance.getString("actgen.ac-rr.zero"));
+    private final Path accompanyCountInputPath =
+            Path.of(AbitResources.instance.getString("actgen.ac-rr.count"));
+    private final Path discretionaryCountInputPath =
+            Path.of(AbitResources.instance.getString("actgen.sh-re-ot.count"));
+
+    private final Path negBinZeroCoefficientsPath =
+            Path.of(AbitResources.instance.getString("actgen.negbin.zero.output"));
+    private final Path negBinZeroCalibrationPath =
+            Path.of(AbitResources.instance.getString("actgen.negbin.zero.calibration.output"));
+    private final Path polrCountCoefficientsPath =
+            Path.of(AbitResources.instance.getString("actgen.polr.count.output"));
+    private final Path polrCountCalibrationPath =
+            Path.of(AbitResources.instance.getString("actgen.polr.count.calibration.output"));
+    private final Path negBinCountCoefficientsPath =
+            Path.of(AbitResources.instance.getString("actgen.negbin.count.output"));
+    private final Path negBinCountCalibrationPath =
+            Path.of(AbitResources.instance.getString("actgen.negbin.count.calibration.output"));
+    private final Path glmNegBinCoefficientsPath =
+            Path.of(AbitResources.instance.getString("actgen.glm.negbin.output"));
+    private final Path glmNegBinCalibrationPath =
+            Path.of(AbitResources.instance.getString("actgen.glm.negbin.calibration.output"));
+
+    public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose, boolean runCalibration) {
+
         this.dataSet = dataSet;
         this.purpose = purpose;
-        if (purpose.equals(Purpose.WORK) || purpose.equals(Purpose.EDUCATION)) {
+        this.runCalibration = runCalibration;
+        this.applyAccompanyCalibration =
+                purpose != Purpose.ACCOMPANY
+                        || ENABLE_ACCOMPANY_CALIBRATION;
+
+
+        if (purpose.equals(Purpose.WORK)
+                || purpose.equals(Purpose.EDUCATION)
+                || purpose.equals(Purpose.ACCOMPANY)) {
+
+            Path zeroCoefficientPath;
+
+            if (purpose.equals(Purpose.ACCOMPANY)) {
+                zeroCoefficientPath =
+                        selectCoefficientInput(
+                                accompanyZeroInputPath,
+                                negBinZeroCoefficientsPath);
+            } else {
+                zeroCoefficientPath =
+                        selectCoefficientInput(
+                                mandatoryZeroInputPath,
+                                negBinZeroCoefficientsPath);
+            }
+
             this.zeroCoef =
-                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.mand.zero"))).readCoefficients();
+                    new CoefficientsReader(
+                            dataSet,
+                            purpose.toString().toLowerCase(),
+                            zeroCoefficientPath)
+                            .readCoefficients();
+        }
+
+        if (purpose.equals(Purpose.WORK)
+                || purpose.equals(Purpose.EDUCATION)) {
+
+            Path countCoefficientPath =
+                    selectCoefficientInput(
+                            mandatoryCountInputPath,
+                            polrCountCoefficientsPath);
 
             this.countCoef =
-                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.mand.count"))).readCoefficients();
+                    new CoefficientsReader(
+                            dataSet,
+                            purpose.toString().toLowerCase(),
+                            countCoefficientPath)
+                            .readCoefficients();
+
         } else if (purpose.equals(Purpose.ACCOMPANY)) {
-            this.zeroCoef =
-                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.ac-rr.zero"))).readCoefficients();
+
+            Path countCoefficientPath =
+                    selectCoefficientInput(
+                            accompanyCountInputPath,
+                            negBinCountCoefficientsPath);
 
             this.countCoef =
-                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.ac-rr.count"))).readCoefficients();
+                    new CoefficientsReader(
+                            dataSet,
+                            "accompany",
+                            countCoefficientPath)
+                            .readCoefficients();
+
         } else {
+
+            Path countCoefficientPath =
+                    selectCoefficientInput(
+                            discretionaryCountInputPath,
+                            glmNegBinCoefficientsPath);
+
             this.countCoef =
-                    new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                            Path.of(AbitResources.instance.getString("actgen.sh-re-ot.count"))).readCoefficients();
+                    new CoefficientsReader(
+                            dataSet,
+                            purpose.toString().toLowerCase(),
+                            countCoefficientPath)
+                            .readCoefficients();
+        }
+
+
+        if (runCalibration || (purpose == Purpose.ACCOMPANY && !applyAccompanyCalibration)) {
+
+            initializeCalibrationFactors();
+
+        } else {
+
+            loadCalibrationFactors();
         }
     }
 
-    // new calibration constructor------------------------
-    public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose, boolean runCalibration) {
-        this(dataSet, purpose);
-        this.runCalibration = runCalibration;
+    private Path selectCoefficientInput(Path baseInputPath, Path calibratedOutputPath) {
+        if (runCalibration) {
+            requireReadableFile(baseInputPath, "base coefficient input");
+            return baseInputPath;
+        }
+
+        if (Files.isRegularFile(calibratedOutputPath)
+                && Files.isReadable(calibratedOutputPath)) {
+            return calibratedOutputPath;
+        }
+
+        requireReadableFile(baseInputPath, "base coefficient input");
+        return baseInputPath;
+    }
+
+    private void requireReadableFile(Path path, String description) {
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            throw new IllegalStateException(
+                    "Cannot read " + description + ": " + path.toAbsolutePath());
+        }
+    }
+
+    public FrequencyGeneratorModel(DataSet dataSet, Purpose purpose) {
+
+        this(dataSet, purpose, false);
+    }
+
+    private void initializeCalibrationFactors() {
+
+        updatedWorkCalibrationFactors = new HashMap<>();
+
+        for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
+            updatedWorkCalibrationFactors.put(occupation, new HashMap<>());
+
+            for (EmploymentStatus employmentStatus : EmploymentStatus.values()) {
+                updatedWorkCalibrationFactors.get(occupation).put(employmentStatus, new HashMap<>());
+
+                for (int freq = 0; freq <= 7; freq++) {
+                    updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).put(freq, 0.0);
+                }
+            }
+        }
+
+        updatedEducationCalibrationFactors = new HashMap<>();
+
+        for (int freq = 0; freq <= 7; freq++) {
+            updatedEducationCalibrationFactors.put(freq, 0.0);
+        }
+
+        updatedDiscretionaryCalibrationFactors = new HashMap<>();
+
+        int maxFrequency = purpose.equals(Purpose.ACCOMPANY) ? 7 : 15;
+
+        for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
+            updatedDiscretionaryCalibrationFactors.put(occupation, new HashMap<>());
+
+            for (RemoteWorkable remoteWorkable : RemoteWorkable.values()) {
+                updatedDiscretionaryCalibrationFactors.get(occupation).put(remoteWorkable, new HashMap<>());
+
+                for (DisabilityMuc disability : DisabilityMuc.values()) {
+                    updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).put(disability, new HashMap<>());
+
+                    for (int freq = 0; freq <= maxFrequency; freq++) {
+                        updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).put(freq, 0.0);
+                    }
+                }
+            }
+        }
+    }
+
+    private void loadCalibrationFactors() {
+
+        initializeCalibrationFactors();
 
         if (purpose.equals(Purpose.WORK)) {
 
-            updatedWorkCalibrationFactors = new HashMap<>();
-
-            for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-                updatedWorkCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
-
-                for (EmploymentStatus employmentStatus : EmploymentStatus.values()) {
-                    updatedWorkCalibrationFactors.get(occupation).putIfAbsent(employmentStatus, new HashMap<>());
-
-                    for (int freq = 0; freq <= 7; freq++) {
-                        updatedWorkCalibrationFactors.get(occupation)
-                                .get(employmentStatus)
-                                .put(freq, 0.0);
-                    }
-                }
+            if (Files.isRegularFile(negBinZeroCalibrationPath)) {
+                loadWorkCalibrationFactors(negBinZeroCalibrationPath);
+            }
+            if (Files.isRegularFile(polrCountCalibrationPath)) {
+                loadWorkCalibrationFactors(polrCountCalibrationPath);
             }
 
         } else if (purpose.equals(Purpose.EDUCATION)) {
 
-            for (int freq = 0; freq <= 7; freq++) {
-                updatedEducationCalibrationFactors.put(freq, 0.0);
+            if (Files.isRegularFile(negBinZeroCalibrationPath)) {
+                loadEducationCalibrationFactors(negBinZeroCalibrationPath);
+            }
+            if (Files.isRegularFile(polrCountCalibrationPath)) {
+                loadEducationCalibrationFactors(polrCountCalibrationPath);
             }
 
-        } else if (Purpose.getDiscretionaryPurposes().contains(purpose)) {
+        } else if (purpose.equals(Purpose.ACCOMPANY)) {
 
-            updatedDiscretionaryCalibrationFactors = new HashMap<>();
-
-            int maxFrequency =
-                    purpose.equals(Purpose.ACCOMPANY) ? 7 : 15;
-
-            for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-                updatedDiscretionaryCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
-
-                for (RemoteWorkable rw : RemoteWorkable.values()) {
-                    updatedDiscretionaryCalibrationFactors.get(occupation).putIfAbsent(rw, new HashMap<>());
-
-                    for (DisabilityMuc disability : DisabilityMuc.values()) {
-                        updatedDiscretionaryCalibrationFactors.get(occupation)
-                                .get(rw)
-                                .putIfAbsent(disability, new HashMap<>());
-
-                        for (int freq = 0; freq <= maxFrequency; freq++) {
-                            updatedDiscretionaryCalibrationFactors.get(occupation)
-                                    .get(rw)
-                                    .get(disability)
-                                    .put(freq, 0.0);
-                        }
-                    }
+            if (applyAccompanyCalibration) {
+                if (Files.isRegularFile(negBinZeroCalibrationPath)) {
+                    loadAccompanyCalibrationFactors(negBinZeroCalibrationPath);
                 }
+                if (Files.isRegularFile(negBinCountCalibrationPath)) {
+                    loadAccompanyCountCalibrationFactors(negBinCountCalibrationPath);
+                }
+            }
+
+        } else {
+
+            if (Files.isRegularFile(glmNegBinCalibrationPath)) {
+                loadDiscretionaryCalibrationFactors(
+                        glmNegBinCalibrationPath,
+                        purpose.toString().toLowerCase());
             }
         }
     }
-    // ------------end
+
+    private Map<String, Double> readCalibrationValues(Path calibrationPath, String columnName) {
+
+        Map<String, Double> calibrationFactors = new HashMap<>();
+        try (BufferedReader reader = Files.newBufferedReader(calibrationPath)) {
+            String header = reader.readLine();
+            if (header == null) {
+                throw new IllegalStateException("Calibration file is empty: " + calibrationPath);
+            }
+
+            String[] columns = header.split(",", -1);
+
+            int columnIndex = -1;
+
+            for (int i = 0; i < columns.length; i++) {
+                if (columns[i].trim().equals(columnName)) {
+                    columnIndex = i;
+                    break;
+                }
+            }
+
+            if (columnIndex == -1) {
+                throw new IllegalStateException(
+                        "Column '" + columnName + "' not found in calibration file: " + calibrationPath);
+            }
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+
+                String[] values = line.split(",", -1);
+
+                if (values.length <= columnIndex) {
+                    continue;
+                }
+
+                String variable = values[0].trim();
+                String value = values[columnIndex].trim();
+
+                if (variable.isEmpty() || value.isEmpty()) {
+                    continue;
+                }
+
+                calibrationFactors.put(
+                        variable,
+                        Double.parseDouble(value));
+            }
+
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Could not read calibration file: " +
+                            calibrationPath,
+                    e);
+        }
+
+        return calibrationFactors;
+    }
+
+    private void loadWorkCalibrationFactors(Path calibrationPath) {
+
+        Map<String, Double> values =
+                readCalibrationValues(calibrationPath, "work");
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+
+            String variable = entry.getKey();
+            double value = entry.getValue();
+
+            if (!variable.startsWith("calibration_")) {
+                continue;
+            }
+
+            String name =
+                    variable.substring("calibration_".length());
+
+            int frequencyInterval = 0;
+            String segmentKey = name;
+
+            int separatorIndex =
+                    name.lastIndexOf("_");
+
+            if (separatorIndex > 0) {
+
+                String interval =
+                        name.substring(separatorIndex + 1);
+
+                if (interval.matches("\\d+\\|\\d+")) {
+
+                    frequencyInterval =
+                            Integer.parseInt(
+                                    interval.substring(
+                                            0,
+                                            interval.indexOf("|")));
+
+                    segmentKey =
+                            name.substring(
+                                    0,
+                                    separatorIndex);
+                }
+            }
+
+            CalibrationSegment segment =
+                    CALIBRATION_SEGMENTS.get(segmentKey);
+
+            if (segment == null) {
+                continue;
+            }
+
+            updatedWorkCalibrationFactors
+                    .get(segment.getOccupation())
+                    .get(segment.getEmploymentStatus())
+                    .put(frequencyInterval, value);
+        }
+    }
+
+    private void loadEducationCalibrationFactors(Path calibrationPath) {
+
+        Map<String, Double> values =
+                readCalibrationValues(calibrationPath, "education");
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+
+            String variable = entry.getKey();
+            double value = entry.getValue();
+
+            if (!variable.startsWith("calibration_")) {
+                continue;
+            }
+
+            String name =
+                    variable.substring("calibration_".length());
+
+            int frequencyInterval = 0;
+
+            if (!name.equals("education")) {
+
+                int separatorIndex = name.lastIndexOf("_");
+
+                if (separatorIndex > 0) {
+
+                    String interval =
+                            name.substring(separatorIndex + 1);
+
+                    if (interval.matches("\\d+\\|\\d+")) {
+
+                        frequencyInterval =
+                                Integer.parseInt(
+                                        interval.substring(
+                                                0,
+                                                interval.indexOf("|")));
+                    }
+                }
+            }
+
+            updatedEducationCalibrationFactors
+                    .put(frequencyInterval, value);
+        }
+    }
+
+    private void loadAccompanyCalibrationFactors(Path calibrationPath) {
+
+        Map<String, Double> values =
+                readCalibrationValues(
+                        calibrationPath,
+                        "accompany");
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+
+            String variable = entry.getKey();
+            double value = entry.getValue();
+
+            if (!variable.startsWith("calibration_")) {
+                continue;
+            }
+
+            String segmentKey =
+                    variable.substring("calibration_".length());
+
+            CalibrationSegment segment =
+                    CALIBRATION_SEGMENTS.get(segmentKey);
+
+            if (segment == null) {
+                continue;
+            }
+
+            if (segment.getRemoteWorkable() == null
+                    || segment.getDisability() == null) {
+                continue;
+            }
+
+            updatedDiscretionaryCalibrationFactors
+                    .get(segment.getOccupation())
+                    .get(segment.getRemoteWorkable())
+                    .get(segment.getDisability())
+                    .put(0, value);
+        }
+    }
+
+    private void loadDiscretionaryCalibrationFactors(Path calibrationPath, String purposeColumn) {
+
+        Map<String, Double> values =
+                readCalibrationValues(calibrationPath, purposeColumn);
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+
+            String variable = entry.getKey();
+            double value = entry.getValue();
+
+            if (!variable.startsWith("calibration_")) {
+                continue;
+            }
+
+            String segmentKey =
+                    variable.substring("calibration_".length());
+
+            CalibrationSegment segment =
+                    CALIBRATION_SEGMENTS.get(segmentKey);
+
+            if (segment == null) {
+                continue;
+            }
+
+            if (segment.getRemoteWorkable() == null
+                    || segment.getDisability() == null) {
+                continue;
+            }
+
+            updatedDiscretionaryCalibrationFactors
+                    .get(segment.getOccupation())
+                    .get(segment.getRemoteWorkable())
+                    .get(segment.getDisability())
+                    .put(0, value);
+        }
+    }
+
+    private void loadAccompanyCountCalibrationFactors(Path calibrationPath) {
+
+        Map<String, Double> values =
+                readCalibrationValues(calibrationPath, "accompany");
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+
+            String variable = entry.getKey();
+            double value = entry.getValue();
+
+            switch (variable) {
+
+                case "calibration_employed_remote_working_with_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.EMPLOYED,
+                            RemoteWorkable.TRUE,
+                            DisabilityMuc.WITH,
+                            1,
+                            value);
+                    break;
+
+                case "calibration_employed_remote_working_without_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.EMPLOYED,
+                            RemoteWorkable.TRUE,
+                            DisabilityMuc.WITHOUT,
+                            1,
+                            value);
+                    break;
+
+                case "calibration_employed_no_remote_working_with_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.EMPLOYED,
+                            RemoteWorkable.FALSE,
+                            DisabilityMuc.WITH,
+                            1,
+                            value);
+                    break;
+
+                case "calibration_employed_no_remote_working_without_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.EMPLOYED,
+                            RemoteWorkable.FALSE,
+                            DisabilityMuc.WITHOUT,
+                            1,
+                            value);
+                    break;
+
+                case "calibration_other_no_remote_working_with_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.OTHER,
+                            RemoteWorkable.FALSE,
+                            DisabilityMuc.WITH,
+                            1,
+                            value);
+                    break;
+
+                case "calibration_other_no_remote_working_without_disability":
+                    putDiscretionaryCalibration(
+                            CalibrationOccupation.OTHER,
+                            RemoteWorkable.FALSE,
+                            DisabilityMuc.WITHOUT,
+                            1,
+                            value);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
 
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
@@ -140,7 +596,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         if (purpose.equals(Purpose.WORK)) {
 
-            if (person.getAge() < 15 && person.getAge() > 70) {
+            if (person.getAge() < 15 || person.getAge() > 70) {
                 numOfActivity = 0;
             } else {
                 numOfActivity = polrEstimateTrips(person);
@@ -183,110 +639,108 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-//    private int polrEstimateTrips(Person pp) {
-//        //double randomNumber = AbitUtils.getRandomObject().nextDouble();
-//        double randomNumber = pp.getRandom().nextDouble();
-//        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
-//        if (runCalibration) {
-//            binaryUtility += updatedCalibrationFactors.get(0);
-//        }
-//        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
-//        double mu = getPredictor(pp, countCoef);
-//
-//        double[] intercepts = new double[6];
-//        intercepts[0] = countCoef.get("1|2") + countCoef.get("calibration_1|2");
-//        intercepts[1] = countCoef.get("2|3") + countCoef.get("calibration_2|3");
-//        intercepts[2] = countCoef.get("3|4") + countCoef.get("calibration_3|4");
-//        intercepts[3] = countCoef.get("4|5") + countCoef.get("calibration_4|5");
-//        intercepts[4] = countCoef.get("5|6") + countCoef.get("calibration_5|6");
-//        intercepts[5] = countCoef.get("6|7") + countCoef.get("calibration_6|7");
-//
-//        if (runCalibration){
-//            intercepts[0] += updatedCalibrationFactors.get(1);
-//            intercepts[1] += updatedCalibrationFactors.get(2);
-//            intercepts[2] += updatedCalibrationFactors.get(3);
-//            intercepts[3] += updatedCalibrationFactors.get(4);
-//            intercepts[4] += updatedCalibrationFactors.get(5);
-//            intercepts[5] += updatedCalibrationFactors.get(6);
-//        }
-//
-//        int i = 0;
-//        double cumProb = 0;
-//        double prob = 1 - phi;
-//        cumProb += prob;
-//
-//        while (cumProb < randomNumber) {
-//            i++;
-//            if (i < 7) {
-//                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
-//            } else {
-//                prob = 1;
-//            }
-//            if (i > 1) {
-//                prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
-//            }
-//            cumProb += phi * prob;
-//        }
-//        return i;
-//    }
-
-    // new polr model
     private int polrEstimateTrips(Person pp) {
-        double randomNumber = pp.getRandom().nextDouble();
-        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
-        if (runCalibration) {
+
+        double randomNumber =
+                AbitUtils.getRandomObject().nextDouble();
+
+        double binaryUtility =
+                getPredictor(pp, zeroCoef);
+
+        CalibrationSegment workSegment = null;
+
+        if (purpose.equals(Purpose.WORK)) {
+
+            workSegment =
+                    getWorkCalibrationSegment(pp);
+
+            binaryUtility +=
+                    getWorkCalibrationFactor(
+                            workSegment,
+                            0);
+
+        } else if (purpose.equals(Purpose.EDUCATION)) {
+
+            binaryUtility +=
+                    updatedEducationCalibrationFactors.get(0);
+        }
+
+        double phi =
+                Math.exp(binaryUtility)
+                        / (1 + Math.exp(binaryUtility));
+
+        /*
+         * Ordered-logit count component
+         */
+        double mu =
+                getPredictor(pp, countCoef);
+
+        double[] intercepts =
+                new double[6];
+
+        for (int frequencyInterval = 1;
+             frequencyInterval <= 6;
+             frequencyInterval++) {
+
+            intercepts[frequencyInterval - 1] =
+                    countCoef.get(
+                            String.valueOf(frequencyInterval)
+                                    + "|"
+                                    + (frequencyInterval + 1));
+
             if (purpose.equals(Purpose.WORK)) {
-                CalibrationOccupation occupation = getCalibrationOccupation(pp);
-                EmploymentStatus status = pp.getEmploymentStatus();
-                binaryUtility += updatedWorkCalibrationFactors.get(occupation).get(status).get(0);
+
+                intercepts[frequencyInterval - 1] +=
+                        getWorkCalibrationFactor(
+                                workSegment,
+                                frequencyInterval);
+
             } else if (purpose.equals(Purpose.EDUCATION)) {
-                binaryUtility += updatedEducationCalibrationFactors.get(0);
+
+                intercepts[frequencyInterval - 1] +=
+                        updatedEducationCalibrationFactors
+                                .get(frequencyInterval);
             }
         }
-        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
-        double mu = getPredictor(pp, countCoef);
-        double[] intercepts = new double[6];
-        intercepts[0] = countCoef.get("1|2") + countCoef.get("calibration_1|2");
-        intercepts[1] = countCoef.get("2|3") + countCoef.get("calibration_2|3");
-        intercepts[2] = countCoef.get("3|4") + countCoef.get("calibration_3|4");
-        intercepts[3] = countCoef.get("4|5") + countCoef.get("calibration_4|5");
-        intercepts[4] = countCoef.get("5|6") + countCoef.get("calibration_5|6");
-        intercepts[5] = countCoef.get("6|7") + countCoef.get("calibration_6|7");
-        if (runCalibration) {
-            if (purpose.equals(Purpose.WORK)) {
-                CalibrationOccupation occupation = getCalibrationOccupation(pp);
-                EmploymentStatus status = pp.getEmploymentStatus();
-                intercepts[0] += updatedWorkCalibrationFactors.get(occupation).get(status).get(1);
-                intercepts[1] += updatedWorkCalibrationFactors.get(occupation).get(status).get(2);
-                intercepts[2] += updatedWorkCalibrationFactors.get(occupation).get(status).get(3);
-                intercepts[3] += updatedWorkCalibrationFactors.get(occupation).get(status).get(4);
-                intercepts[4] += updatedWorkCalibrationFactors.get(occupation).get(status).get(5);
-                intercepts[5] += updatedWorkCalibrationFactors.get(occupation).get(status).get(6);
-            } else if (purpose.equals(Purpose.EDUCATION)) {
-                intercepts[0] += updatedEducationCalibrationFactors.get(1);
-                intercepts[1] += updatedEducationCalibrationFactors.get(2);
-                intercepts[2] += updatedEducationCalibrationFactors.get(3);
-                intercepts[3] += updatedEducationCalibrationFactors.get(4);
-                intercepts[4] += updatedEducationCalibrationFactors.get(5);
-                intercepts[5] += updatedEducationCalibrationFactors.get(6);
-            }
-        }
+
+        /*
+         * Draw frequency from the probability distribution.
+         */
         int i = 0;
         double cumProb = 0;
+
         double prob = 1 - phi;
         cumProb += prob;
+
         while (cumProb < randomNumber) {
+
             i++;
+
             if (i < 7) {
-                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
+
+                prob =
+                        1 / (
+                                1 + Math.exp(
+                                        mu - intercepts[i - 1])
+                        );
+
             } else {
+
                 prob = 1;
             }
+
             if (i > 1) {
-                prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
+
+                prob -=
+                        1 / (
+                                1 + Math.exp(
+                                        mu - intercepts[i - 2])
+                        );
             }
+
             cumProb += phi * prob;
         }
+
         return i;
     }
 
@@ -296,92 +750,71 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-//    private int hurdleEstimateTrips(Person pp) {
-//        double randomNumber = AbitUtils.getRandomObject().nextDouble();
-//        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
-//        if (runCalibration) {
-//            binaryUtility += updatedCalibrationFactors.get(0);
-//        }
-//        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
-//
-//        double mu;
-//        if (runCalibration){
-//            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(1));
-//        } else{
-//            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
-//        }
-//
-//        double theta = countCoef.get("theta") ;
-//
-//        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
-//
-//        double p0_zero = Math.log(phi);
-//        double p0_count = Math.log(1 - nb.cdf(0));
-//        double logphi = p0_zero - p0_count;
-//
-//        int i = 0;
-//        double cumProb = 0;
-//        double prob = 1 - Math.exp(p0_zero);
-//        cumProb += prob;
-//
-//        while (randomNumber > cumProb) {
-//            i++;
-//            prob = Math.exp(logphi + Math.log(nb.prob(i)));
-//            cumProb += prob;
-//        }
-//        return (i);
-//    }
-
-    // new hurdle
     private int hurdleEstimateTrips(Person pp) {
 
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
+        double randomNumber =
+                AbitUtils.getRandomObject().nextDouble();
 
-        double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
+        CalibrationSegment segment =
+                getDiscretionaryCalibrationSegment(pp);
 
-        if (runCalibration) {
-            CalibrationOccupation occupation = getCalibrationOccupation(pp);
-            RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+        double binaryUtility =
+                getPredictor(pp, zeroCoef)
+                        + getDiscretionaryCalibrationFactor(
+                        segment,
+                        0);
 
-            binaryUtility += updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(0);
-        }
+        double phi =
+                Math.exp(binaryUtility)
+                        / (1 + Math.exp(binaryUtility));
 
-        double phi = Math.exp(binaryUtility) / (1 + Math.exp(binaryUtility));
 
-        double mu;
-        if (runCalibration) {
-            CalibrationOccupation occupation = getCalibrationOccupation(pp);
-            RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+        double mu =
+                Math.exp(
+                        getPredictor(pp, countCoef)
+                                + getDiscretionaryCalibrationFactor(
+                                segment,
+                                1));
 
-            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(1));
-        } else {
-            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
-        }
-        double theta = countCoef.get("theta");
+        double theta =
+                countCoef.get("theta");
 
-        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+        NegativeBinomialDist nb =
+                new NegativeBinomialDist(
+                        theta,
+                        theta / (theta + mu));
+        double p0_zero =
+                Math.log(phi);
 
-        double p0_zero = Math.log(phi);
-        double p0_count = Math.log(1 - nb.cdf(0));
-        double logphi = p0_zero - p0_count;
+        double p0_count =
+                Math.log(1 - nb.cdf(0));
+
+        double logphi =
+                p0_zero - p0_count;
 
         int i = 0;
+
         double cumProb = 0;
-        double prob = 1 - Math.exp(p0_zero);
+
+        double prob =
+                1 - Math.exp(p0_zero);
 
         cumProb += prob;
 
         while (randomNumber > cumProb) {
+
             i++;
-            prob = Math.exp(logphi + Math.log(nb.prob(i)));
+
+            prob =
+                    Math.exp(
+                            logphi
+                                    + Math.log(nb.prob(i)));
+
             cumProb += prob;
         }
 
         return i;
     }
-
 
     /**
      * Negative binomial
@@ -389,55 +822,56 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
      * @param pp
      * @return
      */
-//    private int nbEstimateTrips(Person pp) {
-//        double randomNumber = AbitUtils.getRandomObject().nextDouble();
-//        double mu;
-//        if (runCalibration){
-//            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedCalibrationFactors.get(0));
-//        } else{
-//            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
-//        }
-//        double theta = countCoef.get("theta") + countCoef.get("calibration");
-//
-//        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
-//
-//        int i = 0;
-//        double cumProb = nb.prob(0);
-//
-//        while (randomNumber > cumProb) {
-//            i++;
-//            cumProb += nb.prob(i);
-//        }
-//        return (i);
-//    }
-
-    // new nbEstimateTrip
     private int nbEstimateTrips(Person pp) {
 
-        double randomNumber = AbitUtils.getRandomObject().nextDouble();
-        double mu;
+        double randomNumber =
+                AbitUtils.getRandomObject().nextDouble();
 
-        if (runCalibration) {
+        CalibrationSegment segment =
+                getDiscretionaryCalibrationSegment(pp);
 
-            CalibrationOccupation occupation = getCalibrationOccupation(pp);
-            RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+        double calibrationFactor =
+                getDiscretionaryCalibrationFactor(
+                        segment,
+                        0);
 
-            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedDiscretionaryCalibrationFactors
-                            .get(occupation)
-                            .get(remoteWorkable)
-                            .get(disability)
-                            .get(0));
-        } else {
-            mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration"));
+        double mu =
+                Math.exp(
+                        getPredictor(pp, countCoef)
+                                + calibrationFactor);
+
+        double theta =
+                countCoef.get("theta");
+
+        if (!runCalibration) {
+            theta += calibrationFactor;
         }
 
-        double theta = countCoef.get("theta") + countCoef.get("calibration");
+        if (!Double.isFinite(theta) || theta <= 0.0) {
+            throw new IllegalStateException(
+                    "Invalid negative-binomial theta for "
+                            + purpose
+                            + " | segment=" + segment
+                            + " | baseTheta="
+                            + countCoef.get("theta")
+                            + " | calibrationFactor="
+                            + calibrationFactor
+                            + " | theta="
+                            + theta);
+        }
 
-        NegativeBinomialDist nb = new NegativeBinomialDist(theta, theta / (theta + mu));
+        double probability =
+                theta / (theta + mu);
+
+        NegativeBinomialDist nb =
+                new NegativeBinomialDist(
+                        theta,
+                        probability);
 
         int i = 0;
-        double cumProb = nb.prob(0);
+
+        double cumProb =
+                nb.prob(0);
 
         while (randomNumber > cumProb) {
             i++;
@@ -446,6 +880,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
         return i;
     }
+
     /**
      * Calculate the linear predictor for the model ()
      *
@@ -463,22 +898,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         Zone zone = dataSet.getZones().get(hh.getLocation().getZoneId());
 
         //Todo It seems like MOP doesn't have BBSR type, but the regioStaRGem5. Ask Joanna for double checking
-//        BBSRType bbsr = zone.getBBSRType(); //hh.municipalityType_51-54
-//        switch (bbsr) {
-//            case CORE_CITY:
-//                predictor += coefficients.get("hh.municipalityType_51");
-//                break;
-//            case MEDIUM_SIZED_CITY:
-//                predictor += coefficients.get("hh.municipalityType_52");
-//                break;
-//            case TOWN:
-//                predictor += coefficients.get("hh.municipalityType_53");
-//                break;
-//            case RURAL:
-//                predictor += coefficients.get("hh.municipalityType_54");
-//                break;
-//        }
-
         RegioStaR2 regioStrR2 = zone.getRegioStaR2Type();
         switch (regioStrR2) {
             case URBAN:
@@ -714,32 +1133,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 predictor += coefficients.get("p.t_mand_habmode_walk");
                 break;
         }
-
-        /*switch (purpose) {
-            case WORK:
-                predictor += coefficients.get("act.purpose_work");
-                break;
-            case EDUCATION:
-                predictor += coefficients.get("act.purpose_education");
-                break;
-            case ACCOMPANY:
-                predictor += coefficients.get("act.purpose_accompany");
-                break;
-            case SHOPPING:
-                predictor += coefficients.get("act.purpose_shop");
-                break;
-            case RECREATION:
-                predictor += coefficients.get("act.purpose_recreation");
-                break;
-            case OTHER:
-                predictor += coefficients.get("act.purpose_other");
-                break;
-            case HOME:
-                predictor += coefficients.get("act.purpose_home");
-                break;
-        }*/
-        //these coefficients do not exist in the act generation models
-
         int numDaysWork = 0;
         int numDaysEducation = 0;
 
@@ -782,17 +1175,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         return CalibrationOccupation.OTHER;
     }
 
-
-//    public void updateCalibrationFactor(Map<Integer, Double> newCalibrationFactors) {
-//        for (int i = 0; i < newCalibrationFactors.size(); i++) {
-//            double calibrationFactorFromLastIteration = this.updatedCalibrationFactors.get(i);
-//            double updatedCalibrationFactor = newCalibrationFactors.get(i) + calibrationFactorFromLastIteration;
-//            this.updatedCalibrationFactors.replace(i, updatedCalibrationFactor);
-//            logger.info("Calibration factor for " + purpose + "\t" + "and " + i + "\t" + ": " + updatedCalibrationFactor);
-//        }
-//    }
-
-    // new segmented update calibration factors
     public void updateWorkCalibrationFactor(Map<CalibrationOccupation, Map<EmploymentStatus, Map<Integer, Double>>> newCalibrationFactors) {
         for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
             for (EmploymentStatus employmentStatus : EmploymentStatus.values()) {
@@ -823,12 +1205,28 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         int maxFrequency = purpose == Purpose.ACCOMPANY ? 7 : 15;
 
         for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
+
             for (RemoteWorkable remoteWorkable : RemoteWorkable.values()) {
+
+                if (occupation == CalibrationOccupation.OTHER
+                        && remoteWorkable == RemoteWorkable.TRUE) {
+                    continue;
+                }
+
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
+                    Map<Integer, Double> previousFactors = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability);
+                    Map<Integer, Double> newFactors = newCalibrationFactors.get(occupation).get(remoteWorkable).get(disability);
+
+                    // Safety check: skip a segment if it is not present.
+                    if (previousFactors == null || newFactors == null) {
+                        continue;
+                    }
+
                     for (int freq = 0; freq <= maxFrequency; freq++) {
-                        double calibrationFactorFromLastIteration = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(freq);
-                        double updatedCalibrationFactor = calibrationFactorFromLastIteration + newCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(freq);
-                        updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).put(freq, updatedCalibrationFactor);
+                        double calibrationFactorFromLastIteration = previousFactors.getOrDefault(freq, 0.0);
+                        double calibrationFactorThisIteration = newFactors.getOrDefault(freq, 0.0);
+                        double updatedCalibrationFactor = calibrationFactorFromLastIteration + calibrationFactorThisIteration;
+                        previousFactors.put(freq, updatedCalibrationFactor);
                         logger.info("Calibration factor for " + purpose + " | " + occupation + " | " + remoteWorkable + " | " + disability + " | " + freq + " : " + updatedCalibrationFactor);
                     }
                 }
@@ -836,192 +1234,174 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         }
     }
 
-//    public Map<String, Double> obtainZeroCoefficients() {
-//        double originalCalibrationFactor = zeroCoef.get("calibration");
-//        double updatedCalibrationFactor = updatedCalibrationFactors.get(0);
-//        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-//        this.zeroCoef.replace("calibration", latestCalibrationFactor);
-//        return zeroCoef;
-//    }
+    public Map<String, Double> obtainWorkZeroCoefficients(CalibrationOccupation occupation, EmploymentStatus employmentStatus) {
 
-    // new ------------------------------------
-//    public Map<String, Double> obtainZeroCoefficients(
-//            CalibrationOccupation occupation,
-//            EmploymentStatus employmentStatus,
-//            RemoteWorkable remoteWorkable,
-//            DisabilityMuc disability) {
-//
-//        Map<String, Double> coefficients = new HashMap<>(zeroCoef);
-//
-//        double originalCalibration = coefficients.get("calibration");
-//        double updatedCalibration;
-//        if (purpose == Purpose.WORK) {
-//            updatedCalibration = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(0);
-//        } else if (purpose == Purpose.EDUCATION) {
-//            updatedCalibration = updatedEducationCalibrationFactors.get(0);
-//        } else { // ACCOMPANY
-//            updatedCalibration = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(0);
-//        }
-//        coefficients.replace("calibration", originalCalibration + updatedCalibration);
-//        return coefficients;
-//    }
+        Map<String, Double> coefficients =
+                new HashMap<>(zeroCoef);
 
-    public Map<String, Double> obtainZeroCoefficients() {
-        double originalCalibrationFactor = zeroCoef.get("calibration");
-        double updatedCalibrationFactor = updatedCalibrationFactors.get(0);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        this.zeroCoef.replace("calibration", latestCalibrationFactor);
-        return zeroCoef;
-    }
 
-    public Map<String, Double> obtainWorkZeroCoefficients(
-            CalibrationOccupation occupation,
-            EmploymentStatus employmentStatus) {
+        double updatedCalibrationFactor =
+                updatedWorkCalibrationFactors
+                        .get(occupation)
+                        .get(employmentStatus)
+                        .get(0);
 
-        Map<String, Double> coefficients = new HashMap<>(zeroCoef);
 
-        double originalCalibrationFactor = coefficients.get("calibration");
-        double updatedCalibrationFactor = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(0);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        coefficients.put("calibration", latestCalibrationFactor);
+        coefficients.put(
+                "calibration",
+                updatedCalibrationFactor);
+
+
         return coefficients;
     }
 
     public Map<String, Double> obtainEducationZeroCoefficients() {
 
-        Map<String, Double> coefficients = new HashMap<>(zeroCoef);
+        Map<String, Double> coefficients =
+                new HashMap<>(zeroCoef);
 
-        double originalCalibrationFactor = coefficients.get("calibration");
-        double updatedCalibrationFactor = updatedEducationCalibrationFactors.get(0);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        coefficients.put("calibration", latestCalibrationFactor);
+
+        double updatedCalibrationFactor =
+                updatedEducationCalibrationFactors.get(0);
+
+        coefficients.put(
+                "calibration",
+                updatedCalibrationFactor);
+
 
         return coefficients;
     }
 
-    public Map<String, Double> obtainAccompanyZeroCoefficients(
-            CalibrationOccupation occupation,
-            RemoteWorkable remoteWorkable,
-            DisabilityMuc disability) {
+    public Map<String, Double> obtainAccompanyZeroCoefficients(CalibrationOccupation occupation, RemoteWorkable remoteWorkable, DisabilityMuc disability) {
 
-        Map<String, Double> coefficients = new HashMap<>(zeroCoef);
+        Map<String, Double> coefficients =
+                new HashMap<>(zeroCoef);
 
-        double originalCalibrationFactor = coefficients.get("calibration");
-        double updatedCalibrationFactor = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(0);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        coefficients.put("calibration", latestCalibrationFactor);
+
+        double updatedCalibrationFactor =
+                updatedDiscretionaryCalibrationFactors
+                        .get(occupation)
+                        .get(remoteWorkable)
+                        .get(disability)
+                        .get(0);
+
+
+        coefficients.put(
+                "calibration",
+                updatedCalibrationFactor);
+
 
         return coefficients;
     }
 
-    //-----------
+    public Map<String, Double> obtainCountWorkCoefficients(CalibrationOccupation occupation, EmploymentStatus employmentStatus) {
+
+        Map<String, Double> coefficients =
+                new HashMap<>(countCoef);
 
 
-    // new obtain method---------------------------------------------------------
-    public Map<String, Double> obtainCountWorkCoefficients(
-            CalibrationOccupation occupation,
-            EmploymentStatus employmentStatus) {
+        Map<Integer, Double> calibrationFactors =
+                updatedWorkCalibrationFactors
+                        .get(occupation)
+                        .get(employmentStatus);
 
-        Map<String, Double> coefficients = new HashMap<>(countCoef);
 
-        double originalCalibrationFactor_1_2 = coefficients.get("calibration_1|2");
-        double originalCalibrationFactor_2_3 = coefficients.get("calibration_2|3");
-        double originalCalibrationFactor_3_4 = coefficients.get("calibration_3|4");
-        double originalCalibrationFactor_4_5 = coefficients.get("calibration_4|5");
-        double originalCalibrationFactor_5_6 = coefficients.get("calibration_5|6");
-        double originalCalibrationFactor_6_7 = coefficients.get("calibration_6|7");
+        for (int frequencyInterval = 1;
+             frequencyInterval <= 6;
+             frequencyInterval++) {
 
-        double updatedCalibrationFactor_1_2 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(1);
-        double updatedCalibrationFactor_2_3 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(2);
-        double updatedCalibrationFactor_3_4 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(3);
-        double updatedCalibrationFactor_4_5 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(4);
-        double updatedCalibrationFactor_5_6 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(5);
-        double updatedCalibrationFactor_6_7 = updatedWorkCalibrationFactors.get(occupation).get(employmentStatus).get(6);
+            String calibrationVariable =
+                    "calibration_"
+                            + frequencyInterval
+                            + "|"
+                            + (frequencyInterval + 1);
 
-        double latestCalibrationFactor_1_2 = originalCalibrationFactor_1_2 + updatedCalibrationFactor_1_2;
-        double latestCalibrationFactor_2_3 = originalCalibrationFactor_2_3 + updatedCalibrationFactor_2_3;
-        double latestCalibrationFactor_3_4 = originalCalibrationFactor_3_4 + updatedCalibrationFactor_3_4;
-        double latestCalibrationFactor_4_5 = originalCalibrationFactor_4_5 + updatedCalibrationFactor_4_5;
-        double latestCalibrationFactor_5_6 = originalCalibrationFactor_5_6 + updatedCalibrationFactor_5_6;
-        double latestCalibrationFactor_6_7 = originalCalibrationFactor_6_7 + updatedCalibrationFactor_6_7;
 
-        coefficients.replace("calibration_1|2", latestCalibrationFactor_1_2);
-        coefficients.replace("calibration_2|3", latestCalibrationFactor_2_3);
-        coefficients.replace("calibration_3|4", latestCalibrationFactor_3_4);
-        coefficients.replace("calibration_4|5", latestCalibrationFactor_4_5);
-        coefficients.replace("calibration_5|6", latestCalibrationFactor_5_6);
-        coefficients.replace("calibration_6|7", latestCalibrationFactor_6_7);
+            double updatedCalibrationFactor =
+                    calibrationFactors.get(
+                            frequencyInterval);
+
+
+            coefficients.put(
+                    calibrationVariable,
+                    updatedCalibrationFactor);
+        }
+
 
         return coefficients;
     }
 
     public Map<String, Double> obtainCountEducationCoefficients() {
 
-        Map<String, Double> coefficients = new HashMap<>(countCoef);
+        Map<String, Double> coefficients =
+                new HashMap<>(countCoef);
 
-        double originalCalibrationFactor_1_2 = coefficients.get("calibration_1|2");
-        double originalCalibrationFactor_2_3 = coefficients.get("calibration_2|3");
-        double originalCalibrationFactor_3_4 = coefficients.get("calibration_3|4");
-        double originalCalibrationFactor_4_5 = coefficients.get("calibration_4|5");
-        double originalCalibrationFactor_5_6 = coefficients.get("calibration_5|6");
-        double originalCalibrationFactor_6_7 = coefficients.get("calibration_6|7");
 
-        double updatedCalibrationFactor_1_2 = updatedEducationCalibrationFactors.get(1);
-        double updatedCalibrationFactor_2_3 = updatedEducationCalibrationFactors.get(2);
-        double updatedCalibrationFactor_3_4 = updatedEducationCalibrationFactors.get(3);
-        double updatedCalibrationFactor_4_5 = updatedEducationCalibrationFactors.get(4);
-        double updatedCalibrationFactor_5_6 = updatedEducationCalibrationFactors.get(5);
-        double updatedCalibrationFactor_6_7 = updatedEducationCalibrationFactors.get(6);
+        for (int frequencyInterval = 1;
+             frequencyInterval <= 6;
+             frequencyInterval++) {
 
-        double latestCalibrationFactor_1_2 = originalCalibrationFactor_1_2 + updatedCalibrationFactor_1_2;
-        double latestCalibrationFactor_2_3 = originalCalibrationFactor_2_3 + updatedCalibrationFactor_2_3;
-        double latestCalibrationFactor_3_4 = originalCalibrationFactor_3_4 + updatedCalibrationFactor_3_4;
-        double latestCalibrationFactor_4_5 = originalCalibrationFactor_4_5 + updatedCalibrationFactor_4_5;
-        double latestCalibrationFactor_5_6 = originalCalibrationFactor_5_6 + updatedCalibrationFactor_5_6;
-        double latestCalibrationFactor_6_7 = originalCalibrationFactor_6_7 + updatedCalibrationFactor_6_7;
+            String calibrationVariable =
+                    "calibration_"
+                            + frequencyInterval
+                            + "|"
+                            + (frequencyInterval + 1);
 
-        coefficients.replace("calibration_1|2", latestCalibrationFactor_1_2);
-        coefficients.replace("calibration_2|3", latestCalibrationFactor_2_3);
-        coefficients.replace("calibration_3|4", latestCalibrationFactor_3_4);
-        coefficients.replace("calibration_4|5", latestCalibrationFactor_4_5);
-        coefficients.replace("calibration_5|6", latestCalibrationFactor_5_6);
-        coefficients.replace("calibration_6|7", latestCalibrationFactor_6_7);
+
+            double updatedCalibrationFactor =
+                    updatedEducationCalibrationFactors
+                            .get(frequencyInterval);
+
+            coefficients.put(
+                    calibrationVariable,
+                    updatedCalibrationFactor);
+        }
+
 
         return coefficients;
     }
 
-    public Map<String, Double> obtainAccompanyCountCoefficients(
-            CalibrationOccupation occupation,
-            RemoteWorkable remoteWorkable,
-            DisabilityMuc disability) {
+    public Map<String, Double> obtainAccompanyCountCoefficients(CalibrationOccupation occupation, RemoteWorkable remoteWorkable, DisabilityMuc disability) {
 
-        Map<String, Double> coefficients = new HashMap<>(countCoef);
+        Map<String, Double> coefficients =
+                new HashMap<>(countCoef);
 
-        double originalCalibrationFactor = coefficients.get("calibration");
-        double updatedCalibrationFactor = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(1);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        coefficients.replace("calibration", latestCalibrationFactor);
 
-        return coefficients;
-    }
+        double updatedCalibrationFactor =
+                updatedDiscretionaryCalibrationFactors
+                        .get(occupation)
+                        .get(remoteWorkable)
+                        .get(disability)
+                        .get(1);
 
-    public Map<String, Double> obtainDiscretionaryCountCoefficients(
-            CalibrationOccupation occupation,
-            RemoteWorkable remoteWorkable,
-            DisabilityMuc disability) {
+        coefficients.put(
+                "calibration",
+                updatedCalibrationFactor);
 
-        Map<String, Double> coefficients = new HashMap<>(countCoef);
-
-        double originalCalibrationFactor = coefficients.get("calibration");
-        double updatedCalibrationFactor = updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(0);
-        double latestCalibrationFactor = originalCalibrationFactor + updatedCalibrationFactor;
-        coefficients.replace("calibration", latestCalibrationFactor);
 
         return coefficients;
     }
 
-    // -----------------------------------------------------------
+    public Map<String, Double> obtainDiscretionaryCountCoefficients(CalibrationOccupation occupation, RemoteWorkable remoteWorkable, DisabilityMuc disability) {
 
+        Map<String, Double> coefficients =
+                new HashMap<>(countCoef);
+
+
+        double updatedCalibrationFactor =
+                updatedDiscretionaryCalibrationFactors
+                        .get(occupation)
+                        .get(remoteWorkable)
+                        .get(disability)
+                        .get(0);
+
+        coefficients.put(
+                "calibration",
+                updatedCalibrationFactor);
+
+
+        return coefficients;
+    }
 
     private RemoteWorkable getRemoteWorkable(Person person) {
 
@@ -1037,8 +1417,216 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
                 : DisabilityMuc.WITH;
     }
 
-//    @Override
-//    public Object call() throws Exception {
-//        return null;
-//    }
+    private void putDiscretionaryCalibration(CalibrationOccupation occupation, RemoteWorkable remoteWorkable, DisabilityMuc disability, int frequency, double value) {
+
+        updatedDiscretionaryCalibrationFactors
+                .get(occupation)
+                .get(remoteWorkable)
+                .get(disability)
+                .put(frequency, value);
+    }
+
+    private static class CalibrationSegment {
+
+        private final CalibrationOccupation occupation;
+        private final EmploymentStatus employmentStatus;
+        private final RemoteWorkable remoteWorkable;
+        private final DisabilityMuc disability;
+
+        private CalibrationSegment(
+                CalibrationOccupation occupation,
+                EmploymentStatus employmentStatus,
+                RemoteWorkable remoteWorkable,
+                DisabilityMuc disability) {
+
+            this.occupation = occupation;
+            this.employmentStatus = employmentStatus;
+            this.remoteWorkable = remoteWorkable;
+            this.disability = disability;
+        }
+
+        public CalibrationOccupation getOccupation() {
+            return occupation;
+        }
+
+        public EmploymentStatus getEmploymentStatus() {
+            return employmentStatus;
+        }
+
+        public RemoteWorkable getRemoteWorkable() {
+            return remoteWorkable;
+        }
+
+        public DisabilityMuc getDisability() {
+            return disability;
+        }
+    }
+
+    private static Map<String, CalibrationSegment> createCalibrationSegmentMapping() {
+
+        Map<String, CalibrationSegment> map = new HashMap<>();
+
+        map.put(
+                "employed_fulltime",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.FULLTIME_EMPLOYED,
+                        null,
+                        null));
+
+        map.put(
+                "employed_halftime",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.HALFTIME_EMPLOYED,
+                        null,
+                        null));
+
+        map.put(
+                "other",
+                new CalibrationSegment(
+                        CalibrationOccupation.OTHER,
+                        EmploymentStatus.NO_INFO,
+                        null,
+                        null));
+
+
+        map.put(
+                "employed_remote_working_with_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        null,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH));
+
+        map.put(
+                "employed_remote_working_without_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        null,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITHOUT));
+
+        map.put(
+                "employed_no_remote_working_with_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        null,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH));
+
+        map.put(
+                "employed_no_remote_working_without_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.EMPLOYED,
+                        null,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT));
+
+        map.put(
+                "other_no_remote_working_with_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.OTHER,
+                        null,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH));
+
+        map.put(
+                "other_no_remote_working_without_disability",
+                new CalibrationSegment(
+                        CalibrationOccupation.OTHER,
+                        null,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT));
+
+        return map;
+    }
+
+    private CalibrationSegment getWorkCalibrationSegment(Person person) {
+
+        if (person.getOccupation() == Occupation.EMPLOYED) {
+
+            if (person.getEmploymentStatus() == EmploymentStatus.FULLTIME_EMPLOYED) {
+                return CALIBRATION_SEGMENTS.get("employed_fulltime");
+            }
+
+            if (person.getEmploymentStatus() == EmploymentStatus.HALFTIME_EMPLOYED) {
+                return CALIBRATION_SEGMENTS.get("employed_halftime");
+            }
+        }
+
+        return CALIBRATION_SEGMENTS.get("other");
+    }
+
+    private CalibrationSegment getDiscretionaryCalibrationSegment(Person person) {
+
+        CalibrationOccupation occupation = getCalibrationOccupation(person);
+        RemoteWorkable remoteWorkable = getRemoteWorkable(person);
+        DisabilityMuc disability = hasDisability(person);
+
+        // OTHER + remote-workable is not a calibrated segment.
+        if (occupation == CalibrationOccupation.OTHER
+                && remoteWorkable == RemoteWorkable.TRUE) {
+            return null;
+        }
+
+        if (occupation == CalibrationOccupation.EMPLOYED) {
+
+            if (remoteWorkable == RemoteWorkable.TRUE) {
+
+                if (disability == DisabilityMuc.WITH) {
+                    return CALIBRATION_SEGMENTS.get(
+                            "employed_remote_working_with_disability");
+                } else {
+                    return CALIBRATION_SEGMENTS.get(
+                            "employed_remote_working_without_disability");
+                }
+
+            } else {
+
+                if (disability == DisabilityMuc.WITH) {
+                    return CALIBRATION_SEGMENTS.get(
+                            "employed_no_remote_working_with_disability");
+                } else {
+                    return CALIBRATION_SEGMENTS.get(
+                            "employed_no_remote_working_without_disability");
+                }
+            }
+
+        } else {
+
+            if (disability == DisabilityMuc.WITH) {
+                return CALIBRATION_SEGMENTS.get(
+                        "other_no_remote_working_with_disability");
+            } else {
+                return CALIBRATION_SEGMENTS.get(
+                        "other_no_remote_working_without_disability");
+            }
+        }
+    }
+
+    private double getWorkCalibrationFactor(CalibrationSegment segment, int frequencyInterval) {
+
+        if (segment == null) {
+            return 0.0;
+        }
+
+        return updatedWorkCalibrationFactors
+                .get(segment.getOccupation())
+                .get(segment.getEmploymentStatus())
+                .get(frequencyInterval);
+    }
+
+    private double getDiscretionaryCalibrationFactor(CalibrationSegment segment, int frequencyInterval) {
+
+        if (segment == null) {
+            return 0.0;
+        }
+
+        return updatedDiscretionaryCalibrationFactors
+                .get(segment.getOccupation())
+                .get(segment.getRemoteWorkable())
+                .get(segment.getDisability())
+                .get(frequencyInterval);
+    }
 }

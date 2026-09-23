@@ -43,11 +43,11 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
 
         this.zeroCoef =
                 new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                        Path.of(AbitResources.instance.getString("remoteWork.gen.zero"))).readCoefficients();
+                        Path.of(AbitResources.instance.getString("actgen.mand.zero"))).readCoefficients();
 
         this.countCoef =
                 new CoefficientsReader(dataSet, purpose.toString().toLowerCase(),
-                        Path.of(AbitResources.instance.getString("remoteWork.gen.count"))).readCoefficients();
+                        Path.of(AbitResources.instance.getString("actgen.mand.count"))).readCoefficients();
 
     }
 

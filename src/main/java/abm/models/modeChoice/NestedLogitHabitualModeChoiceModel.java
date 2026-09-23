@@ -59,7 +59,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 //        }
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
             updatedCalibrationFactors.putIfAbsent(occupation, new HashMap<>());
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                 updatedCalibrationFactors.get(occupation).putIfAbsent(rw, new HashMap<>());
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
                     updatedCalibrationFactors.get(occupation).get(rw).putIfAbsent(disability, new HashMap<>());
@@ -271,7 +271,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
     public void updateCalibrationFactor(Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Double>>>> newCalibrationFactors){
 
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
                     for (HabitualMode mode : HabitualMode.getHabitualModesWithoutUnknown()) {
                         double oldValue = updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(mode);
@@ -296,17 +296,60 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 //        }
 //    }
 
+//
+//    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
+//        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+//            double updatedCalibrationFactor;
+//            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.EMPLOYED, habitualMode);
+//            coefficients.get(habitualMode).replace("calibration_employed", coefficients.get(habitualMode).get("calibration_employed") + updatedCalibrationFactor);
+//            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.STUDENT, habitualMode);
+//            coefficients.get(habitualMode).replace("calibration_student", coefficients.get(habitualMode).get("calibration_student") + updatedCalibrationFactor);
+//        }
+//        return coefficients;
+//    }
+
 
     public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-            double updatedCalibrationFactor;
-            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.EMPLOYED, habitualMode);
-            coefficients.get(habitualMode).replace("calibration_employed", coefficients.get(habitualMode).get("calibration_employed") + updatedCalibrationFactor);
-            updatedCalibrationFactor = getAverageCalibrationFactor(Occupation.STUDENT, habitualMode);
-            coefficients.get(habitualMode).replace("calibration_student", coefficients.get(habitualMode).get("calibration_student") + updatedCalibrationFactor);
+            for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
+                String baseCalibrationVariable;
+                if (occupation == Occupation.EMPLOYED) {
+                    baseCalibrationVariable = "calibration_employed";
+                } else {
+                    baseCalibrationVariable = "calibration_student";
+                }
+                double baseCalibrationCoefficient = coefficients.get(habitualMode).getOrDefault(baseCalibrationVariable, 0.0);
+                for (RemoteWorkable remoteWorkable : getRelevantRemoteWorkableValues(occupation)) {
+                    for (DisabilityMuc disability : DisabilityMuc.values()) {
+                        String calibrationVariable =
+                                getCalibrationVariableName(occupation, remoteWorkable, disability);
+                        double calibrationFactor =
+                                updatedCalibrationFactors
+                                        .get(occupation)
+                                        .get(remoteWorkable)
+                                        .get(disability)
+                                        .get(habitualMode);
+
+
+                        double finalCoefficient =
+                                baseCalibrationCoefficient
+                                        + calibrationFactor;
+
+
+                        coefficients
+                                .get(habitualMode)
+                                .put(
+                                        calibrationVariable,
+                                        finalCoefficient
+                                );
+                    }
+                }
+            }
         }
+
         return coefficients;
     }
+
 
 //    public Map<HabitualMode, Map<String, Double>> obtainCoefficientsTable() {
 //
@@ -434,6 +477,10 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
     private RemoteWorkable getRemoteWorkable(Person person) {
 
+        if (person.getOccupation() == Occupation.STUDENT) {
+            return RemoteWorkable.FALSE;
+        }
+
         return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
@@ -446,15 +493,58 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
                 : DisabilityMuc.WITH;
     }
 
-    private double getAverageCalibrationFactor(Occupation occupation, HabitualMode habitualMode) {
-        double sum = 0.0;
-        int count = 0;
-        for (RemoteWorkable rw : RemoteWorkable.values()) {
-            for (DisabilityMuc disability : DisabilityMuc.values()) {
-                sum += updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(habitualMode);
-                count++;
-            }
-        }
-        return count > 0 ? sum / count : 0.0;
+//    private double getAverageCalibrationFactor(Occupation occupation, HabitualMode habitualMode) {
+//        double sum = 0.0;
+//        int count = 0;
+//        for (RemoteWorkable rw : RemoteWorkable.values()) {
+//            for (DisabilityMuc disability : DisabilityMuc.values()) {
+//                sum += updatedCalibrationFactors.get(occupation).get(rw).get(disability).get(habitualMode);
+//                count++;
+//            }
+//        }
+//        return count > 0 ? sum / count : 0.0;
+//    }
+
+    private String getCalibrationVariableName(
+            Occupation occupation,
+            RemoteWorkable remoteWorkable,
+            DisabilityMuc disability) {
+
+        String occupationName =
+                occupation
+                        .name()
+                        .toLowerCase();
+
+        String remoteWorkName =
+                remoteWorkable == RemoteWorkable.TRUE
+                        ? "remote_working"
+                        : "no_remote_working";
+
+        String disabilityName =
+                disability == DisabilityMuc.WITH
+                        ? "with_disability"
+                        : "without_disability";
+
+
+        return "calibration_"
+                + occupationName
+                + "_"
+                + remoteWorkName
+                + "_"
+                + disabilityName;
     }
+
+    private List<RemoteWorkable> getRelevantRemoteWorkableValues(
+            Occupation occupation) {
+
+        if (occupation == Occupation.STUDENT) {
+            return List.of(RemoteWorkable.FALSE);
+        }
+
+        return List.of(
+                RemoteWorkable.TRUE,
+                RemoteWorkable.FALSE
+        );
+    }
+
 }

@@ -3,7 +3,7 @@ package abm.calibration;
 import abm.data.DataSet;
 import abm.data.plans.DisabilityMuc;
 import abm.data.plans.HabitualMode;
-import abm.data.plans.Mode;
+import abm.data.plans.Purpose;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.RemoteWorkable;
@@ -11,9 +11,7 @@ import abm.models.modeChoice.NestedLogitHabitualModeChoiceModel;
 import abm.properties.AbitResources;
 import de.tum.bgu.msm.data.person.Disability;
 import de.tum.bgu.msm.data.person.Occupation;
-import org.apache.hadoop.hdfs.inotify.Event;
 import org.apache.log4j.Logger;
-
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -24,7 +22,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class HabitualModeChoiceCalibration implements ModelComponent {
 
@@ -36,6 +33,9 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
     String habitualModeObjectivesPath = AbitResources.instance.getString("habitual.mode.calibration.objectives");
     String habitualModeAggregateObjectivesPath = AbitResources.instance.getString("habitual.mode.calibration.aggregate.objectives");
     DataSet dataSet;
+
+    String habitualModeCalibrationOutputPath = AbitResources.instance.getString("habitual.mode.calibration.output");
+    String habitualModeCoefficientOutputPath =  AbitResources.instance.getString("habitual.mode.coef.output");
 
     Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Double>>>> objectiveHabitualModeShare = new HashMap<>();
     Map<Occupation, Map<RemoteWorkable, Map<DisabilityMuc, Map<HabitualMode, Integer>>>> simulatedHabitualModeCount = new HashMap<>();
@@ -70,7 +70,7 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             simulatedHabitualModeShare.putIfAbsent(occupation, new HashMap<>());
             calibrationFactors.putIfAbsent(occupation, new HashMap<>());
 
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
 
                 objectiveHabitualModeShare.get(occupation).putIfAbsent(rw, new HashMap<>());
                 simulatedHabitualModeCount.get(occupation).putIfAbsent(rw, new HashMap<>());
@@ -120,49 +120,20 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                 logger.info("Habitual mode choice model for " + habitualMode.toString() + "\t" + "difference: " + differenceAggre);
             }
 
-//            for (Occupation occupation : Occupation.values()) {
-//                for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
-//                    double observedShare = objectiveHabitualModeShare.get(occupation).get(habitualMode);
-//                    double simulatedShare = simulatedHabitualModeShare.get(occupation).get(habitualMode);
-//                    double difference = observedShare - simulatedShare;
-//                    double factor = stepSize * (observedShare - simulatedShare);
-//                    if (habitualMode.equals(HabitualMode.CAR_DRIVER)) {
-//                        factor = 0.00;
-//                    }
-//                    calibrationFactors.get(occupation).replace(habitualMode, factor);
-//                    logger.info("Habitual mode choice model for " + occupation.toString() + "\t" + " and " + habitualMode.toString() + "\t" + "difference: " + difference);
-//                    if (Math.abs(difference) > maxDifference) {
-//                        maxDifference = Math.abs(difference);
-//                    }
-//                }
-//            }
-
-// New implementation -------------------------------------------------------------------- start
-
             for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-                for (RemoteWorkable rw : RemoteWorkable.values()) {
+                for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                     for (DisabilityMuc disability  : DisabilityMuc.values()) {
                         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-                            double observedShare =
-                                    objectiveHabitualModeShare
-                                            .get(occupation)
-                                            .get(rw)
-                                            .get(disability)
-                                            .get(habitualMode);
-
-                            double simulatedShare =
-                                    simulatedHabitualModeShare
-                                            .get(occupation)
-                                            .get(rw)
-                                            .get(disability)
-                                            .get(habitualMode);
-
+                            double observedShare = objectiveHabitualModeShare.get(occupation).get(rw).get(disability).get(habitualMode);
+                            double simulatedShare = simulatedHabitualModeShare.get(occupation).get(rw).get(disability).get(habitualMode);
                             double difference = observedShare - simulatedShare;
 
-                            double factor = stepSize * difference;
+                            double factor;
 
                             if (habitualMode == HabitualMode.CAR_DRIVER) {
-                                factor = 0;
+                                factor = 0.0;
+                            } else {
+                                factor = stepSize * difference;
                             }
 
                             calibrationFactors
@@ -171,13 +142,13 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                                     .get(disability)
                                     .put(habitualMode, factor);
 
-                            logger.info(occupation + " " + rw + " " + disability + " " + habitualMode + " difference = " + difference);
+                            logger.info("HABITUAL MODE | " + occupation + " | " + rw + " | " + disability + " | " + habitualMode + " | observed = " + observedShare + " | simulated = " + simulatedShare + " | difference = " + difference + " | calibration factor = " + factor
+                            );
                             maxDifference = Math.max(maxDifference, Math.abs(difference));
                         }
                     }
                 }
             }
-// New implementation -------------------------------------------------------------------- end
 
             habitualModeChoiceCalibration.updateCalibrationFactor(calibrationFactors);
 
@@ -186,9 +157,6 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             }else {
                 logger.info("MAX Diff: " + maxDifference);
             }
-
-            //List<Household> simulatedHousehold = dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated).collect(Collectors.toList());
-            //simulatedHousehold.forEach(household -> household.getPersons());
 
             dataSet.getHouseholds().values().parallelStream().filter(Household::getSimulated)
                     .flatMap(household -> household.getPersons().stream())
@@ -201,70 +169,40 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         logger.info("Finished the calibration of habitual mode choice model.");
 
 
-        // make absolutely sure final shares are up-to-date
         summarizeSimulatedResult();
 
-        // write final simulated values to csv
         try {
-            Path outputPath = Path.of(habitualModeObjectivesPath)
-                    .getParent()
-                    .resolve("habitual_mode_simulated_newIMP.csv");
-
-            writeSimulatedValues(outputPath.toString());
+            writeSimulatedValues(habitualModeCalibrationOutputPath);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new RuntimeException(
+                    "Could not write habitual mode simulated values to: "
+                            + habitualModeCalibrationOutputPath,
+                    e
+            );
         }
 
-        //Todo: obtain the updated coefficients + calibration factors
         Map<HabitualMode, Map<String, Double>> finalCoefficientsTable = habitualModeChoiceCalibration.obtainCoefficientsTable();
 
-        //Todo: print the coefficients table to input folder
         try {
             printFinalCoefficientsTable(finalCoefficientsTable);
         } catch (FileNotFoundException e) {
-            System.err.println("Output path of the coefficient table is not correct.");
+            throw new RuntimeException(
+                    "Could not write calibrated habitual mode coefficients to: "
+                            + habitualModeCoefficientOutputPath,
+                    e
+            );
         }
 
+        try {
+            printFinalCoefficientsTable(finalCoefficientsTable);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(
+                    "Could not write final habitual mode choice coefficients: "
+                            + inputFolder,
+                    e
+            );
+        }
     }
-
-//    private void readObjectiveValues() {
-//
-//        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_DRIVER, 0.5424);
-//        objectiveHabitualAggreModeShare.put(HabitualMode.CAR_PASSENGER, 0.0341);
-//        objectiveHabitualAggreModeShare.put(HabitualMode.PT, 0.2471);
-//        objectiveHabitualAggreModeShare.put(HabitualMode.BIKE, 0.1270);
-//        objectiveHabitualAggreModeShare.put(HabitualMode.WALK, 0.0494);
-//
-//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_DRIVER, 0.6476);
-//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.CAR_PASSENGER, 0.0257);
-//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.PT, 0.1725);
-//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.BIKE, 0.1135);
-//        objectiveHabitualModeShare.get(Occupation.EMPLOYED).put(HabitualMode.WALK, 0.0407);
-//
-//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_DRIVER, 0.1414);
-//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.CAR_PASSENGER, 0.0662);
-//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.PT, 0.5313);
-//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.BIKE, 0.1786);
-//        objectiveHabitualModeShare.get(Occupation.STUDENT).put(HabitualMode.WALK, 0.0825);
-//
-////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BUS, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.BIKE, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.TODDLER).putIfAbsent(Mode.WALK, 0.00);
-////
-////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BUS, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.BIKE, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.RETIREE).putIfAbsent(Mode.WALK, 0.00);
-////
-////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_DRIVER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.CAR_PASSENGER, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BUS, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.BIKE, 0.00);
-////        objectiveHabitualModeShare.get(Occupation.UNEMPLOYED).putIfAbsent(Mode.WALK, 0.00);
-//    }
 
     private void readObjectiveValues() {
 
@@ -331,19 +269,8 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     private void summarizeSimulatedResult() {
 
-//        for (Occupation occupation : Occupation.values()) {
-//            simulatedPopCount.put(occupation, 0);
-//            for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
-//                simulatedHabitualModeCount.get(occupation).put(habitualMode, 0);
-//                simulatedHabitualModeShare.get(occupation).put(habitualMode, 0.0);
-//                simulatedHabitualAggreModeCount.put(habitualMode, 0);
-//                simulatedHabitualAggreModeShare.put(habitualMode, 0.0);
-//            }
-//        }
-
-// New implementation -------------------------------------------------------------------- start
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
                     simulatedPopCount.get(occupation).get(rw).put(disability, 0);
                     for (HabitualMode mode : HabitualMode.getHabitualModesWithoutUnknown()) {
@@ -356,27 +283,8 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                 }
             }
         }
-// New implementation -------------------------------------------------------------------- end
-
-//        for (Household household : dataSet.getHouseholds().values()) {
-//            if (household.getSimulated()) {
-//                for (Person person : household.getPersons()) {
-//                    if (person.getAge() >= 10) {
-//                        if (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) {
-//                            int modeCount = simulatedHabitualModeCount.get(person.getOccupation()).get(person.getHabitualMode());
-//                            simulatedHabitualModeCount.get(person.getOccupation()).replace(person.getHabitualMode(), modeCount + 1);
-//                            int popCount = simulatedPopCount.get(person.getOccupation());
-//                            simulatedPopCount.replace(person.getOccupation(), popCount + 1);
-//                            int modeAggreCount = simulatedHabitualAggreModeCount.get(person.getHabitualMode());
-//                            simulatedHabitualAggreModeCount.replace(person.getHabitualMode(), modeAggreCount + 1);
-//                        }
-//                    }
-//                }
-//            }
-//        }
 
 
-        // New implementation -------------------------------------------------------------------- start
         for (Household household : dataSet.getHouseholds().values()) {
             if (household.getSimulated()) {
                 for (Person person : household.getPersons()) {
@@ -396,24 +304,9 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                 }
             }
         }
-        // New implementation -------------------------------------------------------------------- end
 
-
-//        for (Occupation occupation : Occupation.values()) {
-//            if (occupation.equals(Occupation.EMPLOYED) || occupation.equals(Occupation.STUDENT)) {
-//                int popCount = simulatedPopCount.get(occupation);
-//                int modeCount;
-//                for (HabitualMode habitualMode : HabitualMode.getHabitualModes()) {
-//                    modeCount = simulatedHabitualModeCount.get(occupation).get(habitualMode);
-//                    double modeShare = (double) modeCount / popCount;
-//                    simulatedHabitualModeShare.get(occupation).replace(habitualMode, modeShare);
-//                }
-//            }
-//        }
-
-        // New implementation -------------------------------------------------------------------- start
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
                     int popCount = simulatedPopCount.get(occupation).get(rw).get(disability);
                     if (popCount == 0) {continue;
@@ -426,14 +319,11 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                 }
             }
         }
-        // New implementation -------------------------------------------------------------------- end
-
 
         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-//            int popCount = simulatedPopCount.get(Occupation.EMPLOYED) + simulatedPopCount.get(Occupation.STUDENT);
             int popCount = 0;
             for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-                for (RemoteWorkable rw : RemoteWorkable.values()) {
+                for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                     for (DisabilityMuc disability : DisabilityMuc.values()) {
                         popCount += simulatedPopCount.get(occupation).get(rw).get(disability);
                     }
@@ -449,45 +339,11 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     }
 
-
-
-
-
-     // temporary method--
-//    private void writeSimulatedValues(String fileName)
-//            throws FileNotFoundException {
-//
-//        PrintWriter pw = new PrintWriter(fileName);
-//
-//        pw.println("occupation,mode,simulatedShare");
-//
-//        for (Occupation occupation : Occupation.values()) {
-//
-//            if (!(occupation == Occupation.EMPLOYED ||
-//                    occupation == Occupation.STUDENT))
-//                continue;
-//
-//            for (HabitualMode mode : HabitualMode.getHabitualModes()) {
-//
-//                pw.println(
-//                        occupation + "," +
-//                                mode + "," +
-//                                simulatedHabitualModeShare
-//                                        .get(occupation)
-//                                        .get(mode)
-//                );
-//            }
-//        }
-//
-//        pw.close();
-//    }
-
-    // New implementation -------------------------------------------------------------------- start
     private void writeSimulatedValues(String fileName) throws FileNotFoundException {
         PrintWriter pw = new PrintWriter(fileName);
         pw.println("occupation,remote_work_allowance," + "disability,mode,simulatedShare");
         for (Occupation occupation : List.of(Occupation.EMPLOYED, Occupation.STUDENT)) {
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+            for (RemoteWorkable rw : getRelevantRemoteWorkableValues(occupation)) {
                 for (DisabilityMuc disability : DisabilityMuc.values()) {
                     for (HabitualMode mode : HabitualMode.getHabitualModesWithoutUnknown()) {
                         boolean disabilityBoolean = disability == DisabilityMuc.WITH;
@@ -498,33 +354,66 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
         }
         pw.close();
     }
-    // New implementation -------------------------------------------------------------------- end
-    // -- temporary method
 
-    private void printFinalCoefficientsTable(Map<HabitualMode, Map<String, Double>> finalCoefficientsTable) throws FileNotFoundException {
-        logger.info("Writing habitual mode choice coefficient + calibration factors: " + inputFolder);
-        PrintWriter pw = new PrintWriter(inputFolder);
+    private void printFinalCoefficientsTable(
+            Map<HabitualMode, Map<String, Double>>
+                    finalCoefficientsTable)
+            throws FileNotFoundException {
 
-        StringBuilder header = new StringBuilder("variable");
+        logger.info(
+                "Writing calibrated habitual mode coefficients: "
+                        + habitualModeCoefficientOutputPath
+        );
+
+        PrintWriter pw = new PrintWriter(habitualModeCoefficientOutputPath);
+
+        StringBuilder header =
+                new StringBuilder("variable");
+
         for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-            header.append(",");
-            header.append(habitualMode);
+
+            header.append(",").append(habitualMode);
         }
+
         pw.println(header);
 
-        for (String variableNames : finalCoefficientsTable.get(HabitualMode.PT).keySet()) {
-            StringBuilder line = new StringBuilder(variableNames);
-            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
-                if (variableNames.equals("calibration_retiree") || variableNames.equals("calibration_toddler") || variableNames.equals("calibration_unemployed")) {
-                    line.append(",");
-                    line.append(0);
-                } else {
-                    line.append(",");
-                    line.append(finalCoefficientsTable.get(habitualMode).get(variableNames));
-                }
+        Map<String, Double> referenceCoefficients =
+                finalCoefficientsTable.get(HabitualMode.PT);
+
+        for (String variable :
+                referenceCoefficients.keySet()) {
+
+            if (variable.startsWith("calibration")) {
+                continue;
             }
+
+            StringBuilder line =
+                    new StringBuilder(variable);
+
+            for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+
+                double coefficient = finalCoefficientsTable.get(habitualMode).getOrDefault(variable, 0.0);
+
+                line.append(",").append(coefficient);
+            }
+
             pw.println(line);
         }
+
+
+        writeCalibrationCoefficient(pw, "calibration_employed_remote_working_with_disability", finalCoefficientsTable);
+
+        writeCalibrationCoefficient(pw, "calibration_employed_remote_working_without_disability", finalCoefficientsTable);
+
+        writeCalibrationCoefficient(pw, "calibration_employed_no_remote_working_with_disability", finalCoefficientsTable);
+
+        writeCalibrationCoefficient(pw, "calibration_employed_no_remote_working_without_disability", finalCoefficientsTable);
+
+        writeCalibrationCoefficient(pw, "calibration_student_no_remote_working_with_disability", finalCoefficientsTable);
+
+        writeCalibrationCoefficient(pw, "calibration_student_no_remote_working_without_disability", finalCoefficientsTable);
+
+
         pw.close();
     }
 
@@ -536,8 +425,34 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
 
     private RemoteWorkable getRemoteWorkable(Person person) {
 
+        if (person.getOccupation() == Occupation.STUDENT) {
+            return RemoteWorkable.FALSE;
+        }
+
         return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
+    }
+
+    private void writeCalibrationCoefficient(
+            PrintWriter pw,
+            String calibrationVariable,
+            Map<HabitualMode, Map<String, Double>> finalCoefficientsTable) {
+
+        StringBuilder line = new StringBuilder(calibrationVariable);
+        for (HabitualMode habitualMode : HabitualMode.getHabitualModesWithoutUnknown()) {
+            double coefficient = finalCoefficientsTable.get(habitualMode).getOrDefault(calibrationVariable, 0.0);
+            line.append(",")
+                    .append(coefficient);
+        }
+
+        pw.println(line);
+    }
+
+    private List<RemoteWorkable> getRelevantRemoteWorkableValues(Occupation occupation) {
+        if (occupation == Occupation.STUDENT) {
+            return List.of(RemoteWorkable.FALSE);
+        }
+        return List.of(RemoteWorkable.TRUE, RemoteWorkable.FALSE);
     }
 }

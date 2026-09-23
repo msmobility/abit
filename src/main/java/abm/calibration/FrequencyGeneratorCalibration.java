@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class FrequencyGeneratorCalibration implements ModelComponent {
 
     //Todo define a few calibration parameters
@@ -69,13 +68,15 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
     }
 
     // coefficients path
-    String workZeroCoefficientsPath = AbitResources.instance.getString("actgen.work.zero.output");
-    String educationZeroCoefficientsPath = AbitResources.instance.getString("actgen.education.zero.output");
-    String accompanyZeroCoefficientsPath = AbitResources.instance.getString("actgen.accompany.zero.output");
-    String workCountCoefficientsPath = AbitResources.instance.getString("actgen.work.count.output");
-    String educationCountCoefficientsPath = AbitResources.instance.getString("actgen.education.count.output");
-    String accompanyCountCoefficientsPath = AbitResources.instance.getString("actgen.accompany.count.output");
-    String discretionaryCountCoefficientsPath = AbitResources.instance.getString("actgen.discretionary.count.output");
+    String negBinZeroCoefficientsPath = AbitResources.instance.getString("actgen.negbin.zero.output");
+    String negBinZeroCalibrationFactorsPath = AbitResources.instance.getString("actgen.negbin.zero.calibration.output");
+    String polrCountCoefficientsPath = AbitResources.instance.getString("actgen.polr.count.output");
+    String polrCountCalibrationFactorsPath = AbitResources.instance.getString("actgen.polr.count.calibration.output");
+    String negBinCountCoefficientsPath = AbitResources.instance.getString("actgen.negbin.count.output");
+    String negBinCountCalibrationFactorsPath = AbitResources.instance.getString("actgen.negbin.count.calibration.output");
+    String glmNegBinCoefficientsPath = AbitResources.instance.getString("actgen.glm.negbin.output");
+    String glmNegBinCalibrationFactorsPath = AbitResources.instance.getString("actgen.glm.negbin.calibration.output");
+
 
     // objectives path
     String workFrequencyObjectivesPath = AbitResources.instance.getString("actgen.frequency.calibration.objectives.work");
@@ -89,6 +90,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
     boolean calibrateMandatoryActGen;
     boolean calibrateDiscretionaryActGen;
+    boolean calibrateAccompanyActGen;
 
     @Override
     public void setup() {
@@ -98,14 +100,29 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateMandatoryActGen));
         }
 
-        calibrateDiscretionaryActGen = Boolean.parseBoolean(AbitResources.instance.getString("actgen.disc.calibration"));
+        calibrateDiscretionaryActGen =
+                Boolean.parseBoolean(
+                        AbitResources.instance.getString(
+                                "actgen.disc.calibration"));
+        calibrateAccompanyActGen =
+                FrequencyGeneratorModel.ENABLE_ACCOMPANY_CALIBRATION;
+
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-            frequencyGeneratorsForCalibration.put(purpose, new FrequencyGeneratorModel(dataSet, purpose, calibrateDiscretionaryActGen));
+            boolean runPurposeCalibration =
+                    calibrateDiscretionaryActGen
+                            && (purpose != Purpose.ACCOMPANY
+                            || calibrateAccompanyActGen);
+
+            frequencyGeneratorsForCalibration.put(
+                    purpose,
+                    new FrequencyGeneratorModel(
+                            dataSet,
+                            purpose,
+                            runPurposeCalibration));
         }
 
         //Todo: initialize all the data containers that might be needed for calibration
 
-        // new ***
         for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
             objectiveWorkFrequencyShare.putIfAbsent(occupation, new HashMap<>());
             simulatedWorkFrequencyCount.putIfAbsent(occupation, new HashMap<>());
@@ -133,6 +150,8 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             }
         }
 
+
+
         finalEducationCoefficients = new HashMap<>();
         for (int freq = 0; freq <= 7; freq++) {
             objectiveEducationFrequencyShare.putIfAbsent(freq, 0.0);
@@ -143,58 +162,212 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
             educationCalibrationFactors.putIfAbsent(freq, 0.0);
         }
 
+
         for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-            objectiveDiscretionaryFrequencyShare.putIfAbsent(purpose, new HashMap<>());
-            simulatedDiscretionaryFrequencyCount.putIfAbsent(purpose, new HashMap<>());
-            simulatedDiscretionaryFrequencyCountOnTheFly.putIfAbsent(purpose, new HashMap<>());
-            simulatedDiscretionaryFrequencyShare.putIfAbsent(purpose, new HashMap<>());
-            simulatedDiscretionaryFrequencyShareOnTheFly.putIfAbsent(purpose, new HashMap<>());
-            discretionaryCalibrationFactors.putIfAbsent(purpose, new HashMap<>());
-            finalDiscretionaryCoefficients.putIfAbsent(purpose, new HashMap<>());
-            for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-                objectiveDiscretionaryFrequencyShare.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                simulatedDiscretionaryFrequencyCount.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                simulatedDiscretionaryFrequencyShare.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                simulatedDiscretionaryFrequencyShareOnTheFly.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                discretionaryCalibrationFactors.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                finalDiscretionaryCoefficients.get(purpose).putIfAbsent(occupation, new HashMap<>());
-                for (RemoteWorkable remoteWorkable : RemoteWorkable.values()) {
-                    objectiveDiscretionaryFrequencyShare.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    simulatedDiscretionaryFrequencyCount.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    simulatedDiscretionaryFrequencyShareOnTheFly.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    discretionaryCalibrationFactors.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    finalDiscretionaryCoefficients.get(purpose).get(occupation).putIfAbsent(remoteWorkable, new HashMap<>());
-                    for (DisabilityMuc disability : DisabilityMuc.values()) {
-                        objectiveDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        simulatedDiscretionaryFrequencyCount.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        simulatedDiscretionaryFrequencyShareOnTheFly.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        discretionaryCalibrationFactors.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        finalDiscretionaryCoefficients.get(purpose).get(occupation).get(remoteWorkable).putIfAbsent(disability, new HashMap<>());
-                        for (int freq = 0; freq <= 15; freq++) {
-                            objectiveDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0.0);
-                            simulatedDiscretionaryFrequencyCount.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0);
-                            simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0);
-                            simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0.0);
-                            simulatedDiscretionaryFrequencyShareOnTheFly.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0.0);
-                            discretionaryCalibrationFactors.get(purpose).get(occupation).get(remoteWorkable).get(disability).putIfAbsent(freq, 0.0);
+
+            objectiveDiscretionaryFrequencyShare
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            simulatedDiscretionaryFrequencyCount
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            simulatedDiscretionaryFrequencyCountOnTheFly
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            simulatedDiscretionaryFrequencyShare
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            simulatedDiscretionaryFrequencyShareOnTheFly
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            discretionaryCalibrationFactors
+                    .putIfAbsent(purpose, new HashMap<>());
+
+            finalDiscretionaryCoefficients
+                    .putIfAbsent(purpose, new HashMap<>());
+
+
+            for (CalibrationOccupation occupation :
+                    CalibrationOccupation.values()) {
+
+                objectiveDiscretionaryFrequencyShare
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                simulatedDiscretionaryFrequencyCount
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                simulatedDiscretionaryFrequencyCountOnTheFly
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                simulatedDiscretionaryFrequencyShare
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                simulatedDiscretionaryFrequencyShareOnTheFly
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                discretionaryCalibrationFactors
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+                finalDiscretionaryCoefficients
+                        .get(purpose)
+                        .putIfAbsent(occupation, new HashMap<>());
+
+
+                for (RemoteWorkable remoteWorkable :
+                        RemoteWorkable.values()) {
+
+                    if (!isValidDiscretionarySegment(
+                            occupation,
+                            remoteWorkable)) {
+                        continue;
+                    }
+
+                    objectiveDiscretionaryFrequencyShare
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    simulatedDiscretionaryFrequencyCount
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    simulatedDiscretionaryFrequencyCountOnTheFly
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    simulatedDiscretionaryFrequencyShare
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    simulatedDiscretionaryFrequencyShareOnTheFly
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    discretionaryCalibrationFactors
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+                    finalDiscretionaryCoefficients
+                            .get(purpose)
+                            .get(occupation)
+                            .putIfAbsent(remoteWorkable, new HashMap<>());
+
+
+                    for (DisabilityMuc disability :
+                            DisabilityMuc.values()) {
+
+                        objectiveDiscretionaryFrequencyShare
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        simulatedDiscretionaryFrequencyCount
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        simulatedDiscretionaryFrequencyCountOnTheFly
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        simulatedDiscretionaryFrequencyShare
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        simulatedDiscretionaryFrequencyShareOnTheFly
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        discretionaryCalibrationFactors
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+                        finalDiscretionaryCoefficients
+                                .get(purpose)
+                                .get(occupation)
+                                .get(remoteWorkable)
+                                .putIfAbsent(disability, new HashMap<>());
+
+
+                        int maxFrequency =
+                                purpose == Purpose.ACCOMPANY ? 7 : 15;
+
+                        for (int freq = 0;
+                             freq <= maxFrequency;
+                             freq++) {
+
+                            objectiveDiscretionaryFrequencyShare
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0.0);
+
+                            simulatedDiscretionaryFrequencyCount
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0);
+
+                            simulatedDiscretionaryFrequencyCountOnTheFly
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0);
+
+                            simulatedDiscretionaryFrequencyShare
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0.0);
+
+                            simulatedDiscretionaryFrequencyShareOnTheFly
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0.0);
+
+                            discretionaryCalibrationFactors
+                                    .get(purpose)
+                                    .get(occupation)
+                                    .get(remoteWorkable)
+                                    .get(disability)
+                                    .putIfAbsent(freq, 0.0);
                         }
                     }
                 }
             }
         }
-        // end ***
     }
 
     @Override
     public void load() {
-        //Todo: read objective values
         readObjectiveValues();
-        //Todo: consider having the result summarization in the statistics writer
         summarizeSimulatedResult();
     }
 
@@ -205,9 +378,9 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         //Todo: loop through the calibration process until criteria are met
         for (int iteration = 0; iteration < MAX_ITERATION; iteration++) {
             logger.info("Iteration......" + iteration);
+
             double maxDifference = 0.0;
 
-            // new ***
             if (calibrateMandatoryActGen) {
                 for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
                     for (EmploymentStatus status : EmploymentStatus.values()) {
@@ -247,27 +420,40 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
             if (calibrateDiscretionaryActGen) {
                 for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-                    if (purpose == Purpose.ACCOMPANY)
+
+                    if (purpose == Purpose.ACCOMPANY
+                            && !calibrateAccompanyActGen) {
                         continue;
+                    }
+
+                    int maxFrequency =
+                            purpose == Purpose.ACCOMPANY ? 7 : 15;
                     for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-                        for (RemoteWorkable rw : RemoteWorkable.values()) {
-                            if (!isValidDiscretionarySegment(occupation, rw)) {
+                        for (RemoteWorkable remoteWorkable : RemoteWorkable.values()) {
+                            if (!isValidDiscretionarySegment(occupation, remoteWorkable)) {
                                 continue;
                             }
                             for (DisabilityMuc disability : DisabilityMuc.values()) {
-                                for (int freq = 0; freq <= 15; freq++) {
-                                    double observed = objectiveDiscretionaryFrequencyShare.get(purpose).get(occupation).get(rw).get(disability).get(freq);
-                                    double simulated = simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(rw).get(disability).get(freq);
+                                for (int freq = 0; freq <= maxFrequency; freq++) {
+                                    double observed = objectiveDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).get(disability).get(freq);
+                                    double simulated = simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(remoteWorkable).get(disability).get(freq);
                                     double difference = observed - simulated;
                                     double factor = -stepSize * difference;
-                                    discretionaryCalibrationFactors.get(purpose).get(occupation).get(rw).get(disability).put(freq, factor);
-                                    logger.info(purpose + " | " + occupation + " | " + rw + " | " + disability + " | " + freq + " diff = " + difference);
+                                    discretionaryCalibrationFactors.get(purpose).get(occupation).get(remoteWorkable).get(disability).put(freq, factor);
+                                    logger.info(purpose + " | " + occupation + " | " + remoteWorkable + " | " + disability + " | " + freq + " diff = " + difference);
                                     maxDifference = Math.max(maxDifference, Math.abs(difference));
                                 }
                             }
                         }
                     }
-                    ((FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(purpose)).updateDiscretionaryCalibrationFactor(discretionaryCalibrationFactors.get(purpose));
+
+                    FrequencyGeneratorModel model =
+                            (FrequencyGeneratorModel)
+                                    frequencyGeneratorsForCalibration
+                                            .get(purpose);
+
+                    model.updateDiscretionaryCalibrationFactor(
+                            discretionaryCalibrationFactors.get(purpose));
                 }
             }
 
@@ -290,14 +476,17 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                         continue;
                     }
                     if (Purpose.getDiscretionaryPurposes().contains(purpose)) {
+
+                        if (!isValidDiscretionarySegment(occupation, remoteWorkable)) {
+                            continue;
+                        }
+
                         simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(remoteWorkable).get(disability).merge(numOfAct, 1, Integer::sum);
                     }
-
                 }
             }
 
             calculateSimulatedShares();
-            // end ***
 
             if (maxDifference <= TERMINATION_THRESHOLD) {
                 break;
@@ -305,19 +494,21 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 logger.info("MAX Diff: " + maxDifference);
             }
 
-            // new ***
+
             for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
                 for (EmploymentStatus status : EmploymentStatus.values()) {
                     for (int freq = 0; freq <= 7; freq++) {
                         simulatedWorkFrequencyCountOnTheFly.get(occupation).get(status).put(freq, 0);
-                        simulatedWorkFrequencyShare.get(occupation).get(status).put(freq, 0.0);
+                        simulatedWorkFrequencyShare.get(occupation).get(status).putIfAbsent(freq, 0.0);
                     }
                 }
             }
 
+
+
             for (int freq = 0; freq <= 7; freq++) {
                 simulatedEducationFrequencyCountOnTheFly.put(freq, 0);
-                simulatedEducationFrequencyShare.put(freq, 0.0);
+                simulatedEducationFrequencyShare.putIfAbsent(freq, 0.0);
             }
 
             for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
@@ -330,17 +521,14 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                         for (DisabilityMuc disability : DisabilityMuc.values()) {
                             for (int freq = 0; freq <= maxFreq; freq++) {
                                 simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(rw).get(disability).put(freq, 0);
-                                simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(rw).get(disability).put(freq, 0.0);
+                                simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(rw).get(disability).putIfAbsent(freq, 0.0);
                             }
                         }
                     }
                 }
             }
         }
-        // end ***
         logger.info("Finished the calibration of activity frequency generation model.");
-
-        summarizeSimulatedResult();
 
         try {
             writeSimulatedWorkValues(workFrequencySimulatedPath);
@@ -351,9 +539,9 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                     "Could not write simulated frequency distributions.", e);
         }
 
-       //Todo: obtain the updated coefficients + calibration factors
+        //Todo: obtain the updated coefficients + calibration factors
 
-        // new ***
+
         FrequencyGeneratorModel workModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
         for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
             for (EmploymentStatus status : finalWorkCoefficients.get(occupation).keySet()) {
@@ -382,20 +570,20 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
         //Todo: print the coefficients table to input folder
         try {
-            // CoefficientsNegBinZero
-            printWorkZeroCoefficients();
-            printEducationZeroCoefficients();
-            printAccompanyZeroCoefficients();
 
-            // CoefficientsPolrCount
-            printWorkCountCoefficients();
-            printEducationCountCoefficients();
+            printNegBinZeroCoefficients();
+            printNegBinZeroCalibrationCoefficients();
 
-            // CoefficientsNegBinCount
-            printAccompanyCountCoefficients();
+            printPolrCountCoefficients();
+            printPolrCountCalibrationCoefficients();
 
-            // CoefficientsGlmNegBin
-            printDiscretionaryCountCoefficients();
+
+            printNegBinCountCoefficients();
+            printNegBinCountCalibrationCoefficients();
+
+
+            printGlmNegBinCoefficients();
+            printGlmNegBinCalibrationCoefficients();
 
         } catch (FileNotFoundException e) {
             System.err.println("Output path of the coefficient table is not correct.");
@@ -416,7 +604,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
     private void readWorkObjectives(Path path) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            reader.readLine(); // header
+            reader.readLine();
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] record = line.split(",");
@@ -544,16 +732,18 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                     }
 
                     CalibrationOccupation occupation = getCalibrationOccupation(person);
-                    RemoteWorkable rw = getRemoteWorkable(person);
+                    RemoteWorkable remoteWorkable = getRemoteWorkable(person);
                     DisabilityMuc disability = hasDisability(person);
-                    simulatedDiscretionaryFrequencyCount.get(Purpose.ACCOMPANY).get(occupation).get(rw).get(disability).merge(numberDaysOfAccompanyPerWeek, 1, Integer::sum);
-                    simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).get(occupation).get(rw).get(disability).merge(numberActsOfShoppingPerWeek, 1, Integer::sum);
-                    simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).get(occupation).get(rw).get(disability).merge(numberActsOfOtherPerWeek, 1, Integer::sum);
-                    simulatedDiscretionaryFrequencyCount.get(Purpose.RECREATION).get(occupation).get(rw).get(disability).merge(numberActsOfRecreationPerWeek, 1, Integer::sum);
-                }
+                    if (!isValidDiscretionarySegment(occupation, remoteWorkable)) {
+                        continue;
+                    }
+                    simulatedDiscretionaryFrequencyCount.get(Purpose.ACCOMPANY).get(occupation).get(remoteWorkable).get(disability).merge(Math.min(numberDaysOfAccompanyPerWeek, 7), 1, Integer::sum);
+                    simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).get(occupation).get(remoteWorkable).get(disability).merge(Math.min(numberActsOfShoppingPerWeek, 15), 1, Integer::sum);
+                    simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).get(occupation).get(remoteWorkable).get(disability).merge(Math.min(numberActsOfOtherPerWeek, 15), 1, Integer::sum);
+                    simulatedDiscretionaryFrequencyCount.get(Purpose.RECREATION).get(occupation).get(remoteWorkable).get(disability).merge(Math.min(numberActsOfRecreationPerWeek, 15), 1, Integer::sum);}
             }
         }
-        calculateSimulatedShares();
+        calculateInitialSimulatedShares();
     }
 
     private void writeSimulatedWorkValues(String fileName)
@@ -605,214 +795,636 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         pw.close();
     }
 
-    private void printWorkZeroCoefficients() throws FileNotFoundException {
-        logger.info("Writing work zero coefficients: " + workZeroCoefficientsPath);
+    private void printNegBinZeroCoefficients() throws FileNotFoundException {
 
-        PrintWriter pw = new PrintWriter(workZeroCoefficientsPath);
+        logger.info("Writing NegBinZero coefficients: " + negBinZeroCoefficientsPath);
 
-        pw.println("variable,value");
+        PrintWriter pw = new PrintWriter(negBinZeroCoefficientsPath);
 
-        FrequencyGeneratorModel workModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
-        Map<String, Double> employedFulltime = workModel.obtainWorkZeroCoefficients(CalibrationOccupation.EMPLOYED, EmploymentStatus.FULLTIME_EMPLOYED);
-        Map<String, Double> employedHalftime = workModel.obtainWorkZeroCoefficients(CalibrationOccupation.EMPLOYED, EmploymentStatus.HALFTIME_EMPLOYED);
-        Map<String, Double> other = workModel.obtainWorkZeroCoefficients(CalibrationOccupation.OTHER, EmploymentStatus.NO_INFO);
-        for (String variable : employedFulltime.keySet()) {
-            if (variable.equals("calibration")) {
+        pw.println("variable,work,education,accompany");
+
+        FrequencyGeneratorModel workModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
+
+        FrequencyGeneratorModel educationModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.EDUCATION);
+
+        FrequencyGeneratorModel accompanyModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.ACCOMPANY);
+
+        Map<String, Double> work =
+                workModel.obtainWorkZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.FULLTIME_EMPLOYED);
+
+        Map<String, Double> education =
+                educationModel.obtainEducationZeroCoefficients();
+
+        Map<String, Double> accompany =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH);
+
+        for (String variable : work.keySet()) {
+            if (variable.startsWith("calibration")) {
                 continue;
             }
-            pw.println(variable + "," + employedFulltime.get(variable));
+
+            Double workValue = work.get(variable);
+            Double educationValue = education.get(variable);
+            Double accompanyValue = accompany.get(variable);
+
+            pw.println(
+                    variable + "," +
+                            (workValue != null ? workValue : "") + "," +
+                            (educationValue != null ? educationValue : "") + "," +
+                            (accompanyValue != null ? accompanyValue : "")
+            );
         }
 
-        pw.println("calibration_employed_fulltime," + employedFulltime.get("calibration"));
-        pw.println("calibration_employed_halftime," + employedHalftime.get("calibration"));
-        pw.println("calibration_other," + other.get("calibration"));
         pw.close();
     }
 
-    private void printEducationZeroCoefficients() throws FileNotFoundException {
+    private void printNegBinZeroCalibrationCoefficients()
+            throws FileNotFoundException {
 
-        logger.info("Writing education zero coefficients: " + educationZeroCoefficientsPath);
+        logger.info(
+                "Writing NegBinZero calibration coefficients: "
+                        + negBinZeroCalibrationFactorsPath);
 
-        PrintWriter pw = new PrintWriter(educationZeroCoefficientsPath);
+        PrintWriter pw =
+                new PrintWriter(negBinZeroCalibrationFactorsPath);
 
-        pw.println("variable,value");
+        pw.println("variable,work,education,accompany");
 
-        FrequencyGeneratorModel educationModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.EDUCATION);
-        Map<String, Double> education = educationModel.obtainEducationZeroCoefficients();
+        FrequencyGeneratorModel workModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
+
+        FrequencyGeneratorModel educationModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.EDUCATION);
+
+        FrequencyGeneratorModel accompanyModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.ACCOMPANY);
+
+        Map<String, Double> workFulltime =
+                workModel.obtainWorkZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.FULLTIME_EMPLOYED);
+
+        Map<String, Double> workHalftime =
+                workModel.obtainWorkZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.HALFTIME_EMPLOYED);
+
+        Map<String, Double> workOther =
+                workModel.obtainWorkZeroCoefficients(
+                        CalibrationOccupation.OTHER,
+                        EmploymentStatus.NO_INFO);
+
+        Map<String, Double> accompanyTrueWith =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH);
+
+        Map<String, Double> accompanyTrueWithout =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITHOUT);
+
+        Map<String, Double> accompanyFalseWith =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH);
+
+        Map<String, Double> accompanyFalseWithout =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT);
+
+        Map<String, Double> accompanyOtherWith =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.OTHER,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH);
+
+        Map<String, Double> accompanyOtherWithout =
+                accompanyModel.obtainAccompanyZeroCoefficients(
+                        CalibrationOccupation.OTHER,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT);
+
+        Double educationCalibration =
+                educationModel
+                        .obtainEducationZeroCoefficients()
+                        .get("calibration");
+
+        pw.println(
+                "calibration_employed_fulltime," +
+                        workFulltime.get("calibration") + ",,");
+
+        pw.println(
+                "calibration_employed_halftime," +
+                        workHalftime.get("calibration") + ",,");
+
+        pw.println(
+                "calibration_other," +
+                        workOther.get("calibration") + ",,");
+
+
+        pw.println(
+                "calibration_education,," +
+                        educationCalibration + ",");
+
+
+        pw.println(
+                "calibration_employed_remote_working_with_disability,," +
+                        "," + accompanyTrueWith.get("calibration"));
+
+        pw.println(
+                "calibration_employed_remote_working_without_disability,," +
+                        "," + accompanyTrueWithout.get("calibration"));
+
+        pw.println(
+                "calibration_employed_no_remote_working_with_disability,," +
+                        "," + accompanyFalseWith.get("calibration"));
+
+        pw.println(
+                "calibration_employed_no_remote_working_without_disability,," +
+                        "," + accompanyFalseWithout.get("calibration"));
+
+        pw.println(
+                "calibration_other_no_remote_working_with_disability,," +
+                        "," + accompanyOtherWith.get("calibration"));
+
+        pw.println(
+                "calibration_other_no_remote_working_without_disability,," +
+                        "," + accompanyOtherWithout.get("calibration"));
+
+
+        pw.close();
+    }
+
+    private void printPolrCountCoefficients()
+            throws FileNotFoundException {
+
+        logger.info(
+                "Writing PolrCount coefficients: "
+                        + polrCountCoefficientsPath);
+
+        PrintWriter pw =
+                new PrintWriter(polrCountCoefficientsPath);
+
+        pw.println("variable,work,education");
+
+        FrequencyGeneratorModel workModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
+
+        FrequencyGeneratorModel educationModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.EDUCATION);
+
+
+        Map<String, Double> workFulltime =
+                workModel.obtainCountWorkCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.FULLTIME_EMPLOYED);
+
+        Map<String, Double> education =
+                educationModel.obtainCountEducationCoefficients();
+
+
+        for (String variable : workFulltime.keySet()) {
+
+            if (variable.startsWith("calibration")) {
+                continue;
+            }
+
+            Double workValue = workFulltime.get(variable);
+            Double educationValue = education.get(variable);
+
+            pw.println(
+                    variable + "," +
+                            (workValue != null ? workValue : "") + "," +
+                            (educationValue != null ? educationValue : "")
+            );
+        }
+
+        pw.close();
+    }
+
+    private void printPolrCountCalibrationCoefficients()
+            throws FileNotFoundException {
+
+        logger.info(
+                "Writing PolrCount calibration coefficients: "
+                        + polrCountCalibrationFactorsPath);
+
+        PrintWriter pw =
+                new PrintWriter(polrCountCalibrationFactorsPath);
+
+        pw.println("variable,work,education");
+
+        FrequencyGeneratorModel workModel =
+                (FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.WORK);
+
+        FrequencyGeneratorModel educationModel =
+                (FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.EDUCATION);
+
+        Map<String, Double> workFulltime =
+                workModel.obtainCountWorkCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.FULLTIME_EMPLOYED);
+
+        Map<String, Double> workHalftime =
+                workModel.obtainCountWorkCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        EmploymentStatus.HALFTIME_EMPLOYED);
+
+        Map<String, Double> workOther =
+                workModel.obtainCountWorkCoefficients(
+                        CalibrationOccupation.OTHER,
+                        EmploymentStatus.NO_INFO);
+
+        Map<String, Double> education =
+                educationModel.obtainCountEducationCoefficients();
+
+
+        for (int frequencyInterval = 1;
+             frequencyInterval <= 6;
+             frequencyInterval++) {
+
+            String calibrationVariable =
+                    "calibration_"
+                            + frequencyInterval
+                            + "|"
+                            + (frequencyInterval + 1);
+
+            Double fulltime =
+                    workFulltime.get(calibrationVariable);
+
+            Double halftime =
+                    workHalftime.get(calibrationVariable);
+
+            Double other =
+                    workOther.get(calibrationVariable);
+
+            if (fulltime != null ||
+                    halftime != null ||
+                    other != null) {
+
+                pw.println(
+                        "calibration_employed_fulltime_"
+                                + frequencyInterval
+                                + "|"
+                                + (frequencyInterval + 1)
+                                + ","
+                                + fulltime
+                                + ","
+                );
+
+                pw.println(
+                        "calibration_employed_halftime_"
+                                + frequencyInterval
+                                + "|"
+                                + (frequencyInterval + 1)
+                                + ","
+                                + halftime
+                                + ","
+                );
+
+                pw.println(
+                        "calibration_other_"
+                                + frequencyInterval
+                                + "|"
+                                + (frequencyInterval + 1)
+                                + ","
+                                + other
+                                + ","
+                );
+            }
+        }
+
         for (String variable : education.keySet()) {
-            pw.println(variable + "," + education.get(variable));
+
+            if (variable.startsWith("calibration")) {
+
+                pw.println(
+                        variable + ",," +
+                                education.get(variable)
+                );
+            }
         }
+
         pw.close();
     }
 
-    private void printAccompanyZeroCoefficients() throws FileNotFoundException {
+    private void printNegBinCountCoefficients()
+            throws FileNotFoundException {
 
-        logger.info("Writing accompany zero coefficients: " + accompanyZeroCoefficientsPath);
+        logger.info(
+                "Writing NegBinCount coefficients: "
+                        + negBinCountCoefficientsPath);
 
-        PrintWriter pw = new PrintWriter(accompanyZeroCoefficientsPath);
+        PrintWriter pw =
+                new PrintWriter(negBinCountCoefficientsPath);
 
-        pw.println("variable,value");
+        pw.println("variable,accompany");
 
-        FrequencyGeneratorModel accompanyModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.ACCOMPANY);
-        Map<String, Double> employedTrueWith = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITH);
-        Map<String, Double> employedTrueWithout = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITHOUT);
-        Map<String, Double> employedFalseWith = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.FALSE, DisabilityMuc.WITH);
-        Map<String, Double> employedFalseWithout = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.FALSE, DisabilityMuc.WITHOUT);
-        Map<String, Double> otherFalseWith = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.OTHER, RemoteWorkable.FALSE, DisabilityMuc.WITH);
-        Map<String, Double> otherFalseWithout = accompanyModel.obtainAccompanyZeroCoefficients(CalibrationOccupation.OTHER, RemoteWorkable.FALSE, DisabilityMuc.WITHOUT);
-        for (String variable : employedTrueWith.keySet()) {
-            if (variable.equals("calibration")) {
+        FrequencyGeneratorModel accompanyModel =
+                (FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.ACCOMPANY);
+
+        Map<String, Double> coefficients =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH);
+
+        for (String variable : coefficients.keySet()) {
+
+            if (variable.startsWith("calibration")) {
                 continue;
             }
-            pw.println(variable + "," + employedTrueWith.get(variable));
+
+            pw.println(
+                    variable + "," +
+                            coefficients.get(variable)
+            );
         }
-        pw.println("calibration_employed_remote_working_with_disability," + employedTrueWith.get("calibration"));
-        pw.println("calibration_employed_remote_working_without_disability," + employedTrueWithout.get("calibration"));
-        pw.println("calibration_employed_no_remote_working_with_disability," + employedFalseWith.get("calibration"));
-        pw.println("calibration_employed_no_remote_working_without_disability," + employedFalseWithout.get("calibration"));
-        pw.println("calibration_other_no_remote_working_with_disability," + otherFalseWith.get("calibration"));
-        pw.println("calibration_other_no_remote_working_without_disability," + otherFalseWithout.get("calibration"));
+
         pw.close();
     }
 
-    private void printWorkCountCoefficients() throws FileNotFoundException {
+    private void printNegBinCountCalibrationCoefficients()
+            throws FileNotFoundException {
 
-        logger.info("Writing work count coefficients: " + workCountCoefficientsPath);
+        logger.info(
+                "Writing NegBinCount calibration coefficients: "
+                        + negBinCountCalibrationFactorsPath);
 
-        PrintWriter pw = new PrintWriter(workCountCoefficientsPath);
+        PrintWriter pw =
+                new PrintWriter(negBinCountCalibrationFactorsPath);
 
-        pw.println("variable,value");
+        pw.println("variable,accompany");
 
-        FrequencyGeneratorModel workModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.WORK);
-        Map<String, Double> employedFulltime = workModel.obtainCountWorkCoefficients(CalibrationOccupation.EMPLOYED, EmploymentStatus.FULLTIME_EMPLOYED);
-        Map<String, Double> employedHalftime = workModel.obtainCountWorkCoefficients(CalibrationOccupation.EMPLOYED, EmploymentStatus.HALFTIME_EMPLOYED);
-        Map<String, Double> other = workModel.obtainCountWorkCoefficients(CalibrationOccupation.OTHER, EmploymentStatus.NO_INFO);
-        for (String variable : employedFulltime.keySet()) {
-            if (variable.startsWith("calibration_")) {
-                continue;
-            }
-            pw.println(variable + "," + employedFulltime.get(variable));
-        }
+        FrequencyGeneratorModel accompanyModel =
+                (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.ACCOMPANY);
+
+        Map<String, Double> employedTrueWith =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH);
+
+        pw.println(
+                "calibration_employed_remote_working_with_disability," +
+                        employedTrueWith.get("calibration")
+        );
+
+        Map<String, Double> employedTrueWithout =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITHOUT);
+
+        pw.println(
+                "calibration_employed_remote_working_without_disability," +
+                        employedTrueWithout.get("calibration")
+        );
+
+        Map<String, Double> employedFalseWith =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH);
+
+        pw.println(
+                "calibration_employed_no_remote_working_with_disability," +
+                        employedFalseWith.get("calibration")
+        );
+
+        Map<String, Double> employedFalseWithout =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT);
+
+        pw.println(
+                "calibration_employed_no_remote_working_without_disability," +
+                        employedFalseWithout.get("calibration")
+        );
+
+        Map<String, Double> otherWith =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.OTHER,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITH);
+
+        pw.println(
+                "calibration_other_no_remote_working_with_disability," +
+                        otherWith.get("calibration")
+        );
+
+        Map<String, Double> otherWithout =
+                accompanyModel.obtainAccompanyCountCoefficients(
+                        CalibrationOccupation.OTHER,
+                        RemoteWorkable.FALSE,
+                        DisabilityMuc.WITHOUT);
+
+        pw.println(
+                "calibration_other_no_remote_working_without_disability," +
+                        otherWithout.get("calibration")
+        );
 
 
-        String[] calibrationVariables = {
-                "calibration_1|2",
-                "calibration_2|3",
-                "calibration_3|4",
-                "calibration_4|5",
-                "calibration_5|6",
-                "calibration_6|7"
-        };
-
-        for (String calibrationVariable : calibrationVariables) {
-            pw.println(calibrationVariable + "_employed_fulltime," + employedFulltime.get(calibrationVariable));
-            pw.println(calibrationVariable + "_employed_halftime," + employedHalftime.get(calibrationVariable));
-            pw.println(calibrationVariable + "_other," + other.get(calibrationVariable));
-        }
         pw.close();
     }
 
+    private void printGlmNegBinCoefficients()
+            throws FileNotFoundException {
 
-    private void printEducationCountCoefficients() throws FileNotFoundException {
+        logger.info(
+                "Writing GlmNegBin coefficients: "
+                        + glmNegBinCoefficientsPath);
 
-        logger.info("Writing education count coefficients: " + educationCountCoefficientsPath);
-
-        PrintWriter pw = new PrintWriter(educationCountCoefficientsPath);
-
-        pw.println("variable,value");
-
-        FrequencyGeneratorModel educationModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.EDUCATION);
-        Map<String, Double> education = educationModel.obtainCountEducationCoefficients();
-        for (String variable : education.keySet()) {
-            pw.println(variable + "," + education.get(variable));
-        }
-        pw.close();
-    }
-
-    private void printAccompanyCountCoefficients() throws FileNotFoundException {
-
-        logger.info("Writing accompany count coefficients: " + accompanyCountCoefficientsPath);
-
-        PrintWriter pw = new PrintWriter(accompanyCountCoefficientsPath);
-
-        pw.println("variable,value");
-
-        FrequencyGeneratorModel accompanyModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.ACCOMPANY);
-        Map<String, Double> employedTrueWith = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITH);
-        Map<String, Double> employedTrueWithout = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITHOUT);
-        Map<String, Double> employedFalseWith = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.FALSE, DisabilityMuc.WITH);
-        Map<String, Double> employedFalseWithout = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.FALSE, DisabilityMuc.WITHOUT);
-        Map<String, Double> otherFalseWith = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.OTHER, RemoteWorkable.FALSE, DisabilityMuc.WITH);
-        Map<String, Double> otherFalseWithout = accompanyModel.obtainAccompanyCountCoefficients(CalibrationOccupation.OTHER, RemoteWorkable.FALSE, DisabilityMuc.WITHOUT);
-        for (String variable : employedTrueWith.keySet()) {
-            if (variable.equals("calibration")) {
-                continue;
-            }
-            pw.println(variable + "," + employedTrueWith.get(variable));
-        }
-        pw.println("calibration_employed_remote_working_with_disability," + employedTrueWith.get("calibration"));
-        pw.println("calibration_employed_remote_working_without_disability," + employedTrueWithout.get("calibration"));
-        pw.println("calibration_employed_no_remote_working_with_disability," + employedFalseWith.get("calibration"));
-        pw.println("calibration_employed_no_remote_working_without_disability," + employedFalseWithout.get("calibration"));
-        pw.println("calibration_other_no_remote_working_with_disability," + otherFalseWith.get("calibration"));
-        pw.println("calibration_other_no_remote_working_without_disability," + otherFalseWithout.get("calibration"));
-        pw.close();
-    }
-
-    private void printDiscretionaryCountCoefficients() throws FileNotFoundException {
-
-        logger.info("Writing discretionary count coefficients: " + discretionaryCountCoefficientsPath);
-
-        PrintWriter pw = new PrintWriter(discretionaryCountCoefficientsPath);
+        PrintWriter pw =
+                new PrintWriter(glmNegBinCoefficientsPath);
 
         pw.println("variable,shopping,recreation,other");
 
-        FrequencyGeneratorModel shoppingModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.SHOPPING);
-        FrequencyGeneratorModel recreationModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.RECREATION);
-        FrequencyGeneratorModel otherModel = (FrequencyGeneratorModel) frequencyGeneratorsForCalibration.get(Purpose.OTHER);
-        Map<String, Double> shopping = shoppingModel.obtainDiscretionaryCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITH);
-        Map<String, Double> recreation = recreationModel.obtainDiscretionaryCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITH);
-        Map<String, Double> other = otherModel.obtainDiscretionaryCountCoefficients(CalibrationOccupation.EMPLOYED, RemoteWorkable.TRUE, DisabilityMuc.WITH);
+
+        FrequencyGeneratorModel model =
+                (FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.SHOPPING);
+
+
+        Map<String, Double> shopping =
+                model.obtainDiscretionaryCountCoefficients(
+                        CalibrationOccupation.EMPLOYED,
+                        RemoteWorkable.TRUE,
+                        DisabilityMuc.WITH);
+
+        Map<String, Double> recreation =
+                ((FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.RECREATION))
+                        .obtainDiscretionaryCountCoefficients(
+                                CalibrationOccupation.EMPLOYED,
+                                RemoteWorkable.TRUE,
+                                DisabilityMuc.WITH);
+
+        Map<String, Double> other =
+                ((FrequencyGeneratorModel)
+                        frequencyGeneratorsForCalibration.get(
+                                Purpose.OTHER))
+                        .obtainDiscretionaryCountCoefficients(
+                                CalibrationOccupation.EMPLOYED,
+                                RemoteWorkable.TRUE,
+                                DisabilityMuc.WITH);
+
+
         for (String variable : shopping.keySet()) {
-            if (variable.equals("calibration")) {
+
+            if (variable.startsWith("calibration")) {
                 continue;
             }
-            pw.println(variable + "," + shopping.get(variable) + "," + recreation.get(variable) + "," + other.get(variable));
+
+            Double shoppingValue = shopping.get(variable);
+            Double recreationValue = recreation.get(variable);
+            Double otherValue = other.get(variable);
+
+            pw.println(
+                    variable + "," +
+                            (shoppingValue != null ? shoppingValue : "") + "," +
+                            (recreationValue != null ? recreationValue : "") + "," +
+                            (otherValue != null ? otherValue : "")
+            );
         }
 
-        for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-            for (RemoteWorkable rw : RemoteWorkable.values()) {
+        pw.close();
+    }
+
+    private void printGlmNegBinCalibrationCoefficients()
+            throws FileNotFoundException {
+
+        logger.info(
+                "Writing GlmNegBin calibration coefficients: "
+                        + glmNegBinCalibrationFactorsPath);
+
+        PrintWriter pw =
+                new PrintWriter(glmNegBinCalibrationFactorsPath);
+
+        pw.println("variable,shopping,recreation,other");
+
+
+        for (CalibrationOccupation occupation :
+                CalibrationOccupation.values()) {
+
+            for (RemoteWorkable rw :
+                    RemoteWorkable.values()) {
+
                 if (!isValidDiscretionarySegment(occupation, rw)) {
                     continue;
                 }
 
-                for (DisabilityMuc disability : DisabilityMuc.values()) {
-                    Map<String, Double> shoppingCoefficients = shoppingModel.obtainDiscretionaryCountCoefficients(occupation, rw, disability);
-                    Map<String, Double> recreationCoefficients = recreationModel.obtainDiscretionaryCountCoefficients(occupation, rw, disability);
-                    Map<String, Double> otherCoefficients = otherModel.obtainDiscretionaryCountCoefficients(occupation, rw, disability);
-                    String remoteWorkableName;
+                for (DisabilityMuc disability :
+                        DisabilityMuc.values()) {
 
-                    if (rw == RemoteWorkable.TRUE) {
-                        remoteWorkableName = "remote_working";
+                    FrequencyGeneratorModel shoppingModel =
+                            (FrequencyGeneratorModel)
+                                    frequencyGeneratorsForCalibration.get(
+                                            Purpose.SHOPPING);
+
+                    Map<String, Double> shopping =
+                            shoppingModel.obtainDiscretionaryCountCoefficients(
+                                    occupation,
+                                    rw,
+                                    disability);
+
+
+                    FrequencyGeneratorModel recreationModel =
+                            (FrequencyGeneratorModel)
+                                    frequencyGeneratorsForCalibration.get(
+                                            Purpose.RECREATION);
+
+                    Map<String, Double> recreation =
+                            recreationModel.obtainDiscretionaryCountCoefficients(
+                                    occupation,
+                                    rw,
+                                    disability);
+
+                    FrequencyGeneratorModel otherModel =
+                            (FrequencyGeneratorModel)
+                                    frequencyGeneratorsForCalibration.get(
+                                            Purpose.OTHER);
+
+                    Map<String, Double> other =
+                            otherModel.obtainDiscretionaryCountCoefficients(
+                                    occupation,
+                                    rw,
+                                    disability);
+
+                    String segmentKey;
+
+                    if (occupation == CalibrationOccupation.EMPLOYED) {
+
+                        if (rw == RemoteWorkable.TRUE) {
+
+                            if (disability == DisabilityMuc.WITH) {
+                                segmentKey =
+                                        "employed_remote_working_with_disability";
+                            } else {
+                                segmentKey =
+                                        "employed_remote_working_without_disability";
+                            }
+
+                        } else {
+
+                            if (disability == DisabilityMuc.WITH) {
+                                segmentKey =
+                                        "employed_no_remote_working_with_disability";
+                            } else {
+                                segmentKey =
+                                        "employed_no_remote_working_without_disability";
+                            }
+                        }
+
                     } else {
-                        remoteWorkableName = "no_remote_working";
+
+                        if (disability == DisabilityMuc.WITH) {
+                            segmentKey =
+                                    "other_no_remote_working_with_disability";
+                        } else {
+                            segmentKey =
+                                    "other_no_remote_working_without_disability";
+                        }
                     }
-                    String disabilityName;
-                    if (disability == DisabilityMuc.WITH) {
-                        disabilityName = "with_disability";
-                    } else {
-                        disabilityName = "without_disability";
-                    }
-                    String variable = "calibration_" + occupation.name().toLowerCase() + "_" + remoteWorkableName + "_" + disabilityName;
-                    pw.println(variable + "," + shoppingCoefficients.get("calibration") + "," + recreationCoefficients.get("calibration") + "," + otherCoefficients.get("calibration")
+
+                    String calibrationName =
+                            "calibration_" + segmentKey;
+
+                    pw.println(
+                            calibrationName + "," +
+                                    shopping.get("calibration") + "," +
+                                    recreation.get("calibration") + "," +
+                                    other.get("calibration")
                     );
                 }
             }
         }
+
         pw.close();
     }
-
-    // end ***
 
     private RemoteWorkable getRemoteWorkable(Person person) {
         return person.canRemoteWork()
@@ -858,53 +1470,280 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         return occupation == CalibrationOccupation.EMPLOYED || remoteWorkable == RemoteWorkable.FALSE;
     }
 
-    private void calculateSimulatedShares() {
-        for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-            for (EmploymentStatus status : EmploymentStatus.values()) {
+    private void calculateInitialSimulatedShares() {
+
+        for (CalibrationOccupation occupation :
+                CalibrationOccupation.values()) {
+
+            for (EmploymentStatus status :
+                    EmploymentStatus.values()) {
+
                 if (!isValidWorkSegment(occupation, status)) {
                     continue;
                 }
-                if (!simulatedWorkFrequencyCountOnTheFly.get(occupation).containsKey(status)) {
-                    continue;
-                }
+
+                Map<Integer, Integer> counts =
+                        simulatedWorkFrequencyCount
+                                .get(occupation)
+                                .get(status);
+
+                Map<Integer, Double> shares =
+                        simulatedWorkFrequencyShare
+                                .get(occupation)
+                                .get(status);
+
                 int totalCount = 0;
                 for (int freq = 0; freq <= 7; freq++) {
-                    totalCount += simulatedWorkFrequencyCountOnTheFly.get(occupation).get(status).get(freq);
+                    totalCount += counts.getOrDefault(freq, 0);
                 }
-                if (totalCount == 0) {
-                    continue;
-                }
+
                 for (int freq = 0; freq <= 7; freq++) {
-                    double share = simulatedWorkFrequencyCountOnTheFly.get(occupation).get(status).get(freq) / (double) totalCount;
-                    simulatedWorkFrequencyShare.get(occupation).get(status).put(freq, share);
+                    shares.put(
+                            freq,
+                            totalCount == 0
+                                    ? 0.0
+                                    : counts.getOrDefault(freq, 0)
+                                    / (double) totalCount);
                 }
             }
         }
 
-        int totalEducation = 0;
+        int educationTotalCount = 0;
         for (int freq = 0; freq <= 7; freq++) {
-            totalEducation += simulatedEducationFrequencyCountOnTheFly.get(freq);
+            educationTotalCount +=
+                    simulatedEducationFrequencyCount
+                            .getOrDefault(freq, 0);
         }
-        if (totalEducation > 0) {
-            for (int freq = 0; freq <= 7; freq++) {
-                simulatedEducationFrequencyShare.put(freq, simulatedEducationFrequencyCountOnTheFly.get(freq) / (double) totalEducation);
+
+        for (int freq = 0; freq <= 7; freq++) {
+            simulatedEducationFrequencyShare.put(
+                    freq,
+                    educationTotalCount == 0
+                            ? 0.0
+                            : simulatedEducationFrequencyCount
+                            .getOrDefault(freq, 0)
+                            / (double) educationTotalCount);
+        }
+
+        for (Purpose purpose :
+                Purpose.getDiscretionaryPurposes()) {
+
+            int maxFrequency =
+                    purpose == Purpose.ACCOMPANY ? 7 : 15;
+
+            for (CalibrationOccupation occupation :
+                    CalibrationOccupation.values()) {
+
+                for (RemoteWorkable remoteWorkable :
+                        RemoteWorkable.values()) {
+
+                    if (!isValidDiscretionarySegment(
+                            occupation,
+                            remoteWorkable)) {
+                        continue;
+                    }
+
+                    for (DisabilityMuc disability :
+                            DisabilityMuc.values()) {
+
+                        Map<Integer, Integer> counts =
+                                simulatedDiscretionaryFrequencyCount
+                                        .get(purpose)
+                                        .get(occupation)
+                                        .get(remoteWorkable)
+                                        .get(disability);
+
+                        Map<Integer, Double> shares =
+                                simulatedDiscretionaryFrequencyShare
+                                        .get(purpose)
+                                        .get(occupation)
+                                        .get(remoteWorkable)
+                                        .get(disability);
+
+                        if (counts == null || shares == null) {
+                            continue;
+                        }
+
+                        int totalCount = 0;
+                        for (int freq = 0;
+                             freq <= maxFrequency;
+                             freq++) {
+                            totalCount += counts.getOrDefault(freq, 0);
+                        }
+
+                        for (int freq = 0;
+                             freq <= maxFrequency;
+                             freq++) {
+                            shares.put(
+                                    freq,
+                                    totalCount == 0
+                                            ? 0.0
+                                            : counts.getOrDefault(freq, 0)
+                                            / (double) totalCount);
+                        }
+                    }
+                }
             }
         }
-        for (Purpose purpose : Purpose.getDiscretionaryPurposes()) {
-            int maxFreq = purpose == Purpose.ACCOMPANY ? 7 : 15;
-            for (CalibrationOccupation occupation : CalibrationOccupation.values()) {
-                for (RemoteWorkable rw : RemoteWorkable.values()) {
-                    for (DisabilityMuc disability : DisabilityMuc.values()) {
-                        int totalCount = 0;
-                        for (int freq = 0; freq <= maxFreq; freq++) {
-                            totalCount += simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(rw).get(disability).get(freq);
+    }
+
+    private void calculateSimulatedShares() {
+
+        for (CalibrationOccupation occupation :
+                CalibrationOccupation.values()) {
+
+            for (EmploymentStatus status :
+                    EmploymentStatus.values()) {
+
+                if (!isValidWorkSegment(
+                        occupation,
+                        status)) {
+                    continue;
+                }
+
+                Map<Integer, Integer> counts =
+                        simulatedWorkFrequencyCountOnTheFly
+                                .get(occupation)
+                                .get(status);
+
+                Map<Integer, Double> shares =
+                        simulatedWorkFrequencyShare
+                                .get(occupation)
+                                .get(status);
+
+                if (counts == null || shares == null) {
+                    continue;
+                }
+
+                int totalCount = 0;
+
+                for (int freq = 0;
+                     freq <= 7;
+                     freq++) {
+
+                    totalCount +=
+                            counts.getOrDefault(freq, 0);
+                }
+
+                if (totalCount == 0) {
+                    continue;
+                }
+
+                for (int freq = 0;
+                     freq <= 7;
+                     freq++) {
+
+                    double share =
+                            counts.getOrDefault(freq, 0)
+                                    / (double) totalCount;
+
+                    shares.put(freq, share);
+                }
+            }
+        }
+
+        int educationTotalCount = 0;
+
+        for (int freq = 0;
+             freq <= 7;
+             freq++) {
+
+            educationTotalCount +=
+                    simulatedEducationFrequencyCountOnTheFly
+                            .getOrDefault(freq, 0);
+        }
+
+        if (educationTotalCount > 0) {
+
+            for (int freq = 0;
+                 freq <= 7;
+                 freq++) {
+
+                double share =
+                        simulatedEducationFrequencyCountOnTheFly
+                                .getOrDefault(freq, 0)
+                                / (double) educationTotalCount;
+
+                simulatedEducationFrequencyShare
+                        .put(freq, share);
+            }
+        }
+
+        for (Purpose purpose :
+                Purpose.getDiscretionaryPurposes()) {
+
+            int maxFrequency =
+                    purpose == Purpose.ACCOMPANY
+                            ? 7
+                            : 15;
+
+
+            for (CalibrationOccupation occupation :
+                    CalibrationOccupation.values()) {
+
+                for (RemoteWorkable remoteWorkable :
+                        RemoteWorkable.values()) {
+
+                    if (!isValidDiscretionarySegment(
+                            occupation,
+                            remoteWorkable)) {
+                        continue;
+                    }
+
+
+                    for (DisabilityMuc disability :
+                            DisabilityMuc.values()) {
+
+                        Map<Integer, Integer> counts =
+                                simulatedDiscretionaryFrequencyCountOnTheFly
+                                        .get(purpose)
+                                        .get(occupation)
+                                        .get(remoteWorkable)
+                                        .get(disability);
+
+                        Map<Integer, Double> shares =
+                                simulatedDiscretionaryFrequencyShare
+                                        .get(purpose)
+                                        .get(occupation)
+                                        .get(remoteWorkable)
+                                        .get(disability);
+
+                        if (counts == null || shares == null) {
+                            continue;
                         }
+
+
+                        int totalCount = 0;
+
+                        for (int freq = 0;
+                             freq <= maxFrequency;
+                             freq++) {
+
+                            totalCount +=
+                                    counts.getOrDefault(
+                                            freq,
+                                            0);
+                        }
+
+
                         if (totalCount == 0) {
                             continue;
                         }
-                        for (int freq = 0; freq <= maxFreq; freq++) {
-                            double share = simulatedDiscretionaryFrequencyCountOnTheFly.get(purpose).get(occupation).get(rw).get(disability).get(freq) / (double) totalCount;
-                            simulatedDiscretionaryFrequencyShare.get(purpose).get(occupation).get(rw).get(disability).put(freq, share);
+
+
+                        for (int freq = 0;
+                             freq <= maxFrequency;
+                             freq++) {
+
+                            double share =
+                                    counts.getOrDefault(
+                                            freq,
+                                            0)
+                                            / (double) totalCount;
+
+                            shares.put(
+                                    freq,
+                                    share);
                         }
                     }
                 }

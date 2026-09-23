@@ -23,14 +23,14 @@ public class RunAverageEmissionToolOffline {
         Config config = ConfigUtils.createConfig();
         EmissionsConfigGroup ecg = ConfigUtils.addOrGetModule(config, EmissionsConfigGroup.class);
 
-        String outputDir = "output/10pct-sample-size/80pct_10Iter_matsim_output";
+        String outputDir = "output/10pct-of100population-sample-size/baseline_200Iter_matsim_output";
 
         // INPUT FILES
         config.network().setInputFile(outputDir + "/output_network.xml.gz");
 
         // Must contain EXACT SAME vehicle IDs as used in output_events.xml.gz
         config.vehicles().setVehiclesFile(
-                "output/10pct-sample-size/vehicles_80pct_hbefa.xml"
+                "output/10pct-of100population-sample-size/vehicles_baseline_200Iter_hbefa.xml"
         );
 
         config.controler().setOutputDirectory(outputDir);
