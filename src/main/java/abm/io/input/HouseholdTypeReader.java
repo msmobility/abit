@@ -49,6 +49,7 @@ public class HouseholdTypeReader implements Reader{
                     .anyMatch(p -> p.getRelationship() == Relationship.married);
 
             if (partnered) {
+                //todo the employed man and women should be the one who are married.
                 Person employedMan   = findWorkingMale(household, true);
                 Person employedWoman = findWorkingFemale(household, true);
 

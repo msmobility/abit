@@ -116,12 +116,13 @@ public class HouseholdReader implements Reader {
             Household hh = new Household(id, hhLocation, autos);
             hh.setSimulated(Boolean.FALSE);
 
-            int partition = Integer.parseInt(splitLine[indexes.get("partition")]);
-            hh.setPartition(partition);
+            //int partition = Integer.parseInt(splitLine[indexes.get("partition")]);
+            //hh.setPartition(partition);
 
             dataSet.getHouseholds().put(id, hh);
 
         }
+
 
     }
 

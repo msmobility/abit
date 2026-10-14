@@ -6,9 +6,6 @@ import abm.data.vehicle.Car;
 import abm.data.vehicle.CarType;
 import abm.data.vehicle.VehicleUtil;
 import abm.properties.AbitResources;
-import de.tum.bgu.msm.data.person.Disability;
-import de.tum.bgu.msm.data.person.Gender;
-import de.tum.bgu.msm.data.person.Occupation;
 import de.tum.bgu.msm.util.MitoUtil;
 import org.apache.log4j.Logger;
 
@@ -50,8 +47,7 @@ public class VehicleReader implements Reader {
     private void processHeader(BufferedReader br, Map<String, Integer> indexes) throws IOException {
         String[] header = br.readLine().split(REGEX);
 
-        indexes.put("hhId", MitoUtil.findPositionInArray("id", header));
-        //indexes.put("hhId", MitoUtil.findPositionInArray("hh", header));
+        indexes.put("hhId", MitoUtil.findPositionInArray("hh", header));
         indexes.put("numAutos", MitoUtil.findPositionInArray("autos", header));
         indexes.put("index", MitoUtil.findPositionInArray("index", header));
         indexes.put("vehId", MitoUtil.findPositionInArray("vehId", header));
@@ -78,18 +74,22 @@ public class VehicleReader implements Reader {
                 throw new RuntimeException("The household does not exist");
             }
 
-            int numAutos = Integer.parseInt(splitLine[indexes.get("numAutos")]);
+//            int numAutos = Integer.parseInt(splitLine[indexes.get("numAutos")]);
             String vehType = splitLine[indexes.get("type")].toUpperCase();
 
 
-            if (numAutos != hh.getNumberOfCars()) {
-                throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
-            } else {
-                if (vehType.equals("CONVENTIONAL")) {
-                    hh.getVehicles().add(new Car(id, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
-                } else if (vehType.equals("ELECTRIC")) {
-                    hh.getVehicles().add(new Car(id, CarType.ELECTRIC, VehicleUtil.getVehicleAgeInBaseYear()));
-                }
+//            if (numAutos != hh.getNumberOfCars()) {
+//                throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
+//            } else {
+//
+//            }
+
+            if (vehType.equalsIgnoreCase("diesel")) {
+                hh.getVehicles().add(new Car(id, CarType.DIESEL, VehicleUtil.getVehicleAgeInBaseYear()));
+            } else if (vehType.equalsIgnoreCase("ELECTRIC")) {
+                hh.getVehicles().add(new Car(id, CarType.ELECTRIC, VehicleUtil.getVehicleAgeInBaseYear()));
+            } else if(vehType.equalsIgnoreCase("gasoline")){
+                hh.getVehicles().add(new Car(id, CarType.GASOLINE, VehicleUtil.getVehicleAgeInBaseYear()));
             }
         }
     }

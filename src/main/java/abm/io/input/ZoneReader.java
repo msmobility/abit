@@ -14,7 +14,7 @@ import java.util.Collection;
 public class ZoneReader implements Reader {
 
     private static Logger logger = Logger.getLogger(ZoneReader.class);
-    private String zoneIdField = "id";
+    private String zoneIdField = "TAZ_ID";
     private String zoneNameField = "AGS";
     private String bbsrTypeField = "BBSR_type";
     private String regioStaR2TypeField = "RegioStaR2";

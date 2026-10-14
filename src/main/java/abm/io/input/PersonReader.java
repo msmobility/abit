@@ -57,12 +57,12 @@ public class PersonReader implements Reader {
         indexes.put("driversLicense", MitoUtil.findPositionInArray("driversLicense", header));
         indexes.put("workplace", MitoUtil.findPositionInArray("workplace", header));
         indexes.put("income", MitoUtil.findPositionInArray("income", header));
-        indexes.put("schoolplace", MitoUtil.findPositionInArray("schoolId", header));
+        indexes.put("schoolplace", MitoUtil.findPositionInArray("schoolPlace", header));
         indexes.put("disability", MitoUtil.findPositionInArray("disability", header));
-        indexes.put("employmentStatus", MitoUtil.findPositionInArray("jobType", header));
+        indexes.put("employmentStatus", MitoUtil.findPositionInArray("jobDurationType", header));
         indexes.put("jobDuration", MitoUtil.findPositionInArray("jobDuration", header));
-        indexes.put("jobStartTimeWorkdays", MitoUtil.findPositionInArray("jobStartTimeWorkdays", header));
-        indexes.put("jobStartTimeWeekends", MitoUtil.findPositionInArray("jobStartTimeWeekends", header));
+        indexes.put("jobStartTimeWorkdays", MitoUtil.findPositionInArray("jobStartTimeWorkday", header));
+        indexes.put("jobStartTimeWeekends", MitoUtil.findPositionInArray("jobStartTimeWeekend", header));
     }
 
 
@@ -88,7 +88,12 @@ public class PersonReader implements Reader {
             Relationship relationship = Relationship.valueOf(splitLine[indexes.get("relationship")].replace("\"",""));
             Occupation occupation = Occupation.valueOf(Integer.parseInt(splitLine[indexes.get("occupation")]));
             boolean hasLicense = Boolean.parseBoolean(splitLine[indexes.get("driversLicense")]);
-            Disability disability = Disability.valueOf(splitLine[indexes.get("disability")]);
+
+            DisabilityMuc disability = DisabilityMuc.WITHOUT;
+            if (Integer.parseInt(splitLine[indexes.get("disability")]) == 1){
+                disability = DisabilityMuc.WITH;
+            }
+
             String employmentStatus = splitLine[indexes.get("employmentStatus")];
 
             int jobId = Integer.parseInt(splitLine[indexes.get("workplace")]);
@@ -97,7 +102,7 @@ public class PersonReader implements Reader {
                 jj = dataSet.getJobs().getOrDefault(jobId, null);
             }
 
-            int income = Integer.parseInt(splitLine[indexes.get("income")])/12;
+            int income = Integer.parseInt(splitLine[indexes.get("income")]);
 
             int jobDuration = Integer.parseInt(splitLine[indexes.get("jobDuration")]);
 
