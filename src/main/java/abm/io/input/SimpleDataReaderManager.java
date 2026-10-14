@@ -2,6 +2,7 @@ package abm.io.input;
 
 import abm.data.DataSet;
 import abm.data.geo.MicroscopicLocation;
+import abm.data.pop.DisabilityMuc;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
@@ -31,7 +32,7 @@ public class SimpleDataReaderManager implements DataReaderManager {
                     (AbitUtils.randomObject.nextDouble() - 0.5)* 3000);
             Household household = new Household(i, homeLocation, 1);
             Person person = new Person(i, household, 25, Gender.FEMALE, Relationship.single, Occupation.EMPLOYED, true, null,
-                    1000, 480, 480, 2000, null, Disability.WITHOUT);
+                    1000, 480, 480, 2000, null, DisabilityMuc.WITHOUT);
 
 
             household.getPersons().add(person);
