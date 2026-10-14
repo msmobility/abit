@@ -7,6 +7,7 @@ import abm.data.geo.Zone;
 import abm.data.plans.Activity;
 import abm.data.plans.Plan;
 import abm.data.plans.Purpose;
+import abm.data.pop.DisabilityMuc;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
@@ -47,7 +48,7 @@ public class PlanConsistencyRepairModelTest {
 
         Household household = new Household(1, homeZone, 1);
         Person p = new Person(1, household, 36, Gender.FEMALE, Relationship.married,
-                Occupation.EMPLOYED, true, null, 0, 480, 480, 0, null, Disability.WITHOUT);
+                Occupation.EMPLOYED, true, null, 0, 480, 480, 0, null, DisabilityMuc.WITHOUT);
         household.getPersons().add(p);
         Plan.initializePlan(p);
         this.person = p;
