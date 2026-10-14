@@ -219,12 +219,15 @@ public class PlanGeneratorMuc implements Callable {
             int numberOfDaysWithMandatoryAct = frequencyGenerators.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
             //TODO Ana has new job properties, this model needs be killed after updating the sp reader
             DayOfWeek[] dayOfWeeks = dayOfWeekMandatoryAssignment.assignDaysOfWeek(numberOfDaysWithMandatoryAct, purpose, person);
+            // chronological order within this purpose - readability only, PlanTools' neighbor-aware
+            // construction is correct regardless of insertion order (see PlanTools.resolveBookends)
+            Arrays.sort(dayOfWeeks);
 
             DayOfWeek[] remoteWorkingDays = new DayOfWeek[0];
 
             if (purpose.equals(Purpose.WORK)) {
 
-                int numberOfRemoteWorkingDays = remoteWorkFrequencyModel.calculateNumberOfActivitiesPerWeek(person, Purpose.WORK);
+                int numberOfRemoteWorkingDays = remoteWorkFrequencyModel.calculateNumberOfActivitiesPerWeek(person, Purpose.WORK, dayOfWeeks.length);
                 remoteWorkingDays = dayOfWeekRemoteWorkAssignment.assignDaysOfWeek(dayOfWeeks, numberOfRemoteWorkingDays, Purpose.WORK, person);
 
 

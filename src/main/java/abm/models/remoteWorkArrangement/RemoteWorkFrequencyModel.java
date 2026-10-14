@@ -5,7 +5,6 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
-import abm.data.plans.DisabilityMuc;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -26,6 +25,12 @@ import java.util.stream.Collectors;
 public class RemoteWorkFrequencyModel implements FrequencyGenerator {
 
     private static final Logger logger = Logger.getLogger(RemoteWorkFrequencyModel.class);
+
+    /**
+     * Maximum representable category: the zero-inflation's own 0, plus the 6-intercept
+     * ordered-logit count model's 7 non-zero categories (1|2..6|7 boundaries -> categories 1-7).
+     */
+    private static final int MAX_CATEGORY = 7;
 
     private final DataSet dataSet;
     private final Purpose purpose;
@@ -61,22 +66,31 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
 
     @Override
     public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose) {
+        return calculateNumberOfActivitiesPerWeek(person, purpose, MAX_CATEGORY);
+    }
+
+    /**
+     * @param maxDays caps the predicted count at this value (e.g. the person's own weekly
+     *                work-day count, since a remote day can never exceed that) - pass
+     *                MAX_CATEGORY for the model's own natural, uncapped range.
+     */
+    public int calculateNumberOfActivitiesPerWeek(Person person, Purpose purpose, int maxDays) {
         int numOfRemoteWorkingDays = 0;
 
         if (person.canRemoteWork()) {
-            numOfRemoteWorkingDays = polrEstimateTrips(person);
+            numOfRemoteWorkingDays = polrEstimateTrips(person, maxDays);
         }
 
         return numOfRemoteWorkingDays;
     }
 
     /**
-     * Calculate 0-inflated binary + ordered logit
+     * Calculate 0-inflated binary + ordered logit, truncated to [0, maxDays].
      *
      * @param pp
      * @return
      */
-    private int polrEstimateTrips(Person pp) {
+    private int polrEstimateTrips(Person pp, int maxDays) {
         //double randomNumber = AbitUtils.getRandomObject().nextDouble();
         double randomNumber = pp.getRandom().nextDouble();
         double binaryUtility = getPredictor(pp, zeroCoef) + zeroCoef.get("calibration");
@@ -103,28 +117,43 @@ public class RemoteWorkFrequencyModel implements FrequencyGenerator {
             intercepts[5] += updatedCalibrationFactors.get(6);
         }
 
-        int i = 0;
-        double cumProb = 0;
-        double prob = 1 - phi;
-        cumProb += prob;
+        int effectiveMax = Math.min(MAX_CATEGORY, Math.max(0, maxDays));
+        return drawTruncatedCategory(phi, mu, intercepts, effectiveMax, randomNumber);
+    }
 
-        // i == 7 is already the maximum representable frequency here (6 intercepts cover the
-        // 1|2..6|7 boundaries); capping the loop at i < 7 avoids intercepts[i - 2] indexing past
-        // the array end (intercepts[6]) if floating-point rounding ever leaves cumProb a hair
-        // short of randomNumber at the boundary.
-        while (cumProb < randomNumber && i < 7) {
-            i++;
-            if (i < 7) {
-                prob = 1 / (1 + Math.exp(mu - intercepts[i - 1]));
-            } else {
-                prob = 1;
-            }
+    /**
+     * Draws a category from the zero-inflated ordered-logit distribution, truncated to
+     * [0, effectiveMax] and properly renormalized - the random draw is rescaled by the truncated
+     * range's own total probability mass, so every feasible category keeps its correct relative
+     * share rather than the excess mass above the cap being dumped onto the cap category. Pure
+     * function of its inputs (no AbitResources/instance state), so it's directly unit-testable.
+     * <p>
+     * Per-category formula (cumProbByCategory[i] after each iteration) is unchanged from the
+     * original untruncated implementation - only decoupled from the draw itself, so effectiveMax
+     * == MAX_CATEGORY reproduces byte-identical behavior to before this method existed. The
+     * {@code i < 7} / {@code i > 1} guards preserve the original's own defensive-cap reasoning:
+     * intercepts has only 6 entries (indices 0-5), and category 7 (the model's own maximum) has
+     * no upper intercept boundary of its own.
+     */
+    static int drawTruncatedCategory(double phi, double mu, double[] intercepts, int effectiveMax, double randomNumber) {
+        double[] cumProbByCategory = new double[effectiveMax + 1];
+        double cumProb = 1 - phi;
+        cumProbByCategory[0] = cumProb;
+        for (int i = 1; i <= effectiveMax; i++) {
+            double prob = i < 7 ? 1 / (1 + Math.exp(mu - intercepts[i - 1])) : 1;
             if (i > 1) {
                 prob -= 1 / (1 + Math.exp(mu - intercepts[i - 2]));
             }
             cumProb += phi * prob;
+            cumProbByCategory[i] = cumProb;
         }
-        return i;
+
+        double scaledTarget = randomNumber * cumProbByCategory[effectiveMax];
+        int result = 0;
+        while (result < effectiveMax && cumProbByCategory[result] < scaledTarget) {
+            result++;
+        }
+        return result;
     }
 
     /**
