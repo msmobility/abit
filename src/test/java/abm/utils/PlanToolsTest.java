@@ -11,6 +11,7 @@ import abm.data.plans.Leg;
 import abm.data.plans.Plan;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
+import abm.data.pop.DisabilityMuc;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.Relationship;
@@ -50,7 +51,7 @@ public class PlanToolsTest {
 
         Household household = new Household(1, homeZone, 1);
         Person p = new Person(1, household, 36, Gender.FEMALE, Relationship.married,
-                Occupation.EMPLOYED, true, null, 0, 480, 480, 0, null, Disability.WITHOUT);
+                Occupation.EMPLOYED, true, null, 0, 480, 480, 0, null, DisabilityMuc.WITHOUT);
         household.getPersons().add(p);
         Plan.initializePlan(p);
         this.person = p;
@@ -194,5 +195,223 @@ public class PlanToolsTest {
 
         Assert.assertTrue(plan.getUnmetActivities().containsValue(stopBefore));
         Assert.assertEquals(1, tour.getActivities().size());
+    }
+
+    // --- cross-midnight-scheduling-plan.md Part 1: inline live-neighbor lookup + merge ---
+
+    private Activity workActivity(DayOfWeek day, int startMinuteOfDay, int endMinuteOfDay, Location location) {
+        Activity activity = new Activity(person, Purpose.WORK);
+        activity.setDayOfWeek(day);
+        activity.setLocation(location);
+        activity.setStartTime_min(day.ordinal() * 24 * 60 + startMinuteOfDay);
+        activity.setEndTime_min(day.ordinal() * 24 * 60 + endMinuteOfDay);
+        return activity;
+    }
+
+    @Test
+    public void addMainTour_secondTourOnLaterDay_mergesTrailingAndLeadingBookend() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 15,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity monday = workActivity(DayOfWeek.MONDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, monday);
+        Activity wednesday = workActivity(DayOfWeek.WEDNESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, wednesday);
+
+        Tour mondayTour = monday.getTour();
+        Tour wednesdayTour = wednesday.getTour();
+        int wednesdayDeparture = wednesdayTour.getLegs().firstKey();
+
+        // genuinely the same shared object, not just a matching value - so ActivityPrinter's/
+        // PlansToMATSimPlans's identity-based dedup exports it once
+        Assert.assertSame(mondayTour.getTrailingBookend(), wednesdayTour.getLeadingBookend());
+        // Monday's trailing bookend now extends to Wednesday's own departure, not to day's end
+        Assert.assertEquals(wednesdayDeparture, mondayTour.getTrailingBookend().getEndTime_min());
+    }
+
+    @Test
+    public void addMainTour_insertedBetweenTwoMergedTours_splitsTheSharedBookend() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 15,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity monday = workActivity(DayOfWeek.MONDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, monday);
+        Activity wednesday = workActivity(DayOfWeek.WEDNESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, wednesday);
+
+        Activity sharedBefore = monday.getTour().getTrailingBookend();
+        Assert.assertSame(sharedBefore, wednesday.getTour().getLeadingBookend());
+
+        // Tuesday, inserted last but chronologically between Monday and Wednesday
+        Activity tuesday = workActivity(DayOfWeek.TUESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, tuesday);
+
+        Tour mondayTour = monday.getTour();
+        Tour tuesdayTour = tuesday.getTour();
+        Tour wednesdayTour = wednesday.getTour();
+        int tuesdayDeparture = tuesdayTour.getLegs().firstKey();
+        int wednesdayDeparture = wednesdayTour.getLegs().firstKey();
+
+        // Monday's trailing bookend now shrinks to Tuesday's own departure, shared with it
+        Assert.assertSame(mondayTour.getTrailingBookend(), tuesdayTour.getLeadingBookend());
+        Assert.assertEquals(tuesdayDeparture, mondayTour.getTrailingBookend().getEndTime_min());
+        // the old Monday/Wednesday shared object no longer serves as Wednesday's leading bookend -
+        // Tuesday's own trailing bookend takes over that role instead, far edge preserved
+        Assert.assertTrue(wednesdayTour.getLeadingBookend() != sharedBefore);
+        Assert.assertSame(tuesdayTour.getTrailingBookend(), wednesdayTour.getLeadingBookend());
+        Assert.assertEquals(wednesdayDeparture, tuesdayTour.getTrailingBookend().getEndTime_min());
+    }
+
+    @Test
+    public void addInHomeTour_insertedBetweenTwoMergedTours_splitsTheSharedBookend() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 15,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity monday = workActivity(DayOfWeek.MONDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, monday);
+        Activity wednesday = workActivity(DayOfWeek.WEDNESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, wednesday);
+        Activity sharedBefore = monday.getTour().getTrailingBookend();
+
+        Activity tuesdayWfh = workActivity(DayOfWeek.TUESDAY, 480, 1020, homeZone);
+        planTools.addInHomeTour(plan, tuesdayWfh);
+
+        Tour mondayTour = monday.getTour();
+        HomeEpisode tuesdayEpisode = (HomeEpisode) tuesdayWfh.getTour();
+        Tour wednesdayTour = wednesday.getTour();
+
+        Assert.assertSame(mondayTour.getTrailingBookend(), tuesdayEpisode.getLeadingBookend());
+        Assert.assertEquals(tuesdayWfh.getStartTime_min(), mondayTour.getTrailingBookend().getEndTime_min());
+        Assert.assertTrue(wednesdayTour.getLeadingBookend() != sharedBefore);
+        Assert.assertSame(tuesdayEpisode.getTrailingBookend(), wednesdayTour.getLeadingBookend());
+        Assert.assertEquals(tuesdayWfh.getEndTime_min(), tuesdayEpisode.getTrailingBookend().getStartTime_min());
+    }
+
+    @Test
+    public void addMainTour_adjacentToExistingHomeEpisode_mergesWithItsBookend() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 15,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity mondayWfh = workActivity(DayOfWeek.MONDAY, 480, 1020, homeZone);
+        planTools.addInHomeTour(plan, mondayWfh);
+        Activity tuesday = workActivity(DayOfWeek.TUESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, tuesday);
+
+        HomeEpisode mondayEpisode = (HomeEpisode) mondayWfh.getTour();
+        Tour tuesdayTour = tuesday.getTour();
+
+        // genuinely shares the object now, not just reads a matching value
+        Assert.assertSame(mondayEpisode.getTrailingBookend(), tuesdayTour.getLeadingBookend());
+    }
+
+    @Test
+    public void addMainTour_arrivalPastEndOfWeek_placeholderNeverInverts() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 30,
+                (origin, destination, mode, time) -> 1000);
+
+        // Sunday 22:00 start, 8h shift - arrival home lands past PlanTools.endOfTheWeek() (10080)
+        Activity sundayNightShift = workActivity(DayOfWeek.SUNDAY, 1320, 1320 + 8 * 60, workZone);
+        planTools.addMainTour(plan, sundayNightShift);
+
+        Activity trailing = sundayNightShift.getTour().getTrailingBookend();
+        Assert.assertTrue(trailing.getStartTime_min() <= trailing.getEndTime_min());
+    }
+
+    @Test
+    public void splitInHomeWorkAroundActivity_relocatesOriginalTrailingBookendToWorkAfterEpisode() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 10,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity mondayWfh = workActivity(DayOfWeek.MONDAY, 600, 1080, homeZone);
+        planTools.addInHomeTour(plan, mondayWfh);
+
+        // a later tour gives the WFH episode's own trailing bookend a real, known far edge
+        Activity wednesday = workActivity(DayOfWeek.WEDNESDAY, 480, 1020, workZone);
+        planTools.addMainTour(plan, wednesday);
+
+        HomeEpisode originalEpisode = (HomeEpisode) mondayWfh.getTour();
+        Activity originalTrailing = originalEpisode.getTrailingBookend();
+        int wednesdayDeparture = wednesday.getTour().getLegs().firstKey();
+        Assert.assertEquals(wednesdayDeparture, originalTrailing.getEndTime_min());
+
+        Activity shopping = new Activity(person, Purpose.SHOPPING);
+        shopping.setDayOfWeek(DayOfWeek.MONDAY);
+        shopping.setLocation(workZone);
+        shopping.setStartTime_min(mondayMinute(700));
+        shopping.setEndTime_min(mondayMinute(730));
+
+        planTools.splitInHomeWorkAroundActivity(plan, mondayWfh, shopping);
+
+        Assert.assertTrue(plan.getUnmetActivities().isEmpty());
+        Activity workAfter = shopping.getTour().getLegs().get(shopping.getTour().getLegs().lastKey()).getNextActivity();
+        HomeEpisode workAfterEpisode = (HomeEpisode) workAfter.getTour();
+
+        // relocated: same object, far edge (Wednesday's departure) preserved, near edge updated
+        Assert.assertSame(originalTrailing, workAfterEpisode.getTrailingBookend());
+        Assert.assertEquals(wednesdayDeparture, workAfterEpisode.getTrailingBookend().getEndTime_min());
+        Assert.assertEquals(workAfter.getEndTime_min(), originalTrailing.getStartTime_min());
+        // originalEpisode itself no longer has a separate trailing bookend
+        Assert.assertSame(mondayWfh, originalEpisode.getTrailingBookend());
+    }
+
+    @Test
+    public void splitInHomeWorkAroundActivity_caseB_repointsDependentTourLeadingBookend() {
+        newPerson();
+        Plan plan = person.getPlan();
+        PlanTools planTools = new PlanTools(
+                (origin, destination, mode, time) -> 10,
+                (origin, destination, mode, time) -> 1000);
+
+        Activity mondayWfh = workActivity(DayOfWeek.MONDAY, 480, 1080, homeZone);
+        planTools.addInHomeTour(plan, mondayWfh);
+
+        // manually establish the Case B precondition (as arises in practice from a prior chained
+        // interruption): a real tour already using mondayWfh directly as its own departure point
+        Activity dependentActivity = workActivity(DayOfWeek.MONDAY, 1100, 1130, workZone);
+        Activity dependentTourHomeAfter = new Activity(person, Purpose.HOME);
+        dependentTourHomeAfter.setLocation(homeZone);
+        dependentTourHomeAfter.setStartTime_min(mondayMinute(1140));
+        dependentTourHomeAfter.setEndTime_min(PlanTools.endOfTheWeek());
+        Tour dependentTour = new Tour(dependentActivity, 99);
+        Leg departureLeg = new Leg(mondayWfh, dependentActivity);
+        departureLeg.setTravelTime_min(10);
+        departureLeg.setDistance(1000);
+        Leg returnLeg = new Leg(dependentActivity, dependentTourHomeAfter);
+        returnLeg.setTravelTime_min(10);
+        returnLeg.setDistance(1000);
+        dependentTour.getLegs().put(mondayWfh.getEndTime_min(), departureLeg);
+        dependentTour.getLegs().put(dependentActivity.getEndTime_min(), returnLeg);
+        dependentActivity.setTour(dependentTour);
+        plan.getTours().put(dependentActivity.getStartTime_min(), dependentTour);
+
+        Activity secondStop = new Activity(person, Purpose.SHOPPING);
+        secondStop.setDayOfWeek(DayOfWeek.MONDAY);
+        secondStop.setLocation(workZone);
+        secondStop.setStartTime_min(mondayMinute(700));
+        secondStop.setEndTime_min(mondayMinute(720));
+
+        planTools.splitInHomeWorkAroundActivity(plan, mondayWfh, secondStop);
+
+        Assert.assertTrue(plan.getUnmetActivities().isEmpty());
+        Activity workMiddle = secondStop.getTour().getLegs().get(secondStop.getTour().getLegs().lastKey()).getNextActivity();
+        Assert.assertSame(workMiddle, dependentTour.getLeadingBookend());
     }
 }
