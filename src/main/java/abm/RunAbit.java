@@ -5,6 +5,7 @@ import abm.data.DataSet;
 import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.pop.Household;
+import abm.data.vehicle.VehicleUtil;
 import abm.io.input.DefaultDataReaderManager;
 import abm.io.output.*;
 import abm.models.ModelSetup;
@@ -40,6 +41,7 @@ public class RunAbit {
         AbitUtils.loadHdf5Lib();
 
         MitoUtil.initializeRandomNumber(AbitUtils.getRandomObject());
+        VehicleUtil.initializeVehicleUtils();
 
         logger.info("Reading data");
         DataSet dataSet = new DefaultDataReaderManager().readData();
