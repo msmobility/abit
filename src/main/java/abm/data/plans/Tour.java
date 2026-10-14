@@ -31,6 +31,35 @@ public class Tour {
         return legs;
     }
 
+    /**
+     * The activity a person is doing immediately before this tour's own departure - the "far"
+     * edge shared with the true previous chronological neighbor (see PlanTools' neighbor-aware
+     * construction). HomeEpisode overrides this to go through getActivities() instead, since it
+     * has no legs.
+     */
+    public Activity getLeadingBookend() {
+        return getLegs().get(getLegs().firstKey()).getPreviousActivity();
+    }
+
+    /**
+     * The activity a person is doing immediately after this tour's own arrival - the "far" edge
+     * shared with the true next chronological neighbor. HomeEpisode overrides this to go through
+     * getActivities() instead, since it has no legs.
+     */
+    public Activity getTrailingBookend() {
+        return getLegs().get(getLegs().lastKey()).getNextActivity();
+    }
+
+    /** Repoints this tour's own leading bookend, e.g. when merging with a neighbor. */
+    public void setLeadingBookend(Activity activity) {
+        getLegs().get(getLegs().firstKey()).setPreviousActivity(activity);
+    }
+
+    /** Repoints this tour's own trailing bookend, e.g. when merging with a neighbor. */
+    public void setTrailingBookend(Activity activity) {
+        getLegs().get(getLegs().lastKey()).setNextActivity(activity);
+    }
+
     public SortedMap<Integer, Activity> getActivities() {
         return activities;
     }

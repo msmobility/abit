@@ -3,6 +3,7 @@ package abm.utils;
 import abm.data.geo.Location;
 import abm.data.geo.MicroLocation;
 import abm.data.plans.*;
+import abm.data.pop.Person;
 import abm.data.timeOfDay.BlockedTimeOfWeekLinkedList;
 import abm.data.travelInformation.TravelDistances;
 import abm.data.travelInformation.TravelTimes;
@@ -12,6 +13,7 @@ import org.apache.log4j.Logger;
 import java.time.DayOfWeek;
 import java.util.Collections;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.stream.Collectors;
 
 
@@ -56,26 +58,6 @@ public class PlanTools {
      */
     public void addMainTour(Plan plan, Activity mainTourActivity) {
 
-        //Todo is there already a tour in the chosen day?
-        DayOfWeek dayOfWeek = mainTourActivity.getDayOfWeek();
-        int startTimeOfTheDay_min = dayOfWeek.ordinal() * 24 * 60;
-        int endTimeOfTheDay_min = (dayOfWeek.ordinal() + 1) * 24 * 60 - 1;
-        int numberOfExistingTourOfTheDay = (int) plan.getTours().keySet().stream()
-                .filter(tourStartTime -> tourStartTime >= startTimeOfTheDay_min && tourStartTime <= endTimeOfTheDay_min)
-                .count();
-
-        if (numberOfExistingTourOfTheDay == 0) {
-            addTheFirstTourOfTheDay(plan, mainTourActivity, startTimeOfTheDay_min, endTimeOfTheDay_min);
-        } else if (numberOfExistingTourOfTheDay > 0) {
-            addOtherToursOfTheDay(plan, mainTourActivity, startTimeOfTheDay_min, endTimeOfTheDay_min);
-        } else {
-            System.out.println("Error in calculating number of tours of a day");
-        }
-
-    }
-
-    private void addOtherToursOfTheDay(Plan plan, Activity mainTourActivity, int startTimeOfTheDay_min, int endTimeOfTheDay_min) {
-
         int travelTimeToMainActivity_min = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         double travelDistanceToMainAct_m = travelDistances.getTravelDistanceInMeters(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeLeavingHome_min = mainTourActivity.getStartTime_min() - travelTimeToMainActivity_min;
@@ -83,134 +65,96 @@ public class PlanTools {
         double travelDistanceBackFromMainActivity_m = travelDistances.getTravelDistanceInMeters(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
         int timeArrivingHome_min = mainTourActivity.getEndTime_min() + travelTimeBackFromMainActivity_min;
 
-
-        if (plan.getBlockedTimeOfDay().isAvailable(timeLeavingHome_min, timeArrivingHome_min)) {
-
-            //Todo select tours of the day
-            List<Integer> timeIndexOfPotentialAffectedTours = plan.getTours().keySet().stream()
-                    .filter(tourStartTime -> tourStartTime >= startTimeOfTheDay_min && tourStartTime <= endTimeOfTheDay_min)
-                    .collect(Collectors.toList());
-
-
-            //Todo Identify which tour and which part of the tour will be affected (before the exisiting tour or after)
-            for (Integer timeIndex : timeIndexOfPotentialAffectedTours) {
-
-                Tour tempTour = plan.getTours().get(timeIndex);
-                int indexOfFirstLeg = tempTour.getLegs().firstKey();
-                int indexOfLastLeg = tempTour.getLegs().lastKey();
-                Activity firstHomeAct = tempTour.getLegs().get(indexOfFirstLeg).getPreviousActivity();
-                Activity secondHomeAct = tempTour.getLegs().get(indexOfLastLeg).getNextActivity();
-
-                if (firstHomeAct.getStartTime_min() <= mainTourActivity.getStartTime_min() && firstHomeAct.getEndTime_min() >= mainTourActivity.getEndTime_min()) {
-
-                    //Todo add activities and legs to the new tour
-                    Activity homeActBeforeMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-                    homeActBeforeMainAct.setStartTime_min(startTimeOfTheDay_min);
-                    homeActBeforeMainAct.setEndTime_min(timeLeavingHome_min);
-                    homeActBeforeMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-                    homeActBeforeMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
-
-                    final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
-                    firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
-                    firstLeg.setDistance(travelDistanceToMainAct_m);
-
-                    // reuse firstHomeAct itself as the "after" bookend rather than creating a
-                    // second Activity object for the same time window - the existing tour's own
-                    // first leg already references it, and mutating its start below is exactly
-                    // the resulting window this new tour's return leg needs too
-                    firstHomeAct.setStartTime_min(timeArrivingHome_min);
-
-                    final Leg secondLeg = new Leg(mainTourActivity, firstHomeAct);
-                    secondLeg.setTravelTime_min(travelTimeBackFromMainActivity_min);
-                    secondLeg.setDistance(travelDistanceBackFromMainActivity_m);
-
-                    Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
-                    tour.getLegs().put(timeLeavingHome_min, firstLeg);
-                    tour.getLegs().put(mainTourActivity.getEndTime_min(), secondLeg);
-                    mainTourActivity.setTour(tour);
-                    plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
-                    plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
-                    break;
-
-                }
-
-                if (secondHomeAct.getStartTime_min() <= mainTourActivity.getStartTime_min() && secondHomeAct.getEndTime_min() >= mainTourActivity.getEndTime_min()) {
-
-                    // reuse secondHomeAct itself as the "before" bookend rather than creating a
-                    // second Activity object for the same time window - see the matching comment
-                    // in the branch above
-                    secondHomeAct.setEndTime_min(timeLeavingHome_min);
-
-                    final Leg firstLeg = new Leg(secondHomeAct, mainTourActivity);
-                    firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
-                    firstLeg.setDistance(travelDistanceToMainAct_m);
-
-                    Activity homeActAfterMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-                    homeActAfterMainAct.setStartTime_min(timeArrivingHome_min);
-                    homeActAfterMainAct.setEndTime_min(endTimeOfTheDay_min);
-                    homeActAfterMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-                    homeActAfterMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
-
-                    final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
-                    secondLeg.setTravelTime_min(travelTimeBackFromMainActivity_min);
-                    secondLeg.setDistance(travelDistanceBackFromMainActivity_m);
-
-                    Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
-                    tour.getLegs().put(timeLeavingHome_min, firstLeg);
-                    tour.getLegs().put(mainTourActivity.getEndTime_min(), secondLeg);
-                    mainTourActivity.setTour(tour);
-                    plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
-                    plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
-                    break;
-
-                }
-            }
-
-        } else {
+        if (!plan.getBlockedTimeOfDay().isAvailable(timeLeavingHome_min, timeArrivingHome_min)) {
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
+            return;
         }
-    }
 
-    private void addTheFirstTourOfTheDay(Plan plan, Activity mainTourActivity, int startTimeOfTheDay_min, int endTimeOfTheDay_min) {
-
-        int travelTimeToMainActivity_min = travelTimes.getTravelTimeInMinutes(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
-        double travelDistanceToMainActivity_m = travelDistances.getTravelDistanceInMeters(plan.getDummyHomeActivity().getLocation(), mainTourActivity.getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
-        int timeLeavingHome_min = mainTourActivity.getStartTime_min() - travelTimeToMainActivity_min;
-
-        Activity homeActBeforeMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-        homeActBeforeMainAct.setStartTime_min(startTimeOfTheDay_min);
-        homeActBeforeMainAct.setEndTime_min(timeLeavingHome_min);
-        homeActBeforeMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-        homeActBeforeMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
+        Activity[] bookends = resolveBookends(plan, mainTourActivity.getPerson(), mainTourActivity.getDayOfWeek(),
+                mainTourActivity.getStartTime_min(), timeLeavingHome_min, timeArrivingHome_min);
+        Activity homeActBeforeMainAct = bookends[0];
+        Activity homeActAfterMainAct = bookends[1];
 
         final Leg firstLeg = new Leg(homeActBeforeMainAct, mainTourActivity);
         firstLeg.setTravelTime_min(travelTimeToMainActivity_min);
-        firstLeg.setDistance(travelDistanceToMainActivity_m);
-
-        int travelTimeBackFromMainActivity_min = travelTimes.getTravelTimeInMinutes(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
-        double travelDistanceBackFromMainActivity_m = travelDistances.getTravelDistanceInMeters(mainTourActivity.getLocation(), plan.getDummyHomeActivity().getLocation(), Mode.UNKNOWN, mainTourActivity.getStartTime_min());
-        int timeArrivingHome_min = mainTourActivity.getEndTime_min() + travelTimeBackFromMainActivity_min;
-
-        Activity homeActAfterMainAct = new Activity(mainTourActivity.getPerson(), Purpose.HOME);
-        homeActAfterMainAct.setStartTime_min(timeArrivingHome_min);
-        homeActAfterMainAct.setEndTime_min(endTimeOfTheDay_min);
-        homeActAfterMainAct.setLocation(plan.getDummyHomeActivity().getLocation());
-        homeActAfterMainAct.setDayOfWeek(mainTourActivity.getDayOfWeek());
-
+        firstLeg.setDistance(travelDistanceToMainAct_m);
         final Leg secondLeg = new Leg(mainTourActivity, homeActAfterMainAct);
         secondLeg.setTravelTime_min(travelTimeBackFromMainActivity_min);
         secondLeg.setDistance(travelDistanceBackFromMainActivity_m);
 
-        if (plan.getBlockedTimeOfDay().isAvailable(timeLeavingHome_min, timeArrivingHome_min)) {
-            Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
-            tour.getLegs().put(timeLeavingHome_min, firstLeg);
-            tour.getLegs().put(mainTourActivity.getEndTime_min(), secondLeg);
-            mainTourActivity.setTour(tour);
-            plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
-            plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
+        Tour tour = new Tour(mainTourActivity, plan.getTours().size() + 1);
+        tour.getLegs().put(timeLeavingHome_min, firstLeg);
+        tour.getLegs().put(mainTourActivity.getEndTime_min(), secondLeg);
+        mainTourActivity.setTour(tour);
+        plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
+        plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
+    }
+
+    /**
+     * Resolves the leading and trailing bookend for a new tour/HomeEpisode about to be inserted
+     * at newTourKey, by finding its true chronological neighbors live in plan.getTours() (correct
+     * regardless of construction order - days/purposes aren't necessarily generated in calendar
+     * order) and either merging with an existing neighbor's own bookend (reusing the same
+     * Activity object, so ActivityPrinter/PlansToMATSimPlans's identity-based dedup exports it
+     * once) or creating a fresh placeholder when no neighbor exists yet. nearLeadingEdge/
+     * nearTrailingEdge are this new commitment's own "near" edges - departure/arrival for a real
+     * tour, or the main activity's own start/end for a leg-less HomeEpisode. Returns
+     * [leadingBookend, trailingBookend]; does not itself insert the new tour into
+     * plan.getTours() or wire its own legs/activities - callers do that afterward.
+     */
+    private Activity[] resolveBookends(Plan plan, Person person, DayOfWeek dayOfWeek, int newTourKey,
+                                        int nearLeadingEdge, int nearTrailingEdge) {
+        SortedMap<Integer, Tour> tours = plan.getTours();
+        SortedMap<Integer, Tour> before = tours.headMap(newTourKey);
+        SortedMap<Integer, Tour> after = tours.tailMap(newTourKey);
+        Tour previousNeighbor = before.isEmpty() ? null : before.get(before.lastKey());
+        Tour nextNeighbor = after.isEmpty() ? null : after.get(after.firstKey());
+
+        Activity previousTrailingCandidate = previousNeighbor == null ? null : previousNeighbor.getTrailingBookend();
+        Activity nextLeadingCandidate = nextNeighbor == null ? null : nextNeighbor.getLeadingBookend();
+        // two live-queried neighbors that are already merged with each other - always true
+        // whenever two commitments are chronologically adjacent, since whichever was created
+        // second must have found the other as its own neighbor and merged with it then
+        boolean collision = previousTrailingCandidate != null && previousTrailingCandidate == nextLeadingCandidate;
+        // captured before any mutation below - the collision case needs the shared object's own
+        // original end value to rebuild the trailing side once that object is reused for leading
+        int nextNeighborOwnFarEdge = collision ? nextLeadingCandidate.getEndTime_min() : -1;
+
+        Activity leadingBookend;
+        if (previousNeighbor == null) {
+            leadingBookend = freshHomeActivity(plan, person, dayOfWeek);
+            leadingBookend.setStartTime_min(startOfTheWeek());
         } else {
-            plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
+            leadingBookend = previousTrailingCandidate;
         }
+        leadingBookend.setEndTime_min(nearLeadingEdge);
+
+        Activity trailingBookend;
+        if (collision) {
+            // leadingBookend above already reused the shared object - give the trailing side a
+            // fresh object and repoint nextNeighbor away from the old shared one, mirroring the
+            // existing same-day split branches this generalizes
+            trailingBookend = freshHomeActivity(plan, person, dayOfWeek);
+            trailingBookend.setStartTime_min(nearTrailingEdge);
+            trailingBookend.setEndTime_min(nextNeighborOwnFarEdge);
+            nextNeighbor.setLeadingBookend(trailingBookend);
+        } else if (nextNeighbor == null) {
+            trailingBookend = freshHomeActivity(plan, person, dayOfWeek);
+            trailingBookend.setStartTime_min(nearTrailingEdge);
+            trailingBookend.setEndTime_min(Math.max(nearTrailingEdge, endOfTheWeek()));
+        } else {
+            trailingBookend = nextLeadingCandidate;
+            trailingBookend.setStartTime_min(nearTrailingEdge);
+        }
+
+        return new Activity[]{leadingBookend, trailingBookend};
+    }
+
+    private Activity freshHomeActivity(Plan plan, Person person, DayOfWeek dayOfWeek) {
+        Activity activity = new Activity(person, Purpose.HOME);
+        activity.setLocation(plan.getDummyHomeActivity().getLocation());
+        activity.setDayOfWeek(dayOfWeek);
+        return activity;
     }
 
 
@@ -418,15 +362,24 @@ public class PlanTools {
      * tour.
      */
     public void addInHomeTour(Plan plan, Activity mainTourActivity) {
-        if (plan.getBlockedTimeOfDay().isAvailable(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min())) {
-            mainTourActivity.setAtHome(true);
-            HomeEpisode tour = new HomeEpisode(mainTourActivity, plan.getTours().size() + 1);
-            mainTourActivity.setTour(tour);
-            plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
-            plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
-        } else {
+        if (!plan.getBlockedTimeOfDay().isAvailable(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min())) {
             plan.addUnmetActivities(mainTourActivity.getStartTime_min(), mainTourActivity);
+            return;
         }
+
+        mainTourActivity.setAtHome(true);
+        HomeEpisode tour = new HomeEpisode(mainTourActivity, plan.getTours().size() + 1);
+        mainTourActivity.setTour(tour);
+
+        // no travel, so the "near" edges (the ones facing this episode's own main activity) are
+        // pinned exactly to its own start/end rather than offset by a travel time
+        Activity[] bookends = resolveBookends(plan, mainTourActivity.getPerson(), mainTourActivity.getDayOfWeek(),
+                mainTourActivity.getStartTime_min(), mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
+        tour.getActivities().put(bookends[0].getStartTime_min(), bookends[0]);
+        tour.getActivities().put(bookends[1].getStartTime_min(), bookends[1]);
+
+        plan.getBlockedTimeOfDay().blockTime(mainTourActivity.getStartTime_min(), mainTourActivity.getEndTime_min());
+        plan.getTours().put(mainTourActivity.getStartTime_min(), tour);
     }
 
     /**
@@ -517,6 +470,18 @@ public class PlanTools {
             HomeEpisode workAfterEpisode = new HomeEpisode(workAfter, plan.getTours().size() + 1);
             workAfter.setTour(workAfterEpisode);
 
+            // relocate the original episode's own trailing bookend (if it has a genuine one, not
+            // just its main activity already serving double duty as someone else's bookend from
+            // an earlier split) to workAfterEpisode - workAfter is now the fragment facing away
+            // from this interruption, so it inherits whatever came after the original span
+            Tour originalEpisode = workBefore.getTour();
+            Activity originalTrailing = originalEpisode.getTrailingBookend();
+            if (originalTrailing != workBefore) {
+                originalEpisode.getActivities().remove(originalTrailing.getStartTime_min());
+                originalTrailing.setStartTime_min(workAfterEnd);
+                workAfterEpisode.getActivities().put(originalTrailing.getStartTime_min(), originalTrailing);
+            }
+
             Tour newTour = new Tour(activity, plan.getTours().size() + 2);
             Leg outbound = new Leg(workBefore, activity);
             outbound.setTravelTime_min(travelToActivity);
@@ -575,8 +540,8 @@ public class PlanTools {
 
             // re-point dependentTour's departure leg to workMiddle - same boundary value
             // (originalEnd), so its map key is unchanged, only which object represents it
-            Activity tailStart = dependentTour.getLegs().get(dependentTour.getLegs().lastKey()).getNextActivity();
-            dependentTour.getLegs().get(dependentTour.getLegs().firstKey()).setPreviousActivity(workMiddle);
+            Activity tailStart = dependentTour.getTrailingBookend();
+            dependentTour.setLeadingBookend(workMiddle);
 
             plan.getBlockedTimeOfDay().blockTime(originalStart, leaveTime);
             plan.getBlockedTimeOfDay().blockTime(leaveTime, returnTime);

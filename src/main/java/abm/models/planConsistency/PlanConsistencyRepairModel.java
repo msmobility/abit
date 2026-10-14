@@ -17,10 +17,18 @@ import java.util.Map;
 import java.util.SortedMap;
 
 /**
- * Runs once mode choice has finished for a household, recomputing every leg's travel time from
- * its actually-chosen mode (legs are created earlier in the pipeline with Mode.UNKNOWN, which
+ * Runs once mode choice has finished for a household. Two responsibilities:
+ * <p>
+ * 1. {@link #resolveWeekWraparound(Plan)}: PlanTools' neighbor-aware tour construction resolves
+ * every bookend's boundary against its true chronological neighbor as each tour is built - except
+ * the very last tour of the week, since whether a given tour turns out to be last isn't knowable
+ * until the whole week is finished. That one tour's trailing bookend is left showing a raw,
+ * un-merged placeholder end, corrected here to wrap around to the first commitment of the week.
+ * <p>
+ * 2. {@link #repairLeg(Plan, TrackedLeg)}: recomputes every leg's travel time from its
+ * actually-chosen mode (legs are created earlier in the pipeline with Mode.UNKNOWN, which
  * MitoBasedTravelTimes silently substitutes with 80% of car travel time - a placeholder that
- * mode choice never revisits) and reconciling the resulting timing drift.
+ * mode choice never revisits) and reconciles the resulting timing drift.
  * <p>
  * Corrections on a leg touching a bookend activity (one never given .setTour() - HOME bookends,
  * in-home-WORK bookends, and Subtour's mainActivityPart1/mainActivityPart2 all share this rule)
@@ -42,9 +50,29 @@ public class PlanConsistencyRepairModel implements PlanConsistencyRepair {
 
     @Override
     public void repairPlan(Plan plan) {
+        resolveWeekWraparound(plan);
         for (TrackedLeg tracked : flattenLegs(plan)) {
             repairLeg(plan, tracked);
         }
+    }
+
+    /**
+     * The chronologically-last tour/HomeEpisode's own trailing bookend still shows its
+     * construction-time placeholder (PlanTools.resolveBookends' "no next neighbor" branch) -
+     * wrap it around to the first commitment of the week, offset by a full week, so a late-Sunday
+     * activity connects cleanly to Monday's own first commitment instead of trailing off into an
+     * arbitrary placeholder. Idempotent - safe to run unconditionally every time.
+     */
+    private void resolveWeekWraparound(Plan plan) {
+        if (plan.getTours().isEmpty()) {
+            return;
+        }
+        Tour lastTour = plan.getTours().get(plan.getTours().lastKey());
+        Tour firstTour = plan.getTours().get(plan.getTours().firstKey());
+        int firstCommitmentStart = firstTour instanceof HomeEpisode
+                ? firstTour.getMainActivity().getStartTime_min()
+                : firstTour.getLegs().firstKey();
+        lastTour.getTrailingBookend().setEndTime_min(firstCommitmentStart + PlanTools.endOfTheWeek());
     }
 
     /**
