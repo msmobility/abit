@@ -35,19 +35,19 @@ public class MitoTravelTimeAndDistanceReader implements Reader {
     @Override
     public void read() {
 
-        String carFile = AbitResources.instance.getString("car.omx.file");
+        String carFile = AbitResources.instance.getString("car.skim.file");
         String carMatrixName  = AbitResources.instance.getString("car.omx.matrix");
 
-        String busFile  = AbitResources.instance.getString("bus.omx.file");
+        String busFile  = AbitResources.instance.getString("bus.skim.file");
         String busMatrixName  = AbitResources.instance.getString("bus.omx.matrix");
 
-        String tramMetroFile  = AbitResources.instance.getString("tramMetro.omx.file");
+        String tramMetroFile  = AbitResources.instance.getString("tramMetro.skim.file");
         String tramMetroMatrixName  = AbitResources.instance.getString("tramMetro.omx.matrix");
 
-        String trainFile  = AbitResources.instance.getString("train.omx.file");
+        String trainFile  = AbitResources.instance.getString("train.skim.file");
         String trainMatrixName  = AbitResources.instance.getString("train.omx.matrix");
 
-        String nonMotorizedFile = AbitResources.instance.getString("car.omx.file");
+        String nonMotorizedFile = AbitResources.instance.getString("car.skim.file");
         String nonMotorizedMatrixName  = AbitResources.instance.getString("car.distance.omx.matrix");
 
         SkimTravelTimes travelTimes = new SkimTravelTimes();
