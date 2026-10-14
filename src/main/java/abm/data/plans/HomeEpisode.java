@@ -15,6 +15,38 @@ public class HomeEpisode extends Tour {
     }
 
     /**
+     * A HomeEpisode has no legs, so its bookends (if any - see PlanTools' neighbor-aware
+     * construction) live directly in getActivities() instead: the entry with the smallest key is
+     * the leading bookend, the entry with the largest key is the trailing one, with the main
+     * activity in between. Either or both may be absent (equal to the main activity itself) when
+     * this episode's own edge already directly serves as some other tour's own bookend - see
+     * PlanTools.splitInHomeWorkAroundActivity.
+     */
+    @Override
+    public Activity getLeadingBookend() {
+        return getActivities().get(getActivities().firstKey());
+    }
+
+    @Override
+    public Activity getTrailingBookend() {
+        return getActivities().get(getActivities().lastKey());
+    }
+
+    @Override
+    public void setLeadingBookend(Activity activity) {
+        Activity old = getActivities().get(getActivities().firstKey());
+        getActivities().remove(old.getStartTime_min());
+        getActivities().put(activity.getStartTime_min(), activity);
+    }
+
+    @Override
+    public void setTrailingBookend(Activity activity) {
+        Activity old = getActivities().get(getActivities().lastKey());
+        getActivities().remove(old.getStartTime_min());
+        getActivities().put(activity.getStartTime_min(), activity);
+    }
+
+    /**
      * Tour.toString() reads its two time columns off legs.firstKey()/lastKey(), which throws on
      * a HomeEpisode's always-empty legs map - override with the same column layout, sourcing
      * start/end from the main activity itself instead.
