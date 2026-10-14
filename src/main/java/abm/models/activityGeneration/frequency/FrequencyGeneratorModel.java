@@ -6,8 +6,6 @@ import abm.data.geo.RegioStaR2;
 import abm.data.geo.RegioStaR7;
 import abm.data.geo.RegioStaRGem5;
 import abm.data.geo.Zone;
-import abm.data.plans.DisabilityMuc;
-import abm.data.plans.Mode;
 import abm.data.plans.Purpose;
 import abm.data.plans.Tour;
 import abm.data.pop.*;
@@ -21,7 +19,6 @@ import org.apache.log4j.Logger;
 import umontreal.ssj.probdist.NegativeBinomialDist;
 
 import java.nio.file.Path;
-import java.time.DayOfWeek;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -341,7 +338,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         if (runCalibration) {
             CalibrationOccupation occupation = getCalibrationOccupation(pp);
             RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+            DisabilityMuc disability = pp.getDisability();
 
             binaryUtility += updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(0);
         }
@@ -352,7 +349,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         if (runCalibration) {
             CalibrationOccupation occupation = getCalibrationOccupation(pp);
             RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+            DisabilityMuc disability = pp.getDisability();
 
             mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedDiscretionaryCalibrationFactors.get(occupation).get(remoteWorkable).get(disability).get(1));
         } else {
@@ -420,7 +417,7 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
 
             CalibrationOccupation occupation = getCalibrationOccupation(pp);
             RemoteWorkable remoteWorkable = getRemoteWorkable(pp);
-            DisabilityMuc disability = hasDisability(pp);
+            DisabilityMuc disability = pp.getDisability();
 
             mu = Math.exp(getPredictor(pp, countCoef) + countCoef.get("calibration") + updatedDiscretionaryCalibrationFactors
                             .get(occupation)
@@ -1024,13 +1021,6 @@ public class FrequencyGeneratorModel implements FrequencyGenerator {
         return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
-    }
-
-    private DisabilityMuc hasDisability(Person person) {
-
-        return person.getDisability() == Disability.WITHOUT
-                ? DisabilityMuc.WITHOUT
-                : DisabilityMuc.WITH;
     }
 
 //    @Override

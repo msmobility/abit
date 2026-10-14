@@ -207,7 +207,7 @@ public class LogsumAnalysis {
             averageHouseholdPerZone.setEconomicStatus(EconomicStatus.from0to800);
             Person averagePersonPerZone = new Person(originZone.getZoneId(), averageHouseholdPerZone, 32, Gender.MALE, Relationship.single,
                     Occupation.EMPLOYED, true, null, 0, 480, 480,
-                    0, null, Disability.WITHOUT);
+                    0, null, DisabilityMuc.WITHOUT);
             averagePersonPerZone.setHabitualMode(HabitualMode.CAR_DRIVER);
             personArrayList.add(averagePersonPerZone);
         }

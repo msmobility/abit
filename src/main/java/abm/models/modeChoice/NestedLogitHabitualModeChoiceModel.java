@@ -3,10 +3,7 @@ package abm.models.modeChoice;
 import abm.data.DataSet;
 import abm.data.geo.RegioStaR2;
 import abm.data.plans.*;
-import abm.data.pop.Household;
-import abm.data.pop.Person;
-import abm.data.pop.Relationship;
-import abm.data.pop.RemoteWorkable;
+import abm.data.pop.*;
 import abm.io.input.CoefficientsReader;
 import abm.properties.AbitResources;
 import abm.utils.AbitUtils;
@@ -261,7 +258,7 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
 
         // New implementation -------------------------------------------------------------------- start
         if (runCalibration) {
-            utility += updatedCalibrationFactors.get(person.getOccupation()).get(getRemoteWorkable(person)).get(hasDisability(person)).get(habitualMode);
+            utility += updatedCalibrationFactors.get(person.getOccupation()).get(getRemoteWorkable(person)).get(person.getDisability()).get(habitualMode);
         }
         // New implementation -------------------------------------------------------------------- end
 
@@ -437,13 +434,6 @@ public class NestedLogitHabitualModeChoiceModel implements HabitualModeChoice {
         return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
-    }
-
-    private DisabilityMuc hasDisability(Person person) {
-
-        return person.getDisability() == Disability.WITHOUT
-                ? DisabilityMuc.WITHOUT
-                : DisabilityMuc.WITH;
     }
 
     private double getAverageCalibrationFactor(Occupation occupation, HabitualMode habitualMode) {

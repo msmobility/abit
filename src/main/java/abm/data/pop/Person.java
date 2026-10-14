@@ -39,7 +39,7 @@ public class Person {
     private int monthlyIncome_eur;
     private School school;
 
-    private Disability disability;
+    private DisabilityMuc disability;
 
     private int jobDuration;
     private int jobStartTimeWorkdays;
@@ -65,7 +65,7 @@ public class Person {
 //    }
     public Person(int id, Household household, int age, Gender gender, Relationship relationship, Occupation occupation,
                   boolean hasLicense, Job job, int siloJobDuration, int siloJobStartTimeWorkdays, int siloJobStartTimeWeekends,
-                  int monthlyIncome_eur, School school, Disability disability) {
+                  int monthlyIncome_eur, School school, DisabilityMuc disability) {
         this.id = id;
         this.household = household;
         this.age = age;
@@ -177,7 +177,7 @@ public class Person {
         this.bikeOwnership = bikeOwnership;
     }
 
-    public Disability getDisability() {
+    public DisabilityMuc getDisability() {
         return disability;
     }
 

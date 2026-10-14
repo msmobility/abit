@@ -2,10 +2,7 @@ package abm.calibration;
 
 import abm.data.DataSet;
 import abm.data.plans.*;
-import abm.data.pop.EmploymentStatus;
-import abm.data.pop.Household;
-import abm.data.pop.Person;
-import abm.data.pop.RemoteWorkable;
+import abm.data.pop.*;
 import abm.models.activityGeneration.frequency.FrequencyGenerator;
 import abm.models.activityGeneration.frequency.FrequencyGeneratorModel;
 import abm.properties.AbitResources;
@@ -276,7 +273,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
                 CalibrationOccupation occupation = getCalibrationOccupation(person);
                 EmploymentStatus employmentStatus = getCalibrationEmploymentStatus(person);
                 RemoteWorkable remoteWorkable = getRemoteWorkable(person);
-                DisabilityMuc disability = hasDisability(person);
+                DisabilityMuc disability = person.getDisability();
                 for (Purpose purpose : Purpose.getAllPurposes()) {
                     int numOfAct = frequencyGeneratorsForCalibration.get(purpose).calculateNumberOfActivitiesPerWeek(person, purpose);
                     if (purpose == Purpose.WORK && person.getAge() >= 15 && person.getAge() <= 70) {
@@ -543,7 +540,7 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
 
                     CalibrationOccupation occupation = getCalibrationOccupation(person);
                     RemoteWorkable rw = getRemoteWorkable(person);
-                    DisabilityMuc disability = hasDisability(person);
+                    DisabilityMuc disability = person.getDisability();
                     simulatedDiscretionaryFrequencyCount.get(Purpose.ACCOMPANY).get(occupation).get(rw).get(disability).merge(numberDaysOfAccompanyPerWeek, 1, Integer::sum);
                     simulatedDiscretionaryFrequencyCount.get(Purpose.SHOPPING).get(occupation).get(rw).get(disability).merge(numberActsOfShoppingPerWeek, 1, Integer::sum);
                     simulatedDiscretionaryFrequencyCount.get(Purpose.OTHER).get(occupation).get(rw).get(disability).merge(numberActsOfOtherPerWeek, 1, Integer::sum);
@@ -816,12 +813,6 @@ public class FrequencyGeneratorCalibration implements ModelComponent {
         return person.canRemoteWork()
                 ? RemoteWorkable.TRUE
                 : RemoteWorkable.FALSE;
-    }
-
-    private DisabilityMuc hasDisability(Person person) {
-        return person.getDisability() == Disability.WITHOUT
-                ? DisabilityMuc.WITHOUT
-                : DisabilityMuc.WITH;
     }
 
     private CalibrationOccupation getCalibrationOccupation(Person person) {

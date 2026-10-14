@@ -1,9 +1,8 @@
 package abm.calibration;
 
 import abm.data.DataSet;
-import abm.data.plans.DisabilityMuc;
 import abm.data.plans.HabitualMode;
-import abm.data.plans.Mode;
+import abm.data.pop.DisabilityMuc;
 import abm.data.pop.Household;
 import abm.data.pop.Person;
 import abm.data.pop.RemoteWorkable;
@@ -23,7 +22,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class HabitualModeChoiceCalibration implements ModelComponent {
 
@@ -383,7 +381,7 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
                         if (person.getOccupation().equals(Occupation.EMPLOYED) || person.getOccupation().equals(Occupation.STUDENT)) {
                             Occupation occupation = person.getOccupation();
                             RemoteWorkable rw = getRemoteWorkable(person);
-                            DisabilityMuc disability = hasDisability(person);
+                            DisabilityMuc disability = person.getDisability();
                             int modeCount = simulatedHabitualModeCount.get(occupation).get(rw).get(disability).get(person.getHabitualMode());
                             simulatedHabitualModeCount.get(occupation).get(rw).get(disability).replace(person.getHabitualMode(), modeCount + 1);
                             int popCount = simulatedPopCount.get(occupation).get(rw).get(disability);
@@ -525,12 +523,6 @@ public class HabitualModeChoiceCalibration implements ModelComponent {
             pw.println(line);
         }
         pw.close();
-    }
-
-    private DisabilityMuc hasDisability(Person person) {
-        return person.getDisability() == Disability.WITHOUT
-                ? DisabilityMuc.WITHOUT
-                : DisabilityMuc.WITH;
     }
 
     private RemoteWorkable getRemoteWorkable(Person person) {
