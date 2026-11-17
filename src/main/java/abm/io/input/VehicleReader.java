@@ -79,16 +79,24 @@ public class VehicleReader implements Reader {
             }
 
             int numAutos = Integer.parseInt(splitLine[indexes.get("numAutos")]);
-            String vehType = splitLine[indexes.get("type")].toUpperCase();
 
+            String vehType = splitLine[indexes.get("type")].trim().toUpperCase();
 
             if (numAutos != hh.getNumberOfCars()) {
                 throw new RuntimeException("Number of cars in hh and vv doesn't match, hh id: " + hh.getId());
             } else {
-                if (vehType.equals("CONVENTIONAL")) {
-                    hh.getVehicles().add(new Car(id, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
-                } else if (vehType.equals("ELECTRIC")) {
-                    hh.getVehicles().add(new Car(id, CarType.ELECTRIC, VehicleUtil.getVehicleAgeInBaseYear()));
+                if (vehType.equals("DIESEL")) {hh.getVehicles().add(
+                        new Car(id, CarType.DIESEL,
+                                VehicleUtil.getVehicleAgeInBaseYear())
+                );
+                } else if (vehType.equals("GASOLINE")) {
+                    hh.getVehicles().add(
+                            new Car(id, CarType.GASOLINE,
+                                    VehicleUtil.getVehicleAgeInBaseYear())
+                    );
+                } else {
+                    logger.warn("Unknown vehicle type: '" + vehType
+                            + "' for vehicle ID " + id);
                 }
             }
         }
