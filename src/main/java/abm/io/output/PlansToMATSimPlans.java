@@ -74,7 +74,7 @@ public class PlansToMATSimPlans {
                             }
 
                             //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(leg.getLegMode())));
-                            org.matsim.api.core.v01.population.Leg firstMATSimLeg = PopulationUtils.createLeg(leg.getLegMode().toString().toLowerCase());
+                            org.matsim.api.core.v01.population.Leg firstMATSimLeg = PopulationUtils.createLeg(getMatsimLegMode(leg, tourMode, carType));
                             if (tourMode.equals(Mode.CAR_DRIVER)) {
                                 firstMATSimLeg.getAttributes().putAttribute("vehicleType", carType);
                             }
@@ -96,7 +96,7 @@ public class PlansToMATSimPlans {
                                     matsimPlan.addActivity(nextMatsimActivity);
 
                                     // matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
-                                    org.matsim.api.core.v01.population.Leg nextMATSimLeg = PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase());
+                                    org.matsim.api.core.v01.population.Leg nextMATSimLeg = PopulationUtils.createLeg(getMatsimLegMode(outboundLeg, tourMode, carType));
                                     if (tourMode.equals(Mode.CAR_DRIVER)) {
                                         nextMATSimLeg.getAttributes().putAttribute("vehicleType", carType);
                                     }
@@ -111,8 +111,8 @@ public class PlansToMATSimPlans {
 
                                     final Leg inboundLeg = nextActivity.getSubtour().getInboundLeg();
 
-                                    //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(outboundLeg.getLegMode())));
-                                    org.matsim.api.core.v01.population.Leg nextNextLeg = PopulationUtils.createLeg(outboundLeg.getLegMode().toString().toLowerCase());
+                                    //matsimPlan.addLeg(PopulationUtils.createLeg(Mode.getMatsimMode(inboundLeg.getLegMode())));
+                                    org.matsim.api.core.v01.population.Leg nextNextLeg = PopulationUtils.createLeg(getMatsimLegMode(inboundLeg, tourMode, carType));
                                     if (tourMode.equals(Mode.CAR_DRIVER)) {
                                         nextNextLeg.getAttributes().putAttribute("vehicleType", carType);
                                     }
@@ -154,6 +154,13 @@ public class PlansToMATSimPlans {
 
         new PopulationWriter(matsimPopulation).write(folder + "/matsimPlan_" + dayOfWeek.toString().toLowerCase() + ".xml");
 
+    }
+
+    private String getMatsimLegMode(Leg leg, Mode tourMode, String carType) {
+        if (tourMode.equals(Mode.CAR_DRIVER)) {
+            return "Car" + "_" + carType;
+        }
+        return leg.getLegMode().toString().toLowerCase();
     }
 
     private org.matsim.api.core.v01.population.Activity convertActivityToMATSim(Activity previousActivity) {
