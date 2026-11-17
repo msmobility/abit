@@ -4,10 +4,15 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.population.Person;
+import org.matsim.api.core.v01.population.Population;
+import org.matsim.core.gbl.MatsimRandom;
+import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.ControlerConfigGroup;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup;
+import org.matsim.core.config.groups.PlansCalcRouteConfigGroup;
 import org.matsim.core.config.groups.QSimConfigGroup;
 import org.matsim.core.config.groups.StrategyConfigGroup;
 import org.matsim.core.controler.Controler;
@@ -26,17 +31,27 @@ public class RunMATSim {
 
     private static final double CHANGE_EXP_BETA = 0.8;
     private static final double WEIGHT_REROUTE = 0.2;
+    // sample of the person plans (25 pct population); also used for flow/storage capacity
+    private static final double POPULATION_SCALE_FACTOR = 0.25;
+    // FOCA truck day-of-week factor (thursday 1.278066, saturday 0.430817, sunday 0.178852); weekday uses thursday
+    private static final double TRUCK_DAY_FACTOR = 1.278066;
+
+    // file paths
+    private static final String SCENARIO_FOLDER = "output/uncalibrated_no_telework_25_pct_population/2011_scenario/";
+    private static final String OUTPUT_DIRECTORY = SCENARIO_FOLDER + "matsim_wednesday";
+    private static final String NETWORK_FILE = SCENARIO_FOLDER + "cleaned_network_hbefa.xml";
+    private static final String PLANS_FILE = SCENARIO_FOLDER + "matsimPlan_wednesday.xml";
+    private static final String TRUCK_PLANS_FILE = "output/uncalibrated_no_telework_25_pct_population/truck_plans_muc.xml";
 
     public static void main(String[] args) {
 
         Config config = ConfigUtils.createConfig();
 
         // 1. GLOBAL
-        config.global().setRandomSeed(987654321L);
         config.global().setNumberOfThreads(12);
 
         // 2. CONTROLER
-        config.controler().setOutputDirectory("output/uncalibrated_no_telework_25_pct_population/2011_scenario/matsim_wednesday");
+        config.controler().setOutputDirectory(OUTPUT_DIRECTORY);
         config.controler().setLastIteration(150);
         config.controler().setOverwriteFileSetting(OutputDirectoryHierarchy.OverwriteFileSetting.deleteDirectoryIfExists);
         config.controler().setMobsim("qsim");
@@ -44,27 +59,59 @@ public class RunMATSim {
         config.linkStats().setWriteLinkStatsInterval(0);
 
         // 3. INPUT FILES
-        config.network().setInputFile("output/uncalibrated_no_telework_25_pct_population/2011_scenario/cleaned_network_hbefa.xml");
-        config.plans().setInputFile("output/uncalibrated_no_telework_25_pct_population/2011_scenario/matsimVehiclePlan_wednesday.xml");
+        config.network().setInputFile(NETWORK_FILE);
+        config.plans().setInputFile(PLANS_FILE);
         config.transit().setUseTransit(false);
 
         // 4. QSIM + ROUTING MODES
         config.qsim().setStartTime(0.0);
         config.qsim().setEndTime(30.0 * 3600.0);
-        config.qsim().setFlowCapFactor(0.25);
-        config.qsim().setStorageCapFactor(0.25);
+        config.qsim().setFlowCapFactor(POPULATION_SCALE_FACTOR);
+        config.qsim().setStorageCapFactor(POPULATION_SCALE_FACTOR);
         config.qsim().setNumberOfThreads(12);
         config.qsim().setMainModes(Arrays.asList("Car_GASOLINE", "Car_DIESEL", "truck"));
         config.qsim().setVehiclesSource(QSimConfigGroup.VehiclesSource.modeVehicleTypesFromVehiclesData);
 
         config.plansCalcRoute().setNetworkModes(Arrays.asList("Car_GASOLINE", "Car_DIESEL", "truck"));
 
-        // 5. TRAVEL TIMES (all vehicles share the same congestion)
+        //5. Teleported modes
+        // (a) beeline teleportation: speed in m/s, beeline distance factor
+        PlansCalcRouteConfigGroup.TeleportedModeParams trainParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("train");
+        trainParams.setTeleportedModeSpeed(50.0 / 3.6);
+        trainParams.setBeelineDistanceFactor(1.3);
+        config.plansCalcRoute().addTeleportedModeParams(trainParams);
+
+        PlansCalcRouteConfigGroup.TeleportedModeParams tramMetroParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("tram_metro");
+        tramMetroParams.setTeleportedModeSpeed(25.0 / 3.6);
+        tramMetroParams.setBeelineDistanceFactor(1.3);
+        config.plansCalcRoute().addTeleportedModeParams(tramMetroParams);
+
+        PlansCalcRouteConfigGroup.TeleportedModeParams busParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bus");
+        busParams.setTeleportedModeSpeed(18.0 / 3.6);
+        busParams.setBeelineDistanceFactor(1.3);
+        config.plansCalcRoute().addTeleportedModeParams(busParams);
+
+        PlansCalcRouteConfigGroup.TeleportedModeParams walkParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("walk");
+        walkParams.setTeleportedModeSpeed(5.0 / 3.6);
+        walkParams.setBeelineDistanceFactor(1.3);
+        config.plansCalcRoute().addTeleportedModeParams(walkParams);
+
+        PlansCalcRouteConfigGroup.TeleportedModeParams bikeParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("bike");
+        bikeParams.setTeleportedModeSpeed(15.0 / 3.6);
+        bikeParams.setBeelineDistanceFactor(1.3);
+        config.plansCalcRoute().addTeleportedModeParams(bikeParams);
+
+        // (b) network-routed teleportation: car_passenger
+        PlansCalcRouteConfigGroup.TeleportedModeParams routeParams = new PlansCalcRouteConfigGroup.TeleportedModeParams("car_passenger");
+        routeParams.setTeleportedModeFreespeedFactor(1.0);
+        config.plansCalcRoute().addTeleportedModeParams(routeParams);
+
+        // 6. TRAVEL TIMES (all vehicles share the same congestion)
         config.travelTimeCalculator().setSeparateModes(false);
         config.travelTimeCalculator().setFilterModes(false);
         config.travelTimeCalculator().setAnalyzedModes(new HashSet<>(Arrays.asList("Car_GASOLINE", "Car_DIESEL", "truck")));
 
-        // 6. REPLANNING STRATEGIES
+        // 7. REPLANNING STRATEGIES
         config.strategy().clearStrategySettings();
 
         StrategyConfigGroup.StrategySettings reroute = new StrategyConfigGroup.StrategySettings();
@@ -79,14 +126,14 @@ public class RunMATSim {
 
         config.strategy().setFractionOfIterationsToDisableInnovation(0.8);
 
-        // 7. SCORING - GENERAL
+        // 8. SCORING - GENERAL
         config.planCalcScore().setPerforming_utils_hr(6.0);
         config.planCalcScore().setLateArrival_utils_hr(-18.0);
         config.planCalcScore().setEarlyDeparture_utils_hr(0.0);
         config.planCalcScore().setMarginalUtilityOfMoney(1.0);
         config.planCalcScore().setUtilityOfLineSwitch(-1.0);
 
-        // 8. SCORING - ACTIVITIES (persons)
+        // 9. SCORING - ACTIVITIES (persons)
         PlanCalcScoreConfigGroup.ActivityParams homeParams =
                 new PlanCalcScoreConfigGroup.ActivityParams("home");
         homeParams.setTypicalDuration(12.0 * 3600.0);
@@ -127,7 +174,7 @@ public class RunMATSim {
         otherParams.setTypicalDuration(1.0 * 3600.0);
         config.planCalcScore().addActivityParams(otherParams);
 
-        // 9. SCORING - ACTIVITIES (trucks: start / end, not scored)
+        // 10. SCORING - ACTIVITIES (trucks: start / end, not scored)
         PlanCalcScoreConfigGroup.ActivityParams startParams =
                 new PlanCalcScoreConfigGroup.ActivityParams("start");
         startParams.setTypicalDuration(1.0 * 3600.0);
@@ -140,7 +187,7 @@ public class RunMATSim {
         endParams.setScoringThisActivityAtAll(false);
         config.planCalcScore().addActivityParams(endParams);
 
-        // 10. SCORING - MODES
+        // 11. SCORING - MODES
         PlanCalcScoreConfigGroup.ModeParams carGasolineParams =
                 new PlanCalcScoreConfigGroup.ModeParams("Car_GASOLINE");
         carGasolineParams.setMarginalUtilityOfTraveling(-6.0);
@@ -162,17 +209,42 @@ public class RunMATSim {
         truckParams.setConstant(0.0);
         config.planCalcScore().addModeParams(truckParams);
 
-        // 11. LOAD SCENARIO + MERGE TRUCK PLANS
-        //TODO: check the scale factor for truck plan, is it 10% or 100% truck demand? - Qin
+        // teleported modes (walk and bike already have MATSim default scoring params)
+        for (String teleportedMode : Arrays.asList("train", "tram_metro", "bus", "car_passenger")) {
+            PlanCalcScoreConfigGroup.ModeParams teleportedParams =
+                    new PlanCalcScoreConfigGroup.ModeParams(teleportedMode);
+            teleportedParams.setMarginalUtilityOfTraveling(-6.0);
+            teleportedParams.setMonetaryDistanceRate(0.0);
+            teleportedParams.setConstant(0.0);
+            config.planCalcScore().addModeParams(teleportedParams);
+        }
+
+        // 12. LOAD SCENARIO
         Scenario scenario = ScenarioUtils.loadScenario(config);
 
-        String truckPlanFile = "output/uncalibrated_no_telework_25_pct_population/truck_plans_muc.xml";
-        new PopulationReader(scenario).readFile(truckPlanFile);
+        // 13.  SAMPLE DOWN AND MERGE TRUCK PLANS
+        // truck_plans_muc.xml is 100% truck demand (FOCA); sample it down to the person sample,
+        double truckSample = POPULATION_SCALE_FACTOR * TRUCK_DAY_FACTOR;
+        System.out.println("Truck sample: " + truckSample);
+        if (truckSample >= 1.) {
+            throw new RuntimeException("Requested truck sample " + truckSample + " > 1. The truck plan file has too few trucks.");
+        }
 
-        System.out.println("Truck plans merged into scenario: " + truckPlanFile);
-        System.out.println("Total persons: " + scenario.getPopulation().getPersons().size());
+        Scenario truckScenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
+        new PopulationReader(truckScenario).readFile(TRUCK_PLANS_FILE);
+        Population truckPopulation = truckScenario.getPopulation();
+        PopulationUtils.sampleDown(truckPopulation, truckSample);
 
-        // 12. VEHICLE TYPES (id must equal the leg mode)
+        int personsBefore = scenario.getPopulation().getPersons().size();
+        for (Person truck : truckPopulation.getPersons().values()) {
+            scenario.getPopulation().addPerson(truck);
+        }
+
+        System.out.println("Truck plans merged into scenario: " + TRUCK_PLANS_FILE);
+        System.out.println("Persons: " + personsBefore + ", trucks added: " + truckPopulation.getPersons().size()
+                + ", total agents: " + scenario.getPopulation().getPersons().size());
+
+        // 14. VEHICLE TYPES (id must equal the leg mode)
         // Gasoline car
         VehicleType gasolineType = VehicleUtils.getFactory().createVehicleType(Id.create("Car_GASOLINE", VehicleType.class));
         gasolineType.setNetworkMode("Car_GASOLINE");
@@ -194,7 +266,7 @@ public class RunMATSim {
         truckType.setMaximumVelocity(80.0 / 3.6);
         scenario.getVehicles().addVehicleType(truckType);
 
-        // 14. RUN
+        // 15. RUN
         Controler controler = new Controler(scenario);
         controler.run();
     }
