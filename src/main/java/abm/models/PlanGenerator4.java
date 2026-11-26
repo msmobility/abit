@@ -103,7 +103,7 @@ public class PlanGenerator4 implements Callable {
         //Todo check
         List<Vehicle> vehicles = new ArrayList<>();
         for (int i = 1; i <= household.getNumberOfCars(); i++) {
-            vehicles.add(new Car(i, CarType.CONVENTIONAL, VehicleUtil.getVehicleAgeInBaseYear()));
+            vehicles.add(new Car(i, CarType.GASOLINE, VehicleUtil.getVehicleAgeInBaseYear()));
         }
 
         //Start: Vehicle assignment and mode choice
